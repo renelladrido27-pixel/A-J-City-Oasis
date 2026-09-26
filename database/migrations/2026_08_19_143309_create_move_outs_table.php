@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('move_outs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('lease_id')->constrained()->cascadeOnDelete();
+            $table->date('requested_move_out_date');
+            $table->date('actual_move_out_date')->nullable();
+            $table->decimal('refund_amount', 10, 2)->default(0);
+            $table->enum('refund_status', ['calculated', 'disbursed_manually'])->default('calculated');
+            $table->text('reason')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('move_outs');
+    }
+};
