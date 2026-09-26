@@ -24,14 +24,42 @@ class BookingController extends Controller
     public function __construct(protected BookingService $bookings) {}
 
     /**
-     * Combined "create account & book" — the mobile room-booking screen collects
-     * account details and the booking in one form (unlike the web app, which
-     * requires signing up first). Reuses the same validation/creation rules as
-     * Api\AuthController::register and the same BookingService the web app uses.
+     * Combined "create account & book" for anonymous visitors — the mobile
+     * room-booking screen collects account details and the booking in one form
+     * (unlike the web app, which requires signing up first). Reuses the same
+     * validation/creation rules as Api\AuthController::register and the same
+     * BookingService the web app uses.
+     *
+     * A tenant who is already authenticated (e.g. signed up via C2's Sign up
+     * tab, or logged in) skips account creation entirely and just books with
+     * their existing account — mirrors web's authenticated BookingController::store.
      */
     public function store(Request $request, Room $room): JsonResponse
     {
         abort_unless($room->isVacant(), 422, 'This room is no longer available.');
+
+        $existingUser = auth('sanctum')->user();
+
+        if ($existingUser) {
+            abort_unless($existingUser->isTenant(), 403, 'Only tenants can book rooms.');
+
+            $validated = $request->validate([
+                'move_in_date' => ['nullable', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
+            ]);
+
+            try {
+                $booking = $this->bookings->createBooking($existingUser, $room, $validated['move_in_date'] ?? null);
+            } catch (PaymentGatewayException $e) {
+                return response()->json(['message' => $e->getMessage()], 502);
+            }
+
+            $booking->load(['room.property', 'payments']);
+
+            return response()->json([
+                'user' => UserResource::make($existingUser),
+                'booking' => BookingResource::make($booking),
+            ], 201);
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],

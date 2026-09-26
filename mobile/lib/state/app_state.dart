@@ -130,6 +130,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Books as the already-signed-in tenant (e.g. via C2's standalone Sign up)
+  /// — no account-creation fields needed since the session token already
+  /// identifies them. Mirrors web's authenticated BookingController::store.
+  Future<void> submitBookingForCurrentUser({
+    required DateTime moveInDate,
+  }) async {
+    final room = draft?.room;
+    if (room == null) return;
+
+    final res = await _api.post('/rooms/${room.id}/book', {
+      'move_in_date': _isoDate(moveInDate),
+    });
+    currentBooking = BookingSummary.fromJson(res['booking']);
+    notifyListeners();
+  }
+
   /// Returns the raw API result so the screen can react to 'paid' vs.
   /// 'redirect' (real Xendit checkout needs to open invoice_url).
   Future<Map<String, dynamic>> completeBookingPayment(String method) async {

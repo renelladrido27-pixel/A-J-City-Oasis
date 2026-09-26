@@ -4,19 +4,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>@yield('title', 'Dashboard') — A &amp; J OASIS</title>
-    <meta name="description" content="@yield('meta_description', 'Manage your booking, lease, payments, and maintenance requests at A & J OASIS, Koronadal City.')">
+    <meta name="description" content="@yield('meta_description', 'Manage your booking, lease, payments, and maintenance requests at A &amp; J OASIS, Koronadal City.')">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
-    <link href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>" rel="icon" type="image/svg+xml">
+    <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    @include('partials.brand-theme')
+    @include('partials.animations')
     <style>
         html { -webkit-text-size-adjust: 100%; }
         body { display: flex; flex-direction: column; min-height: 100vh; }
         main { flex: 1; }
         img { max-width: 100%; height: auto; }
         .navbar-brand { font-weight: 600; letter-spacing: .02em; }
-        .nav-link.active { color: #fff !important; font-weight: 600; }
+        .nav-link.active { color: #fff !important; font-weight: 600; border-bottom: 2px solid var(--oasis-gold); }
+        .navbar .dropdown-item.active, .navbar .dropdown-item:active { background: var(--oasis-green); }
         .table-responsive { border-radius: .5rem; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
         .table { white-space: nowrap; }
         .btn:disabled { cursor: not-allowed; }
@@ -35,9 +38,9 @@
     </style>
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-oasis sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="{{ url('/') }}"><i class="bi bi-house-door-fill me-1"></i>A &amp; J OASIS</a>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A &amp; J OASIS</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -132,7 +135,7 @@
                         </li>
                     @else
                         <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Login</a></li>
-                        <li class="nav-item"><a class="btn btn-primary btn-sm ms-lg-2" href="{{ route('register') }}">Register</a></li>
+                        <li class="nav-item"><a class="btn btn-oasis btn-sm ms-lg-2" href="{{ route('register') }}">Register</a></li>
                     @endauth
                 </ul>
             </div>

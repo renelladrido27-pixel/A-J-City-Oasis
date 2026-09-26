@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="oasisLogoTitle">
+    <title id="oasisLogoTitle">A &amp; J OASIS</title>
+    <defs>
+        <linearGradient id="oasisLogoBg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#2d6a4f"/>
+            <stop offset="100%" stop-color="#10291f"/>
+        </linearGradient>
+    </defs>
+    <rect width="64" height="64" rx="14" fill="url(#oasisLogoBg)"/>
+    <path d="M32 12.5 L51 28.5 V49 a3.2 3.2 0 0 1 -3.2 3.2 H16.2 A3.2 3.2 0 0 1 13 49 V28.5 Z" fill="#faf6ee"/>
+    <path d="M32 12.5 L51 28.5" stroke="#c9963e" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+    <rect x="26.5" y="33" width="11" height="19.2" rx="1.6" fill="#10291f"/>
+    <circle cx="35.2" cy="42.6" r="1.7" fill="#c9963e"/>
+</svg>

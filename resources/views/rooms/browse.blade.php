@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Available Rooms')
-@section('meta_description', 'Browse vacant rental rooms at A & J OASIS across two properties in Koronadal City, with transparent monthly pricing.')
+@section('meta_description', 'Browse vacant rental rooms at A &amp; J OASIS across two properties in Koronadal City, with transparent monthly pricing.')
 
 @section('content')
 <style>

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/webhooks/xendit', [XenditWebhookController::class, 'handle'])->name('webhooks.xendit');
 
-// Mobile app API (Sanctum bearer-token auth). Public: browse + login/register + booking.
+// Mobile app API 
 Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
 Route::post('/rooms/{room}/book', [BookingController::class, 'store']);

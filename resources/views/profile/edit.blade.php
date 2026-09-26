@@ -58,7 +58,7 @@
                         </div>
                         <div>
                             <div class="fw-semibold">{{ $user->name }}</div>
-                            {{-- <div class="text-muted small">Click the camera icon to change your photo.</div> --}}
+                
                             @error('photo')
                                 <div class="text-danger small mt-1">{{ $message }}</div>
                             @enderror

@@ -6,8 +6,11 @@
     <title>Page Not Found — A &amp; J OASIS</title>
     <meta name="robots" content="noindex">
     <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
+    <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    @include('partials.brand-theme')
+    @include('partials.animations')
     <style>
         html { -webkit-text-size-adjust: 100%; }
         body {
@@ -20,9 +23,6 @@
         }
         main { flex: 1; }
         a, button, .btn { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-        .text-oasis { color: #1b4332; }
-        .btn-oasis { background: #c9963e; border-color: #c9963e; color: #1f2d27; font-weight: 600; }
-        .btn-oasis:hover { background: #b8852f; border-color: #b8852f; color: #fff; }
     </style>
 </head>
 <body>
