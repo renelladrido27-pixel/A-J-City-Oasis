@@ -59,4 +59,22 @@ class Payment extends Model
         return $this->status === 'pending'
             && now()->gte($this->due_date->copy()->addDays(30));
     }
+
+    /**
+     * Line shown to the payer on Xendit's checkout page — shared by the web
+     * and mobile pay flows so both invoices read the same.
+     */
+    public function gatewayDescription(): string
+    {
+        $room = ($this->booking?->room ?? $this->lease?->room)?->room_number;
+        $suffix = $room ? " for Room {$room}" : '';
+
+        return match ($this->type) {
+            'booking_upfront' => "3-month upfront payment (advance, deposit, security){$suffix}",
+            'rent' => "Monthly rent{$suffix}",
+            'utility' => "Utility bill{$suffix}",
+            'transfer_adjustment' => "Room transfer deposit adjustment{$suffix}",
+            default => ucfirst(str_replace('_', ' ', $this->type)).' payment',
+        };
+    }
 }

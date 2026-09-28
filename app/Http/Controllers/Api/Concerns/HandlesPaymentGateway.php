@@ -25,16 +25,23 @@ trait HandlesPaymentGateway
         /** @var XenditService $xendit */
         $xendit = app(XenditService::class);
 
-        if (! $payment->xendit_invoice_id) {
+        $invoiceId = $xendit->resumableInvoiceId($payment->xendit_invoice_id);
+
+        if (! $invoiceId) {
+            // Checkout opens in the phone's browser, which has no web session —
+            // send it to the public "return to the app" page, not the auth-only
+            // web success page. The app confirms the status itself on resume.
             $invoice = $xendit->createInvoice(
                 externalId: $payment->booking_id ? 'booking-'.$payment->booking_id : 'payment-'.$payment->id,
                 amount: (float) $payment->amount,
-                description: ucfirst($payment->type).' payment',
+                description: $payment->gatewayDescription(),
                 payerEmail: $payerEmail,
+                successUrl: route('payments.return-to-app'),
+                failureUrl: route('payments.return-to-app', ['failed' => 1]),
             );
             $payment->update(['xendit_invoice_id' => $invoice['invoice_id']]);
         } else {
-            $invoice = $xendit->getInvoice($payment->xendit_invoice_id);
+            $invoice = $xendit->getInvoice($invoiceId);
         }
 
         if (config('xendit.fake_mode')) {
@@ -57,9 +64,12 @@ trait HandlesPaymentGateway
             return ['status' => 'paid'];
         }
 
-        abort_unless($payment->xendit_invoice_id, 422, 'No payment has been started yet.');
+        $xendit = app(XenditService::class);
+        $invoiceId = $xendit->resumableInvoiceId($payment->xendit_invoice_id);
 
-        $invoice = app(XenditService::class)->getInvoice($payment->xendit_invoice_id);
+        abort_unless($invoiceId, 422, 'No payment has been started yet.');
+
+        $invoice = $xendit->getInvoice($invoiceId);
 
         if (in_array($invoice['status'], ['PAID', 'SETTLED'], true)) {
             app(PaymentCompletionService::class)->complete($payment, $invoice['invoice_id'] ?? null);

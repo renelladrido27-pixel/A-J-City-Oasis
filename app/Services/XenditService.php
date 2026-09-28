@@ -28,12 +28,20 @@ class XenditService
      * @param  float  $amount
      * @param  string  $description
      * @param  string|null  $payerEmail
+     * @param  string|null  $successUrl  Where Xendit sends the payer after paying (defaults to payments.success)
+     * @param  string|null  $failureUrl  Where Xendit sends the payer on failure/expiry (defaults to payments.failure)
      * @return array{invoice_id: string, invoice_url: string, status: string}
      *
      * @throws PaymentGatewayException
      */
-    public function createInvoice(string $externalId, float $amount, string $description, ?string $payerEmail = null): array
-    {
+    public function createInvoice(
+        string $externalId,
+        float $amount,
+        string $description,
+        ?string $payerEmail = null,
+        ?string $successUrl = null,
+        ?string $failureUrl = null,
+    ): array {
         if (config('xendit.fake_mode')) {
             $fakeId = 'fake_'.Str::uuid();
 
@@ -51,8 +59,8 @@ class XenditService
             'currency' => 'PHP',
             'invoice_duration' => 86400,
             'payer_email' => $payerEmail,
-            'success_redirect_url' => route('payments.success'),
-            'failure_redirect_url' => route('payments.failure'),
+            'success_redirect_url' => $successUrl ?? route('payments.success'),
+            'failure_redirect_url' => $failureUrl ?? route('payments.failure'),
         ]);
 
         try {
@@ -75,6 +83,20 @@ class XenditService
             'invoice_url' => $invoice['invoice_url'],
             'status' => $invoice['status'],
         ];
+    }
+
+    /**
+     * A payment's stored invoice id, or null if it can't be resumed — i.e. a
+     * fake_ id left over from fake mode after fake mode has been switched off.
+     * Callers treat null as "no invoice yet" and create a fresh one.
+     */
+    public function resumableInvoiceId(?string $invoiceId): ?string
+    {
+        if ($invoiceId && str_starts_with($invoiceId, 'fake_') && ! config('xendit.fake_mode')) {
+            return null;
+        }
+
+        return $invoiceId;
     }
 
     /**

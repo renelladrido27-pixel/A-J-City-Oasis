@@ -29,6 +29,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Guest
 Route::get('/rooms', [RoomController::class, 'browse'])->name('rooms.browse');
 Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
+Route::get('/payments/return-to-app', [PaymentController::class, 'returnToApp'])->name('payments.return-to-app');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');

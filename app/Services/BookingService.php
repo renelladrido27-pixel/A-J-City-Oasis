@@ -16,13 +16,15 @@ use Illuminate\Support\Facades\Mail;
 class BookingService
 {
     public function __construct(
-        protected XenditService $xendit,
         protected NotificationService $notifications,
     ) {}
 
     /**
      * Create a booking with the required 3-month upfront payment
-     * (advance + deposit + security) and a Xendit invoice for the total.
+     * (advance + deposit + security). The Xendit invoice is created later,
+     * when the tenant presses Pay — that's the only point where we know
+     * whether they're paying from the web or the mobile app, which decides
+     * where Xendit should send them back to after checkout.
      */
     public function createBooking(User $tenant, Room $room, ?string $moveInDate = null): Booking
     {
@@ -51,20 +53,12 @@ class BookingService
 
             $locked->update(['status' => 'reserved']);
 
-            $invoice = $this->xendit->createInvoice(
-                externalId: 'booking-'.$booking->id,
-                amount: (float) $booking->total_amount,
-                description: "3-month upfront payment for Room {$room->room_number}",
-                payerEmail: $tenant->email,
-            );
-
             Payment::create([
                 'booking_id' => $booking->id,
                 'type' => 'booking_upfront',
                 'amount' => $booking->total_amount,
                 'due_date' => $deadline,
                 'status' => 'pending',
-                'xendit_invoice_id' => $invoice['invoice_id'],
             ]);
 
             $this->notifications->notify(

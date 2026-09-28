@@ -16,11 +16,33 @@ class BookingPaymentScreen extends StatefulWidget {
   State<BookingPaymentScreen> createState() => _BookingPaymentScreenState();
 }
 
-class _BookingPaymentScreenState extends State<BookingPaymentScreen> {
+class _BookingPaymentScreenState extends State<BookingPaymentScreen>
+    with WidgetsBindingObserver {
   String _method = 'GCash';
   bool _submitting = false;
   bool _awaitingCheckout = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Xendit checkout runs in the external browser — when the tenant switches
+  /// back to the app, confirm the payment without making them tap anything.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _awaitingCheckout && !_submitting) {
+      _checkStatus();
+    }
+  }
 
   Future<void> _pay() async {
     setState(() {

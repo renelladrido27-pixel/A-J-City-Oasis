@@ -97,12 +97,15 @@ class PaymentController extends Controller
         abort_unless($payment->status === 'pending', 422, 'This payment is not payable.');
 
         try {
-            if (! $payment->xendit_invoice_id) {
+            $invoiceId = $this->xendit->resumableInvoiceId($payment->xendit_invoice_id);
+
+            if (! $invoiceId) {
                 $invoice = $this->xendit->createInvoice(
                     externalId: 'payment-'.$payment->id,
                     amount: (float) $payment->amount,
-                    description: ucfirst($payment->type).' payment',
+                    description: $payment->gatewayDescription(),
                     payerEmail: $tenant->email,
+                    successUrl: route('payments.success', ['payment' => $payment->id]),
                 );
 
                 $payment->update(['xendit_invoice_id' => $invoice['invoice_id']]);
@@ -110,7 +113,7 @@ class PaymentController extends Controller
                 return redirect()->away($invoice['invoice_url']);
             }
 
-            $invoice = $this->xendit->getInvoice($payment->xendit_invoice_id);
+            $invoice = $this->xendit->getInvoice($invoiceId);
 
             return redirect()->away($invoice['invoice_url']);
         } catch (PaymentGatewayException $e) {
@@ -134,10 +137,14 @@ class PaymentController extends Controller
             return back()->with('status', 'This payment is already marked as paid.');
         }
 
-        abort_unless($payment->xendit_invoice_id, 422, 'No Xendit invoice has been created for this payment yet.');
+        $invoiceId = $this->xendit->resumableInvoiceId($payment->xendit_invoice_id);
+
+        if (! $invoiceId) {
+            return back()->withErrors(['gateway' => 'No Xendit checkout has been started for this payment yet — press Pay via Xendit first.']);
+        }
 
         try {
-            $invoice = $this->xendit->getInvoice($payment->xendit_invoice_id);
+            $invoice = $this->xendit->getInvoice($invoiceId);
         } catch (PaymentGatewayException $e) {
             return back()->withErrors(['gateway' => $e->getMessage()]);
         }
@@ -182,9 +189,45 @@ class PaymentController extends Controller
         return view('payments.receipt', compact('payment'));
     }
 
-    public function success(): View
+    /**
+     * Xendit's success redirect lands here with ?payment={id}. The webhook can't
+     * reach a locally-served app, so confirm the invoice with Xendit directly
+     * rather than making the tenant go back and press "check status".
+     */
+    public function success(Request $request): View
     {
-        return view('payments.success');
+        $payment = $request->filled('payment') ? Payment::find($request->integer('payment')) : null;
+        $tenant = $payment?->lease?->tenant ?? $payment?->booking?->tenant;
+
+        if (! $payment || ! $tenant || $tenant->id !== auth()->id()) {
+            return view('payments.success', ['payment' => null]);
+        }
+
+        $invoiceId = $this->xendit->resumableInvoiceId($payment->xendit_invoice_id);
+
+        if ($payment->status === 'pending' && $invoiceId) {
+            try {
+                $invoice = $this->xendit->getInvoice($invoiceId);
+
+                if (in_array($invoice['status'], ['PAID', 'SETTLED'], true)) {
+                    $this->completion->complete($payment, $invoice['invoice_id']);
+                }
+            } catch (PaymentGatewayException) {
+                // Leave it pending — the webhook or a manual status check will finish it.
+            }
+        }
+
+        return view('payments.success', ['payment' => $payment->fresh()]);
+    }
+
+    /**
+     * Public landing page for checkouts started from the mobile app. The phone's
+     * browser has no web session, so this can't be behind auth — it just tells
+     * the tenant to switch back to the app, which confirms the status itself.
+     */
+    public function returnToApp(Request $request): View
+    {
+        return view('payments.return-to-app', ['failed' => $request->boolean('failed')]);
     }
 
     public function failure(): View
