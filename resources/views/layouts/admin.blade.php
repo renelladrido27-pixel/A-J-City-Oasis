@@ -97,9 +97,7 @@
                 <a class="nav-link {{ request()->routeIs('notifications.index') ? 'active' : '' }}" href="{{ route('notifications.index') }}">
                     <i class="bi bi-bell me-2"></i>Notifications
                     @php($unread = auth()->user()->notifications()->whereNull('read_at')->count())
-                    @if ($unread)
-                        <span class="badge rounded-pill bg-danger ms-1">{{ $unread > 9 ? '9+' : $unread }}</span>
-                    @endif
+                    <span data-live-unread class="badge rounded-pill bg-danger ms-1 {{ $unread ? '' : 'd-none' }}">{{ $unread > 9 ? '9+' : $unread }}</span>
                 </a>
             </nav>
         </aside>
@@ -160,6 +158,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    @include('partials.realtime')
     <script>
         const sidebar = document.getElementById('sidebar');
         const backdrop = document.getElementById('sidebarBackdrop');

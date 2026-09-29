@@ -75,11 +75,7 @@
                             <a class="nav-link position-relative dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-bell fs-6"></i>
                                 @php($unreadCount = $unreadByType->count())
-                                @if ($unreadCount)
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: .6rem;">
-                                        {{ $unreadCount > 9 ? '9+' : $unreadCount }}
-                                    </span>
-                                @endif
+                                <span data-live-unread class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $unreadCount ? '' : 'd-none' }}" style="font-size: .6rem;">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end shadow-sm p-0" style="width: 340px; max-height: 420px; overflow-y: auto;">
                                 @if ($unreadCount)
@@ -187,6 +183,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    @include('partials.realtime')
     <script>
         document.querySelectorAll('#mainNav .nav-link:not(.dropdown-toggle)').forEach(function (link) {
             link.addEventListener('click', function () {
