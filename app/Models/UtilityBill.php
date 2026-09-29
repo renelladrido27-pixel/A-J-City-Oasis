@@ -14,6 +14,7 @@ class UtilityBill extends Model
         'lease_id',
         'type',
         'amount',
+        'receipt_photo',
         'due_date',
         'encoded_by',
         'status',
@@ -41,5 +42,14 @@ class UtilityBill extends Model
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
+    }
+
+    /**
+     * Built from the current request's host (see RoomImage::url()) so it
+     * works regardless of how the app is being served.
+     */
+    public function receiptUrl(): ?string
+    {
+        return $this->receipt_photo ? asset('storage/'.$this->receipt_photo) : null;
     }
 }

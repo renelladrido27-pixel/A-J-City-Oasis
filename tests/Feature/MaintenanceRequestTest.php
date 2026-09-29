@@ -49,6 +49,48 @@ class MaintenanceRequestTest extends TestCase
         $this->assertDatabaseHas('notifications', ['user_id' => $admin->id, 'type' => 'maintenance']);
     }
 
+    public function test_the_issue_photo_must_be_a_jpg_png_or_webp_image(): void
+    {
+        Storage::fake('public');
+        $lease = Lease::factory()->create();
+
+        $this->actingAs($lease->tenant)
+            ->post(route('tenant.maintenance-requests.store', $lease), [
+                'category' => 'Plumbing',
+                'description' => 'Leaking sink',
+                'photo' => UploadedFile::fake()->create('sink.pdf', 100, 'application/pdf'),
+            ])
+            ->assertSessionHasErrors('photo');
+
+        $this->assertDatabaseCount('maintenance_requests', 0);
+    }
+
+    public function test_the_mobile_app_can_upload_an_issue_photo(): void
+    {
+        Storage::fake('public');
+        $lease = Lease::factory()->create();
+        \Laravel\Sanctum\Sanctum::actingAs($lease->tenant);
+
+        // Multipart, exactly as the app's ApiClient.postMultipart sends it.
+        $this->post('/api/maintenance-requests', [
+            'category' => 'Plumbing',
+            'description' => 'Leaking sink',
+            'photo' => UploadedFile::fake()->create('IMG_2031.jpg', 800, 'image/jpeg'),
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        Storage::disk('public')->assertExists(MaintenanceRequest::sole()->photo);
+    }
+
+    public function test_the_report_form_uses_the_photo_upload_component(): void
+    {
+        $lease = Lease::factory()->create();
+
+        $this->actingAs($lease->tenant)->get(route('tenant.maintenance-requests.create', $lease))
+            ->assertOk()
+            ->assertSee('data-photo-upload', false)
+            ->assertSee('Take a photo or choose one');
+    }
+
     public function test_a_tenant_cannot_report_an_issue_on_someone_elses_lease(): void
     {
         $lease = Lease::factory()->create();

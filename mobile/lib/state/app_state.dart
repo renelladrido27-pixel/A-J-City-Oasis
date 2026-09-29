@@ -326,14 +326,18 @@ class AppState extends ChangeNotifier {
     return res;
   }
 
+  /// [photoPath] is a local file from the camera/gallery picker; sent as the
+  /// same `photo` field the web form uploads.
   Future<void> submitMaintenanceRequest(
     String issueType,
-    String description,
-  ) async {
-    await _api.post('/maintenance-requests', {
-      'category': issueType,
-      'description': description,
-    });
+    String description, {
+    String? photoPath,
+  }) async {
+    await _api.postMultipart(
+      '/maintenance-requests',
+      fields: {'category': issueType, 'description': description},
+      files: {'photo': ?photoPath},
+    );
     await _loadMaintenanceRequests();
     notifyListeners();
   }

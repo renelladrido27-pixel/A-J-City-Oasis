@@ -39,7 +39,7 @@ class MaintenanceRequestController extends Controller
         $validated = $request->validate([
             'category' => ['required', 'string', 'max:100'],
             'description' => ['required', 'string', 'max:2000'],
-            'photo' => ['nullable', 'image', 'max:5120'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         $maintenanceRequest = MaintenanceRequest::create([

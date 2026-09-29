@@ -42,6 +42,35 @@ class ApiClient {
   Future<Map<String, dynamic>> put(String path, [Map<String, dynamic>? body]) =>
       _send('PUT', path, body);
 
+  /// POST as multipart/form-data — for endpoints that take a file upload
+  /// (e.g. a maintenance request photo) alongside plain text fields.
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    Map<String, String> files = const {},
+  }) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
+      ..headers['Accept'] = 'application/json'
+      ..fields.addAll(fields);
+    final t = await token;
+    if (t != null) request.headers['Authorization'] = 'Bearer $t';
+
+    for (final entry in files.entries) {
+      request.files.add(
+        await http.MultipartFile.fromPath(entry.key, entry.value),
+      );
+    }
+
+    try {
+      final streamed = await request.send();
+      return _decode(await http.Response.fromStream(streamed));
+    } on http.ClientException catch (e) {
+      throw ApiException(
+        'Could not reach the server. Check your connection. (${e.message})',
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> _send(
     String method,
     String path, [
@@ -83,6 +112,10 @@ class ApiClient {
       throw ApiException('Could not reach the server. Check your connection.');
     }
 
+    return _decode(response);
+  }
+
+  Map<String, dynamic> _decode(http.Response response) {
     if (response.statusCode == 204 || response.body.isEmpty) {
       return {};
     }

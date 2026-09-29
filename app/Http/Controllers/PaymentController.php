@@ -23,10 +23,10 @@ class PaymentController extends Controller
     public function index(Request $request): View
     {
         $payments = $request->user()->isAdmin()
-            ? Payment::with(['lease.tenant', 'booking.tenant'])->latest()->paginate(25)
+            ? Payment::with(['lease.tenant', 'booking.tenant', 'utilityBill'])->latest()->paginate(25)
             : Payment::whereHas('lease', fn ($q) => $q->where('tenant_id', $request->user()->id))
                 ->orWhereHas('booking', fn ($q) => $q->where('user_id', $request->user()->id))
-                ->with(['lease', 'booking'])
+                ->with(['lease', 'booking', 'utilityBill'])
                 ->latest()
                 ->paginate(25);
 

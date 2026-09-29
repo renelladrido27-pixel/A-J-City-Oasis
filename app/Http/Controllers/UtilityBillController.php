@@ -82,6 +82,7 @@ class UtilityBillController extends Controller
             'type' => ['required', Rule::in(['water', 'electricity'])],
             'amount' => ['required', 'numeric', 'min:0'],
             'due_date' => ['required', 'date', 'after_or_equal:'.now()->addDays(10)->toDateString()],
+            'receipt_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 
@@ -91,6 +92,9 @@ class UtilityBillController extends Controller
             'lease_id' => $lease->id,
             'type' => $validated['type'],
             'amount' => $validated['amount'],
+            'receipt_photo' => request()->hasFile('receipt_photo')
+                ? request()->file('receipt_photo')->store('utility-receipts', 'public')
+                : null,
             'due_date' => $validated['due_date'],
             'encoded_by' => request()->user()->id,
             'status' => 'unpaid',

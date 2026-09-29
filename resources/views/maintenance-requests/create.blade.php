@@ -19,11 +19,8 @@
                 <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="4" required>{{ old('description') }}</textarea>
                 @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="mb-3">
-                <label class="form-label">Photo <span class="text-muted fw-normal">(optional)</span></label>
-                <input type="file" name="photo" accept="image/*" class="form-control @error('photo') is-invalid @enderror">
-                @error('photo')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                <div class="form-text">Attach a photo of the issue to help staff assess it faster.</div>
+            <div class="mb-4">
+                <x-photo-upload name="photo" label="Photo of the issue" hint="A clear photo helps staff assess the problem faster." />
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-primary"><i class="bi bi-send me-1"></i>Submit</button>

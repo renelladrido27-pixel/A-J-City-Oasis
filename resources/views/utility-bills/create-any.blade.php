@@ -15,7 +15,7 @@
         @if ($leases->isEmpty())
             <x-empty-state icon="bi-door-closed" message="No active leases to bill right now." />
         @else
-            <form method="POST" action="{{ route('admin.utility-bills.store-any') }}">
+            <form method="POST" action="{{ route('admin.utility-bills.store-any') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-3">
                     <label class="form-label">Room</label>
@@ -49,6 +49,9 @@
                     <label class="form-label">Due Date</label>
                     <input type="date" name="due_date" class="form-control @error('due_date') is-invalid @enderror" value="{{ old('due_date') }}" min="{{ now()->addDays(10)->toDateString() }}" required>
                     @error('due_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="mb-4">
+                    <x-photo-upload name="receipt_photo" label="Receipt photo" hint="Photo of the water/electric provider's bill, so the tenant can verify the amount." />
                 </div>
                 <div class="d-flex gap-2">
                     <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save</button>
