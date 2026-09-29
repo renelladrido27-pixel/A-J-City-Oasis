@@ -11,7 +11,6 @@ use App\Models\Room;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 
 class BookingService
 {
@@ -115,7 +114,7 @@ class BookingService
                 'payment',
             );
 
-            Mail::to($booking->tenant->email)->send(new BookingConfirmedMail($booking->fresh(['tenant', 'room.property'])));
+            app(MailService::class)->send($booking->tenant->email, new BookingConfirmedMail($booking->fresh(['tenant', 'room.property'])));
 
             if ($booking->move_in_date) {
                 $this->createLeaseForBooking($booking->fresh());
@@ -147,7 +146,7 @@ class BookingService
                 'lease',
             );
 
-            Mail::to($booking->tenant->email)->send(new LeaseStartedMail($lease->fresh(['tenant', 'room.property'])));
+            app(MailService::class)->send($booking->tenant->email, new LeaseStartedMail($lease->fresh(['tenant', 'room.property'])));
 
             return $lease;
         });

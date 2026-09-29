@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Mail\PaymentReceiptMail;
 use App\Models\Payment;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Applies the side effects of a payment being marked PAID — shared by the
@@ -77,7 +76,7 @@ class PaymentCompletionService
         }
 
         if ($tenant) {
-            Mail::to($tenant->email)->send(new PaymentReceiptMail($payment->fresh(['lease'])));
+            app(MailService::class)->send($tenant->email, new PaymentReceiptMail($payment->fresh(['lease'])));
         }
     }
 }

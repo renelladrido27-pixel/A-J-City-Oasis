@@ -6,10 +6,10 @@ use App\Mail\UtilityBillEncodedMail;
 use App\Models\Lease;
 use App\Models\Payment;
 use App\Models\UtilityBill;
+use App\Services\MailService;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -113,7 +113,7 @@ class UtilityBillController extends Controller
             'utility',
         );
 
-        Mail::to($lease->tenant->email)->send(new UtilityBillEncodedMail($bill->fresh(['lease.tenant', 'lease.room'])));
+        app(MailService::class)->send($lease->tenant->email, new UtilityBillEncodedMail($bill->fresh(['lease.tenant', 'lease.room'])));
 
         return $bill;
     }

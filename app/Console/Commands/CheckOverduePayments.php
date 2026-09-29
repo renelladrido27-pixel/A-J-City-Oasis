@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Mail\PaymentOverdueMail;
 use App\Models\Payment;
+use App\Services\MailService;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 
 class CheckOverduePayments extends Command
 {
@@ -34,7 +34,7 @@ class CheckOverduePayments extends Command
                     'payment',
                 );
 
-                Mail::to($tenant->email)->send(new PaymentOverdueMail($payment));
+                app(MailService::class)->send($tenant->email, new PaymentOverdueMail($payment));
             }
         }
 
