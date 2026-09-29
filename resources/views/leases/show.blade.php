@@ -67,7 +67,7 @@
                                 @if (! auth()->user()->isAdmin() && $payment->status === 'pending')
                                     <form method="POST" action="{{ route('payments.pay', $payment) }}" class="d-inline">
                                         @csrf
-                                        <button class="btn btn-sm btn-success"><i class="bi bi-credit-card me-1"></i>Pay via Xendit</button>
+                                        <button class="btn btn-sm btn-success" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Pay</button>
                                     </form>
                                     @if ($payment->xendit_invoice_id && ! config('xendit.fake_mode'))
                                         <form method="POST" action="{{ route('payments.check-status', $payment) }}" class="d-inline">
@@ -225,7 +225,7 @@
                             @if (auth()->user()->isTenant() && $moveOut->balancePayment?->status === 'pending')
                                 <form method="POST" action="{{ route('payments.pay', $moveOut->balancePayment) }}" class="d-inline ms-2">
                                     @csrf
-                                    <button class="btn btn-sm btn-success"><i class="bi bi-credit-card me-1"></i>Pay via Xendit</button>
+                                    <button class="btn btn-sm btn-success" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Pay</button>
                                 </form>
                             @endif
                         </dd>

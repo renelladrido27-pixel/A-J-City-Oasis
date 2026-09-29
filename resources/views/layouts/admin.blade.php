@@ -194,7 +194,7 @@
                         if (e.defaultPrevented) return;
                         btn.disabled = true;
                         btn.dataset.originalHtml = btn.innerHTML;
-                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Please wait…';
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>' + (btn.dataset.loadingText || 'Please wait…');
                     }, 0);
                 }
             });

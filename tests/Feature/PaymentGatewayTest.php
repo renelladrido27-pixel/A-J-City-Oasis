@@ -80,11 +80,44 @@ class PaymentGatewayTest extends TestCase
         $tenant = $payment->lease->tenant;
         $this->actingAs($tenant)->post(route('payments.pay', $payment));
 
+        // Keeps re-checking on its own instead of asking the tenant to press a button...
         $this->actingAs($tenant)->get(route('payments.success', ['payment' => $payment->id]))
             ->assertOk()
-            ->assertSee('Payment Processing');
+            ->assertSee('Confirming Your Payment')
+            ->assertSee("url.searchParams.set('attempt', 1)", false)
+            ->assertDontSee('Check Again');
+
+        // ...and only falls back to a manual button after ~30 seconds of retries.
+        $this->actingAs($tenant)->get(route('payments.success', ['payment' => $payment->id, 'attempt' => 10]))
+            ->assertOk()
+            ->assertSee('Check Again');
 
         $this->assertSame('pending', $payment->fresh()->status);
+    }
+
+    public function test_confirming_a_booking_opens_xendit_checkout_directly(): void
+    {
+        $tenant = User::factory()->create();
+        $room = \App\Models\Room::factory()->create();
+
+        $this->actingAs($tenant)->post(route('tenant.bookings.store', $room), [
+            'move_in_date' => now()->addDays(3)->toDateString(),
+            'agreed_to_terms' => '1',
+        ])->assertRedirect('https://checkout.test/inv_1');
+
+        $payment = Payment::sole();
+        $this->assertSame(route('payments.success', ['payment' => $payment->id]), $this->xendit->invoices['inv_1']['success_url']);
+        $this->assertSame('booking-'.$payment->booking_id, $this->xendit->invoices['inv_1']['external_id']);
+    }
+
+    public function test_pay_buttons_just_say_pay(): void
+    {
+        $payment = Payment::factory()->create();
+
+        $this->actingAs($payment->lease->tenant)->get(route('tenant.payments.index'))
+            ->assertOk()
+            ->assertSee('Opening payment…')
+            ->assertDontSee('Pay via Xendit');
     }
 
     public function test_success_page_ignores_another_tenants_payment(): void

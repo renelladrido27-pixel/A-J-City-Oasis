@@ -6,6 +6,7 @@ use App\Exceptions\PaymentGatewayException;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Services\BookingService;
+use App\Services\PaymentCheckoutService;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,14 +50,19 @@ class BookingController extends Controller
             'move_in_date.before_or_equal' => 'Move-in date must be within 7 days of booking.',
         ]);
 
-        try {
-            $booking = $this->bookings->createBooking($request->user(), $room, $validated['move_in_date'] ?? null);
-        } catch (PaymentGatewayException $e) {
-            return back()->withErrors(['gateway' => $e->getMessage()]);
-        }
+        $booking = $this->bookings->createBooking($request->user(), $room, $validated['move_in_date'] ?? null);
 
-        return redirect()->route('tenant.bookings.show', $booking)
-            ->with('status', 'Booking created. Complete the upfront payment via Xendit to confirm your room.');
+        // Straight to checkout — no stop on the booking page where the Pay
+        // button could be missed. If the gateway is down, land on the booking
+        // page instead; its Pay button retries.
+        try {
+            return redirect()->away(
+                app(PaymentCheckoutService::class)->checkoutUrl($booking->payments()->sole(), $request->user()->email)
+            );
+        } catch (PaymentGatewayException $e) {
+            return redirect()->route('tenant.bookings.show', $booking)
+                ->withErrors(['gateway' => 'Your room is reserved, but the payment page could not be opened: '.$e->getMessage().' Press Pay to try again.']);
+        }
     }
 
     public function show(Booking $booking): View

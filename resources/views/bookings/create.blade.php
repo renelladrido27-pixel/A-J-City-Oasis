@@ -46,7 +46,7 @@
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
-            <button class="btn btn-primary w-100"><i class="bi bi-credit-card me-1"></i>Confirm Booking &amp; Pay via Xendit</button>
+            <button class="btn btn-primary w-100" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Confirm &amp; Pay</button>
         </form>
     </div>
 </div>

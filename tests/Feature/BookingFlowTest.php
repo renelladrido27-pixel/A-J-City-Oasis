@@ -48,8 +48,41 @@ class BookingFlowTest extends TestCase
         $this->assertSame('booking_upfront', $payment->type);
         $this->assertEquals(12600, $payment->amount);
         $this->assertSame('pending', $payment->status);
-        // The invoice is created when the tenant presses Pay, not at booking time.
-        $this->assertNull($payment->xendit_invoice_id);
+    }
+
+    public function test_confirming_a_booking_goes_straight_to_the_payment_page(): void
+    {
+        $tenant = User::factory()->create();
+        $room = Room::factory()->create();
+
+        $response = $this->book($tenant, $room);
+
+        // Fake mode (phpunit.xml): the "payment page" is the simulated completion route.
+        $payment = Payment::sole();
+        $this->assertNotNull($payment->xendit_invoice_id);
+        $response->assertRedirect(route('payments.fake-complete', $payment->xendit_invoice_id));
+    }
+
+    public function test_if_the_payment_page_cannot_open_the_room_stays_reserved_and_pay_can_be_retried(): void
+    {
+        $this->app->instance(\App\Services\XenditService::class, new class extends \App\Services\XenditService
+        {
+            public function __construct() {}
+
+            public function createInvoice(string $externalId, float $amount, string $description, ?string $payerEmail = null, ?string $successUrl = null, ?string $failureUrl = null): array
+            {
+                throw new \App\Exceptions\PaymentGatewayException('The payment gateway is temporarily unavailable.');
+            }
+        });
+        $tenant = User::factory()->create();
+        $room = Room::factory()->create();
+
+        $response = $this->book($tenant, $room);
+        $booking = Booking::sole();
+
+        $response->assertRedirect(route('tenant.bookings.show', $booking))->assertSessionHasErrors('gateway');
+        $this->assertSame('reserved', $room->fresh()->status);
+        $this->assertNull(Payment::sole()->xendit_invoice_id);
     }
 
     public function test_move_in_date_must_be_within_seven_days(): void
@@ -90,12 +123,10 @@ class BookingFlowTest extends TestCase
         $room = Room::factory()->create();
         $moveIn = now()->addDays(5)->toDateString();
 
-        $this->book($tenant, $room, $moveIn);
+        // Booking redirects straight to checkout; in fake mode that's the simulated completion route.
+        $checkout = $this->book($tenant, $room, $moveIn)->headers->get('Location');
         $payment = Payment::sole();
-
-        // Fake mode (phpunit.xml): Pay redirects to the simulated completion route.
-        $redirect = $this->actingAs($tenant)->post(route('payments.pay', $payment))->headers->get('Location');
-        $this->actingAs($tenant)->get($redirect)->assertRedirect(route('payments.success'));
+        $this->actingAs($tenant)->get($checkout)->assertRedirect(route('payments.success'));
 
         $booking = Booking::sole();
         $this->assertSame('confirmed', $booking->status);

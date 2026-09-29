@@ -6,6 +6,7 @@ use App\Exceptions\PaymentGatewayException;
 use App\Models\Lease;
 use App\Models\Payment;
 use App\Services\NotificationService;
+use App\Services\PaymentCheckoutService;
 use App\Services\PaymentCompletionService;
 use App\Services\XenditService;
 use Illuminate\Http\RedirectResponse;
@@ -97,25 +98,7 @@ class PaymentController extends Controller
         abort_unless($payment->status === 'pending', 422, 'This payment is not payable.');
 
         try {
-            $invoiceId = $this->xendit->resumableInvoiceId($payment->xendit_invoice_id);
-
-            if (! $invoiceId) {
-                $invoice = $this->xendit->createInvoice(
-                    externalId: 'payment-'.$payment->id,
-                    amount: (float) $payment->amount,
-                    description: $payment->gatewayDescription(),
-                    payerEmail: $tenant->email,
-                    successUrl: route('payments.success', ['payment' => $payment->id]),
-                );
-
-                $payment->update(['xendit_invoice_id' => $invoice['invoice_id']]);
-
-                return redirect()->away($invoice['invoice_url']);
-            }
-
-            $invoice = $this->xendit->getInvoice($invoiceId);
-
-            return redirect()->away($invoice['invoice_url']);
+            return redirect()->away(app(PaymentCheckoutService::class)->checkoutUrl($payment, $tenant->email));
         } catch (PaymentGatewayException $e) {
             return back()->withErrors(['gateway' => $e->getMessage()]);
         }
