@@ -5,9 +5,6 @@
          colors="true"
 >
     <testsuites>
-        <testsuite name="Unit">
-            <directory>tests/Unit</directory>
-        </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
@@ -21,12 +18,21 @@
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="BROADCAST_CONNECTION" value="null" force="true"/>
+        <!-- Tests must never reach real services, whatever the local .env says:
+             Xendit calls are faked (tests that need the real-mode code path bind a
+             fake XenditService), and Pusher/SMTP are replaced above and below. -->
+        <env name="XENDIT_FAKE_MODE" value="true" force="true"/>
+        <env name="XENDIT_SECRET_KEY" value="" force="true"/>
+        <env name="XENDIT_CALLBACK_TOKEN" value="test-callback-token" force="true"/>
+        <env name="PUSHER_APP_KEY" value="" force="true"/>
+        <env name="PUSHER_APP_SECRET" value="" force="true"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
         <env name="DB_URL" value=""/>
-        <env name="MAIL_MAILER" value="array"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="MAIL_PASSWORD" value="" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
