@@ -42,7 +42,7 @@ class RoomController extends Controller
     {
         $properties = Property::orderBy('name')->get();
 
-        $rooms = Room::with(['property', 'images'])
+        $rooms = Room::with(['property', 'images', 'activeLease.tenant', 'reservingBooking.tenant'])
             ->when($request->filled('property_id'), fn ($q) => $q->where('property_id', $request->integer('property_id')))
             ->orderBy('property_id')
             ->orderBy('room_number')

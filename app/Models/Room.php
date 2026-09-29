@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Room extends Model
 {
@@ -44,6 +45,26 @@ class Room extends Model
     public function leases(): HasMany
     {
         return $this->hasMany(Lease::class);
+    }
+
+    /**
+     * Whoever currently lives here — the room's active lease, if any.
+     */
+    public function activeLease(): HasOne
+    {
+        return $this->hasOne(Lease::class)->where('status', 'active')->latestOfMany();
+    }
+
+    /**
+     * The booking holding a reserved room: not yet paid, or paid but not yet
+     * moved in (no lease yet).
+     */
+    public function reservingBooking(): HasOne
+    {
+        return $this->hasOne(Booking::class)
+            ->whereIn('status', ['pending_payment', 'confirmed'])
+            ->whereDoesntHave('lease')
+            ->latestOfMany();
     }
 
     public function maintenanceRequests(): HasMany

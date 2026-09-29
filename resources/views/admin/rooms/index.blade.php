@@ -25,7 +25,7 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
-                <tr><th></th><th>Room #</th><th>Property</th><th>Floor</th><th>Type</th><th>Rate</th><th>Status</th><th class="text-end">Actions</th></tr>
+                <tr><th></th><th>Room #</th><th>Property</th><th>Floor</th><th>Type</th><th>Rate</th><th>Status</th><th>Tenant</th><th class="text-end">Actions</th></tr>
             </thead>
             <tbody>
                 @forelse ($rooms as $room)
@@ -43,6 +43,25 @@
                         <td>{{ ucfirst($room->type) }}</td>
                         <td>₱{{ number_format($room->monthly_rate, 2) }}</td>
                         <td><x-status-badge :status="$room->status" /></td>
+                        <td>
+                            @if ($lease = $room->activeLease)
+                                <a href="{{ route('admin.tenants.show', $lease->tenant) }}" class="fw-medium text-decoration-none">{{ $lease->tenant->name }}</a>
+                                <div class="small text-muted">Since {{ $lease->start_date->format('M d, Y') }}</div>
+                            @elseif ($booking = $room->reservingBooking)
+                                <a href="{{ route('admin.tenants.show', $booking->tenant) }}" class="fw-medium text-decoration-none">{{ $booking->tenant->name }}</a>
+                                <div class="small text-muted">
+                                    @if ($booking->status === 'pending_payment')
+                                        Reserved &middot; awaiting payment
+                                    @elseif ($booking->move_in_date)
+                                        Moving in {{ $booking->move_in_date->format('M d, Y') }}
+                                    @else
+                                        Paid &middot; move-in date not set
+                                    @endif
+                                </div>
+                            @else
+                                <span class="text-muted">&mdash;</span>
+                            @endif
+                        </td>
                         <td class="text-end">
                             <a href="{{ route('admin.rooms.edit', $room) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                             <form method="POST" action="{{ route('admin.rooms.destroy', $room) }}" class="d-inline" onsubmit="return confirm('Delete this room?')">
@@ -52,7 +71,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8"><x-empty-state icon="bi-door-closed" message="No rooms found for this property." /></td></tr>
+                    <tr><td colspan="9"><x-empty-state icon="bi-door-closed" message="No rooms found for this property." /></td></tr>
                 @endforelse
             </tbody>
         </table>
