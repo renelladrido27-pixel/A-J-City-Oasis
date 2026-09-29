@@ -54,14 +54,13 @@
                             <label class="avatar-badge" for="avatarInput" title="Change photo">
                                 <i class="bi bi-camera-fill"></i>
                             </label>
-                            <input type="file" name="photo" id="avatarInput" accept="image/*" class="d-none">
+                            <input type="file" name="photo" id="avatarInput" accept="image/jpeg,image/png,image/webp" class="d-none">
                         </div>
                         <div>
                             <div class="fw-semibold">{{ $user->name }}</div>
                 
-                            @error('photo')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            <div class="text-danger small mt-1" id="avatarError">@error('photo'){{ $message }}@enderror</div>
+                            <div class="text-muted small">JPG, PNG or WebP &middot; up to 2 MB</div>
                             @if ($user->photo)
                                 <button type="submit" form="removePhotoForm" class="btn btn-link btn-sm text-danger p-0 mt-1 d-block">Remove photo</button>
                             @endif
@@ -125,6 +124,12 @@
     document.getElementById('avatarInput').addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (!file) return;
+        // Same rules as the server (and the site's other upload boxes).
+        const problem = !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)
+            ? 'Only JPG, PNG or WebP photos are allowed.'
+            : file.size > 2 * 1024 * 1024 ? 'That photo is larger than 2 MB — please choose a smaller one.' : '';
+        document.getElementById('avatarError').textContent = problem;
+        if (problem) { e.target.value = ''; return; }
         const img = document.getElementById('avatarImg');
         img.src = URL.createObjectURL(file);
         img.style.display = 'block';

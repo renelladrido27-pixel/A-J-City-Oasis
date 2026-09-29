@@ -27,7 +27,7 @@ class ProfileController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'current_password' => ['required_with:password', 'current_password'],
-            'photo' => ['nullable', 'image', 'max:2048'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $user->fill([

@@ -128,7 +128,7 @@ class RoomController extends Controller
             'monthly_rate' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'in:vacant,occupied,maintenance,reserved'],
             'images' => ['nullable', 'array', 'max:10'],
-            'images.*' => ['image', 'max:4096'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
     }
 

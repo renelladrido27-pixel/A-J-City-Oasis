@@ -39,7 +39,7 @@
             </div>
 
             <div class="border rounded p-3 mb-3 bg-light">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
                     <div>
                         <span class="fw-semibold small text-uppercase text-muted">Lease Agreement</span>
                         @if ($lease->document)
@@ -48,21 +48,20 @@
                             <div class="small text-muted">No document uploaded yet.</div>
                         @endif
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <form method="POST" action="{{ route('admin.leases.document.store', $lease) }}" enctype="multipart/form-data" class="d-flex align-items-center gap-2">
-                            @csrf
-                            <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" class="form-control form-control-sm" required>
-                            <button class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-upload me-1"></i>Upload</button>
+                    @if ($lease->document)
+                        <form method="POST" action="{{ route('admin.leases.document.destroy', $lease) }}" onsubmit="return confirm('Remove the uploaded lease agreement?')">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Remove</button>
                         </form>
-                        @if ($lease->document)
-                            <form method="POST" action="{{ route('admin.leases.document.destroy', $lease) }}" onsubmit="return confirm('Remove the uploaded lease agreement?')">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                            </form>
-                        @endif
-                    </div>
+                    @endif
                 </div>
-                @error('document')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
+                <form method="POST" action="{{ route('admin.leases.document.store', $lease) }}" enctype="multipart/form-data">
+                    @csrf
+                    <x-photo-upload name="document" :label="$lease->document ? 'Replace document' : 'Upload signed agreement'" :optional="false"
+                        accept="application/pdf,image/jpeg,image/png" types="PDF, JPG or PNG" :max-mb="10"
+                        prompt="Choose the signed agreement (PDF or photo)" />
+                    <button class="btn btn-sm btn-primary mt-2"><i class="bi bi-upload me-1"></i>Upload</button>
+                </form>
             </div>
 
             <div class="row g-3 small">

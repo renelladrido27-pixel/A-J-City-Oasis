@@ -61,11 +61,8 @@
                 <textarea name="inclusions" class="form-control" rows="4" placeholder="One per line, e.g.&#10;2 Beds&#10;Own Sink &amp; CR&#10;Free Wi-Fi">{{ old('inclusions', $room->inclusions ? implode("\n", $room->inclusions) : '') }}</textarea>
                 <div class="form-text">One inclusion per line — shown as a list on the room's page.</div>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Add Photos</label>
-                <input type="file" name="images[]" class="form-control @error('images.*') is-invalid @enderror" accept="image/*" multiple>
-                @error('images.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                <div class="form-text">New photos are added to the gallery below — existing ones aren't replaced.</div>
+            <div class="mb-4">
+                <x-photo-upload name="images[]" label="Add Photos" multiple :max-mb="4" hint="New photos are added to the gallery below — existing ones aren't replaced." />
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save</button>

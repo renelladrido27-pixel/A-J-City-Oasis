@@ -66,8 +66,9 @@
                 <label class="avatar-badge" for="avatarInput" title="Add a photo">
                     <i class="bi bi-camera-fill"></i>
                 </label>
-                <input type="file" name="photo" id="avatarInput" accept="image/*" class="d-none">
+                <input type="file" name="photo" id="avatarInput" accept="image/jpeg,image/png,image/webp" class="d-none">
             </div>
+            <p class="field-error text-center" id="avatarError" style="margin-top: -.75rem;">@error('photo'){{ $message }}@enderror</p>
 
             <div class="field-float {{ $errors->has('name') ? 'is-invalid' : '' }}">
                 <input type="text" name="name" id="signup-name" placeholder=" " value="{{ old('name') }}" required>
@@ -141,6 +142,12 @@
         avatarInput?.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
+            // Same rules as the server (and the site's other upload boxes).
+            const problem = !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)
+                ? 'Only JPG, PNG or WebP photos are allowed.'
+                : file.size > 2 * 1024 * 1024 ? 'That photo is larger than 2 MB — please choose a smaller one.' : '';
+            root.querySelector('#avatarError').textContent = problem;
+            if (problem) { e.target.value = ''; return; }
             const img = root.querySelector('#avatarImg');
             img.src = URL.createObjectURL(file);
             img.style.display = 'block';

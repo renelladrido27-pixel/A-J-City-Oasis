@@ -62,11 +62,8 @@
                 <textarea name="inclusions" class="form-control" rows="4" placeholder="One per line, e.g.&#10;2 Beds&#10;Own Sink &amp; CR&#10;Free Wi-Fi">{{ old('inclusions') }}</textarea>
                 <div class="form-text">One inclusion per line — shown as a list on the room's page.</div>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Photos</label>
-                <input type="file" name="images[]" class="form-control @error('images.*') is-invalid @enderror" accept="image/*" multiple>
-                @error('images.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                <div class="form-text">You can select multiple images. JPG/PNG/WebP, up to 4 MB each.</div>
+            <div class="mb-4">
+                <x-photo-upload name="images[]" label="Photos" multiple :max-mb="4" hint="The first photo is used as the room's cover image." />
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save</button>
