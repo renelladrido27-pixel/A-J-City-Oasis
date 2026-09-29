@@ -20,7 +20,7 @@
 
     <p><strong>3. Rent.</strong> The monthly rental rate for this unit is <strong>₱{{ number_format($monthly, 2) }}</strong>. Billing begins on {{ $startLabel }}, regardless of the date the Tenant physically moves in.</p>
 
-    <p><strong>4. Upfront Payment.</strong> Before move-in, the Tenant shall pay a total of <strong>₱{{ number_format($upfront, 2) }}</strong>, covering one month's advance, one month's deposit, and one month's security, payable in full through the Xendit payment gateway. The unit is reserved only once this payment is confirmed.</p>
+    <p><strong>4. Upfront Payment.</strong> Before move-in, the Tenant shall pay a total of <strong>₱{{ number_format($upfront, 2) }}</strong>, covering one month's advance, one month's deposit, and one month's security, payable in full through the Xendit payment gateway. The unit is reserved only once this payment is confirmed. The advance and the deposit are applied as rent and are not refundable; only the security deposit is refundable, as described in Section 10.</p>
 
     <p><strong>5. Move-in Date.</strong> The Tenant must select a move-in date within seven (7) days of booking. If no date is selected within that window, the booking may expire and be released.</p>
 
@@ -32,7 +32,7 @@
 
     <p><strong>9. Room Transfers.</strong> Should the Tenant request a transfer to a different unit, any increase in the required deposit pool (based on three months of the new unit's rate) must be settled by the Tenant before the transfer is approved. If the new unit costs less, any excess is credited or refunded manually by the Owner, outside the system.</p>
 
-    <p><strong>10. Early Move-Out.</strong> Should the Tenant vacate before the end of a paid rental period, any applicable refund is calculated by the system but disbursed manually by the Owner outside the system.</p>
+    <p><strong>10. Move-Out and Security Deposit.</strong> Upon move-out, the Owner inspects the unit. The security deposit, together with rent already paid for the unused remainder of the month, is applied first to any unpaid bills and then to the cost of any damage found, which is itemized for the Tenant. Any remaining amount is refunded, calculated by the system but disbursed manually by the Owner outside the system. If the unpaid bills and damages exceed the security deposit, the Tenant shall pay the difference through the Xendit payment gateway.</p>
 
     <p><strong>11. Maintenance.</strong> The Tenant may report maintenance concerns for the unit through the tenant portal. The Owner will address reported issues in a reasonable timeframe but is not responsible for damage caused by the Tenant's own negligence.</p>
 

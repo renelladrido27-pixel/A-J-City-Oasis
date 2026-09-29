@@ -107,7 +107,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/room-transfers/{roomTransfer}/approve', [RoomTransferController::class, 'approve'])->name('room-transfers.approve');
     Route::post('/room-transfers/{roomTransfer}/reject', [RoomTransferController::class, 'reject'])->name('room-transfers.reject');
 
-    Route::post('/move-outs/{moveOut}/complete', [MoveOutController::class, 'complete'])->name('move-outs.complete');
+    Route::get('/move-outs', [MoveOutController::class, 'index'])->name('move-outs.index');
+    Route::get('/move-outs/{moveOut}', [MoveOutController::class, 'show'])->name('move-outs.show');
+    Route::post('/move-outs/{moveOut}/finalize', [MoveOutController::class, 'finalize'])->name('move-outs.finalize');
 });
 
 // Staff

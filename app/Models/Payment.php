@@ -74,6 +74,7 @@ class Payment extends Model
             'rent' => "Monthly rent{$suffix}",
             'utility' => "Utility bill{$suffix}",
             'transfer_adjustment' => "Room transfer deposit adjustment{$suffix}",
+            'move_out_balance' => "Move-out balance (damages and unpaid bills){$suffix}",
             default => ucfirst(str_replace('_', ' ', $this->type)).' payment',
         };
     }

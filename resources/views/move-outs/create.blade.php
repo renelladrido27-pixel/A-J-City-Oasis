@@ -7,7 +7,7 @@
 
 <div class="alert alert-info d-flex align-items-start small">
     <i class="bi bi-info-circle-fill me-2 mt-1"></i>
-    <div>Your refund will be calculated automatically by the system. Disbursement is handled manually by the admin.</div>
+    <div>Your security deposit is refundable, less any unpaid bills and the cost of any damage found when the admin inspects the room. The system calculates the final amount after the inspection; the refund is released manually by the admin. If deductions exceed the deposit, you'll receive a bill to pay via Xendit.</div>
 </div>
 
 <div class="card border-0 shadow-sm" style="max-width: 560px;">

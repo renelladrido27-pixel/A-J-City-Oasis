@@ -2,10 +2,10 @@
 
 @php
     $color = match ($status) {
-        'vacant', 'active', 'confirmed', 'paid', 'completed', 'approved', 'disbursed_manually' => 'success',
-        'pending', 'pending_payment', 'in_progress', 'reserved', 'unpaid', 'calculated' => 'warning',
-        'grace_period' => 'info',
-        'overdue', 'cancelled', 'rejected', 'expired', 'deactivated' => 'danger',
+        'vacant', 'active', 'confirmed', 'paid', 'completed', 'approved', 'disbursed_manually', 'balance_paid' => 'success',
+        'pending', 'pending_payment', 'in_progress', 'reserved', 'unpaid', 'calculated', 'awaiting_inspection' => 'warning',
+        'grace_period', 'settled' => 'info',
+        'overdue', 'cancelled', 'rejected', 'expired', 'deactivated', 'balance_due' => 'danger',
         'occupied', 'ended', 'transferred' => 'primary',
         default => 'secondary',
     };

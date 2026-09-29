@@ -85,6 +85,12 @@
                             <span class="badge rounded-pill bg-danger ms-1">{{ $pendingTransferCount }}</span>
                         @endif
                     </a>
+                    <a class="nav-link {{ request()->routeIs('admin.move-outs.*') ? 'active' : '' }}" href="{{ route('admin.move-outs.index') }}">
+                        <i class="bi bi-box-arrow-left me-2"></i>Move-Outs
+                        @if ($pendingMoveOutCount = \App\Models\MoveOut::where('refund_status', 'calculated')->count())
+                            <span class="badge rounded-pill bg-danger ms-1">{{ $pendingMoveOutCount }}</span>
+                        @endif
+                    </a>
                     <a class="nav-link {{ request()->routeIs('admin.maintenance-requests.*') ? 'active' : '' }}" href="{{ route('admin.maintenance-requests.index') }}"><i class="bi bi-tools me-2"></i>Maintenance</a>
                     <a class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}"><i class="bi bi-megaphone me-2"></i>Announce.</a>
                     <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}"><i class="bi bi-graph-up me-2"></i>Reports</a>
@@ -183,6 +189,9 @@
                     // name/value from the submitted form data (the browser builds the entry list right
                     // after this event fires, while the button is already disabled).
                     setTimeout(function () {
+                        // A "Cancel" on an onsubmit="return confirm(...)" prompt cancels the
+                        // submit — don't leave the button stuck on "Please wait…".
+                        if (e.defaultPrevented) return;
                         btn.disabled = true;
                         btn.dataset.originalHtml = btn.innerHTML;
                         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Please wait…';

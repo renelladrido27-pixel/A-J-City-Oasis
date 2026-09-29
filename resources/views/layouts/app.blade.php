@@ -202,6 +202,9 @@
                     // name/value from the submitted form data (the browser builds the entry list right
                     // after this event fires, while the button is already disabled).
                     setTimeout(function () {
+                        // A "Cancel" on an onsubmit="return confirm(...)" prompt cancels the
+                        // submit — don't leave the button stuck on "Please wait…".
+                        if (e.defaultPrevented) return;
                         btn.disabled = true;
                         btn.dataset.originalHtml = btn.innerHTML;
                         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Please wait…';

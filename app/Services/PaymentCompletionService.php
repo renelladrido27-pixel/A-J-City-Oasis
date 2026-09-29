@@ -66,6 +66,19 @@ class PaymentCompletionService
             }
         }
 
+        if ($payment->type === 'move_out_balance') {
+            $moveOut = $payment->lease?->moveOut;
+            $moveOut?->update(['refund_status' => 'balance_paid']);
+
+            if ($moveOut) {
+                $this->notifications->notifyAdmins(
+                    'Move-out balance paid',
+                    "{$tenant?->name} paid the ₱".number_format($payment->amount, 2)." move-out balance for Room {$payment->lease->room->room_number}.",
+                    'move_out',
+                );
+            }
+        }
+
         if ($payment->type === 'rent' && $tenant) {
             $this->notifications->notify(
                 $tenant,

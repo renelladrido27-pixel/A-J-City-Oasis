@@ -197,19 +197,48 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
             <h2 class="h5 mb-3"><i class="bi bi-box-arrow-left me-1"></i>Move-Out</h2>
+            @php($moveOut = $lease->moveOut)
             <dl class="row mb-0">
                 <dt class="col-sm-4 text-muted fw-normal">Requested Date</dt>
-                <dd class="col-sm-8">{{ $lease->moveOut->requested_move_out_date->format('M d, Y') }}</dd>
-                <dt class="col-sm-4 text-muted fw-normal">Calculated Refund</dt>
-                <dd class="col-sm-8 fw-semibold">₱{{ number_format($lease->moveOut->refund_amount, 2) }}</dd>
-                <dt class="col-sm-4 text-muted fw-normal">Refund Status</dt>
-                <dd class="col-sm-8"><x-status-badge :status="$lease->moveOut->refund_status" /></dd>
+                <dd class="col-sm-8">{{ $moveOut->requested_move_out_date->format('M d, Y') }}</dd>
+                <dt class="col-sm-4 text-muted fw-normal">Status</dt>
+                <dd class="col-sm-8"><x-status-badge :status="$moveOut->isFinalized() ? $moveOut->refund_status : 'awaiting_inspection'" /></dd>
+                @if (! $moveOut->isFinalized())
+                    <dt class="col-sm-4 text-muted fw-normal">Estimated Refund</dt>
+                    <dd class="col-sm-8 fw-semibold">₱{{ number_format($moveOut->refund_amount, 2) }}
+                        <div class="small text-muted fw-normal">Security deposit less unpaid bills. The final amount is set after the room inspection, minus any damages.</div>
+                    </dd>
+                @else
+                    <dt class="col-sm-4 text-muted fw-normal">Security Deposit</dt>
+                    <dd class="col-sm-8">₱{{ number_format($moveOut->security_deposit, 2) }}</dd>
+                    <dt class="col-sm-4 text-muted fw-normal">Unused Rent</dt>
+                    <dd class="col-sm-8">₱{{ number_format($moveOut->unused_rent_credit, 2) }}</dd>
+                    <dt class="col-sm-4 text-muted fw-normal">Unpaid Bills</dt>
+                    <dd class="col-sm-8 text-danger">−₱{{ number_format($moveOut->unpaid_dues, 2) }}</dd>
+                    @foreach ($moveOut->deductions as $deduction)
+                        <dt class="col-sm-4 text-muted fw-normal">{{ $deduction->description }}</dt>
+                        <dd class="col-sm-8 text-danger">−₱{{ number_format($deduction->amount, 2) }}</dd>
+                    @endforeach
+                    @if ($moveOut->balance_due > 0)
+                        <dt class="col-sm-4 text-muted fw-normal">Balance Due</dt>
+                        <dd class="col-sm-8 fw-semibold">₱{{ number_format($moveOut->balance_due, 2) }}
+                            @if (auth()->user()->isTenant() && $moveOut->balancePayment?->status === 'pending')
+                                <form method="POST" action="{{ route('payments.pay', $moveOut->balancePayment) }}" class="d-inline ms-2">
+                                    @csrf
+                                    <button class="btn btn-sm btn-success"><i class="bi bi-credit-card me-1"></i>Pay via Xendit</button>
+                                </form>
+                            @endif
+                        </dd>
+                    @else
+                        <dt class="col-sm-4 text-muted fw-normal">Refund</dt>
+                        <dd class="col-sm-8 fw-semibold">₱{{ number_format($moveOut->refund_amount, 2) }}</dd>
+                    @endif
+                @endif
             </dl>
-            @if (auth()->user()->isAdmin() && $lease->moveOut->refund_status === 'calculated')
-                <form method="POST" action="{{ route('admin.move-outs.complete', $lease->moveOut) }}" class="mt-3 pt-3 border-top">
-                    @csrf
-                    <button class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i>Mark Refund as Disbursed &amp; Close Lease</button>
-                </form>
+            @if (auth()->user()->isAdmin())
+                <a href="{{ route('admin.move-outs.show', $moveOut) }}" class="btn btn-sm {{ $moveOut->isFinalized() ? 'btn-outline-secondary' : 'btn-primary' }} mt-3">
+                    {{ $moveOut->isFinalized() ? 'View Settlement' : 'Inspect & Finalize' }}
+                </a>
             @endif
         </div>
     </div>
