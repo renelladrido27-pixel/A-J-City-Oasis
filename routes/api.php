@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\LeaseController;
@@ -45,6 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+
+    Route::get('/announcements', [AnnouncementController::class, 'index']);
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);

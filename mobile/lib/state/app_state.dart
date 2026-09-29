@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/announcement.dart';
 import '../models/app_notification.dart';
 import '../models/booking_summary.dart';
 import '../models/lease.dart';
@@ -41,6 +42,7 @@ class AppState extends ChangeNotifier {
   List<TransferRequest> transferRequests = [];
   List<Room> transferableRooms = [];
   List<AppNotification> notifications = [];
+  List<Announcement> announcements = [];
 
   /// Checks for a stored token and restores the session on app start.
   Future<void> bootstrap() async {
@@ -194,6 +196,7 @@ class AppState extends ChangeNotifier {
     transferRequests = [];
     transferableRooms = [];
     notifications = [];
+    announcements = [];
     notifyListeners();
   }
 
@@ -207,6 +210,7 @@ class AppState extends ChangeNotifier {
       _loadMaintenanceRequests(),
       _loadTransfers(),
       _loadNotifications(),
+      _loadAnnouncements(),
     ]);
     notifyListeners();
   }
@@ -255,6 +259,13 @@ class AppState extends ChangeNotifier {
         .toList();
   }
 
+  Future<void> _loadAnnouncements() async {
+    final res = await _api.get('/announcements');
+    announcements = (res['announcements'] as List)
+        .map((e) => Announcement.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   // Public per-section refreshers for pull-to-refresh — cheaper than refreshAll()
   // since each screen only needs to re-fetch its own data (e.g. an admin might
   // generate a rent payment or update a maintenance request status externally).
@@ -278,8 +289,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Pull-to-refresh on the Alerts tab — also refetches announcements, since
+  /// its News filter lives on the same screen.
   Future<void> refreshNotifications() async {
-    await _loadNotifications();
+    await Future.wait([_loadNotifications(), _loadAnnouncements()]);
     notifyListeners();
   }
 
