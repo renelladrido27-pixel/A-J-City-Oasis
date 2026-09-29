@@ -19,10 +19,10 @@ Route::post('/webhooks/xendit', [XenditWebhookController::class, 'handle'])->nam
 // Mobile app API 
 Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
-Route::post('/rooms/{room}/book', [BookingController::class, 'store']);
+Route::post('/rooms/{room}/book', [BookingController::class, 'store'])->middleware('throttle:signup');
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:signup');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
