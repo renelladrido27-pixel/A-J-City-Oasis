@@ -36,7 +36,9 @@ class NotificationCreated implements ShouldBroadcastNow
             'title' => $this->notification->title,
             'message' => $this->notification->message,
             'type' => $this->notification->type,
-            'url' => route('notifications.open', $this->notification),
+            // Relative: the trigger may come from another host (mobile API over the
+            // LAN IP, a queue, tinker) than the one the recipient's browser is on.
+            'url' => route('notifications.open', $this->notification, absolute: false),
             'unread_count' => $this->notification->user->notifications()->whereNull('read_at')->count(),
         ];
     }
