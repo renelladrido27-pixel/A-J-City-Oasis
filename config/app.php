@@ -65,7 +65,10 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Philippine time: "today", the 7-day move-in window, due dates and the
+    // daily scheduled jobs must follow the property's clock, not UTC (which is
+    // still "yesterday" until 8 AM in Koronadal).
+    'timezone' => env('APP_TIMEZONE', 'Asia/Manila'),
 
     /*
     |--------------------------------------------------------------------------
