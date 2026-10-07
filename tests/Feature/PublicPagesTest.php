@@ -16,7 +16,7 @@ class PublicPagesTest extends TestCase
         $vacant = Room::factory()->create(['room_number' => '101']);
         Room::factory()->create(['room_number' => '102', 'status' => 'occupied']);
 
-        $this->get('/')->assertOk()->assertSee('A &amp; J OASIS', false);
+        $this->get('/')->assertOk()->assertSee('A &amp; J CITY OASIS', false);
         $this->get(route('rooms.browse'))->assertOk()->assertSee('101');
         $this->get(route('rooms.show', $vacant))->assertOk()->assertSee('101');
         $this->get(route('login'))->assertOk();

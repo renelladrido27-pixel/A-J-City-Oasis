@@ -1,5 +1,5 @@
 <x-mail::message>
-# Welcome to A & J OASIS
+# Welcome to A & J CITY OASIS
 
 Hi {{ $lease->tenant->name }},
 

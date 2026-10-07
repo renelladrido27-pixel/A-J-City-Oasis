@@ -83,7 +83,7 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               const SizedBox(height: 48),
               const Text(
-                'A & J Oasis',
+                'A & J City Oasis',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),

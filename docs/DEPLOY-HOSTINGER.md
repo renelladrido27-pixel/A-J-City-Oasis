@@ -1,4 +1,4 @@
-# Deploying A & J OASIS to Hostinger
+# Deploying A & J CITY OASIS to Hostinger
 
 Everything below is done once. After that, updating the live site is one
 command (`bash deploy.sh`, see the end).
@@ -84,7 +84,7 @@ mv public_html public_html_old
 ln -s app/public public_html
 ```
 
-Open `https://YOURDOMAIN` — the A & J OASIS home page should load.
+Open `https://YOURDOMAIN` — the A & J CITY OASIS home page should load.
 
 ## 5. Cron job (in the browser)
 

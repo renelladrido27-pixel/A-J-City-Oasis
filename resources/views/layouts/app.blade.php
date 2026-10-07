@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>@yield('title', 'Dashboard') — A &amp; J OASIS</title>
-    <meta name="description" content="@yield('meta_description', 'Manage your booking, lease, payments, and maintenance requests at A &amp; J OASIS, Koronadal City.')">
+    <title>@yield('title', 'Dashboard') — A &amp; J CITY OASIS</title>
+    <meta name="description" content="@yield('meta_description', 'Manage your booking, lease, payments, and maintenance requests at A &amp; J CITY OASIS, Koronadal City.')">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
     <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
@@ -40,7 +40,7 @@
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-oasis sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A &amp; J OASIS</a>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A &amp; J CITY OASIS</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -172,12 +172,12 @@
                     <a href="{{ route('rooms.browse') }}" class="text-decoration-none text-muted">Browse Rooms</a>
                 </div>
                 <div class="d-flex flex-wrap gap-3 small text-muted">
-                    <a href="mailto:hello@ajoasis.test" class="text-decoration-none text-muted"><i class="bi bi-envelope me-1"></i>hello@ajoasis.test</a>
+                    <a href="mailto:ajoasis.system@gmail.com" class="text-decoration-none text-muted"><i class="bi bi-envelope me-1"></i>ajoasis.system@gmail.com</a>
                     <a href="tel:+639123456789" class="text-decoration-none text-muted"><i class="bi bi-telephone me-1"></i>+63 912 345 6789</a>
                 </div>
             </div>
             <div class="text-center text-muted small border-top pt-3">
-                &copy; {{ now()->year }} A &amp; J OASIS &mdash; Web-Based and Mobile Rental Apartment Management System
+                &copy; {{ now()->year }} A &amp; J CITY OASIS &mdash; Web-Based and Mobile Rental Apartment Management System
             </div>
         </div>
     </footer>

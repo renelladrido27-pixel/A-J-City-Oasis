@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Forgot Password')
-@section('meta_description', 'Reset your A &amp; J OASIS account password.')
+@section('meta_description', 'Reset your A &amp; J CITY OASIS account password.')
 
 @section('content')
 @include('partials.auth-styles')
@@ -10,7 +10,7 @@
     <div class="card">
         <div class="brandmark">
             <div class="mark"><img src="{{ asset('images/logo-mark.svg') }}" alt=""></div>
-            <span>A &amp; J OASIS</span>
+            <span>A &amp; J CITY OASIS</span>
         </div>
 
         <p class="subtitle">Enter your account email and we'll send you a link to reset your password.</p>

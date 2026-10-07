@@ -22,7 +22,7 @@ Your move-out from **Room {{ $moveOut->lease->room->room_number }}** was finaliz
 </x-mail::table>
 
 @if ($moveOut->refund_status === 'balance_due')
-The deductions exceeded your security deposit. Please settle the balance of **₱{{ number_format($moveOut->balance_due, 2) }}** by {{ $moveOut->balancePayment?->due_date?->format('F d, Y') }} through the Payments page or the A & J OASIS app.
+The deductions exceeded your security deposit. Please settle the balance of **₱{{ number_format($moveOut->balance_due, 2) }}** by {{ $moveOut->balancePayment?->due_date?->format('F d, Y') }} through the Payments page or the A & J CITY OASIS app.
 @elseif ($moveOut->refund_amount > 0)
 Your refund will be released to you by the admin.
 @endif

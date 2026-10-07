@@ -3,7 +3,7 @@
 @section('title', 'Announcements')
 
 @section('content')
-<x-page-header title="Announcements" subtitle="Updates from A & J OASIS management" />
+<x-page-header title="Announcements" subtitle="Updates from A & J CITY OASIS management" />
 
 <div class="list-group shadow-sm">
     @forelse ($announcements as $announcement)

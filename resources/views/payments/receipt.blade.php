@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Receipt #{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }} — A &amp; J OASIS</title>
+    <title>Receipt #{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }} — A &amp; J CITY OASIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -29,7 +29,7 @@
             <div class="card-body p-4 p-md-5">
                 <div class="d-flex justify-content-between align-items-start receipt-header pb-3 mb-4">
                     <div>
-                        <h1 class="h4 mb-0"><i class="bi bi-house-door-fill text-success me-1"></i>A &amp; J OASIS</h1>
+                        <h1 class="h4 mb-0"><i class="bi bi-house-door-fill text-success me-1"></i>A &amp; J CITY OASIS</h1>
                         <p class="text-muted small mb-0">Koronadal City, South Cotabato</p>
                     </div>
                     <div class="text-end">
@@ -85,7 +85,7 @@
 
                 <div class="text-center border-top pt-3 mt-3">
                     <span class="badge bg-success-subtle text-success-emphasis px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i>Paid in Full</span>
-                    <p class="text-muted small mt-3 mb-0">This is a system-generated receipt from A &amp; J OASIS. No signature required.</p>
+                    <p class="text-muted small mt-3 mb-0">This is a system-generated receipt from A &amp; J CITY OASIS. No signature required.</p>
                 </div>
             </div>
         </div>

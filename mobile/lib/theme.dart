@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Brand palette carried over from the web app (resources/views/home.blade.php)
-/// so the mobile app matches the existing A & J OASIS identity.
+/// so the mobile app matches the existing A & J CITY OASIS identity.
 class OasisColors {
   static const green = Color(0xFF1B4332);
   static const greenDark = Color(0xFF10291F);

@@ -3,7 +3,7 @@
 
 Hi {{ $user->first_name ?: $user->name }},
 
-Enter this code to verify your A & J OASIS account:
+Enter this code to verify your A & J CITY OASIS account:
 
 <x-mail::panel>
 <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; text-align: center;">{{ $code }}</div>

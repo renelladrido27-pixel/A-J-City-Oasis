@@ -1,4 +1,4 @@
-# A & J OASIS — Mobile (Flutter, Android)
+# A & J CITY OASIS — Mobile (Flutter, Android)
 
 Tenant-facing mobile app matching the **C-series wireframes**
 (`AJ_Oasis_Wireframe_Exports/C1`–`C10`). Public browsing, booking + Xendit

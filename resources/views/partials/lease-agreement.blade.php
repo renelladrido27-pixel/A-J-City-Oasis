@@ -12,9 +12,9 @@
 @endphp
 
 <div class="lease-agreement-text">
-    <p class="text-muted small mb-3">Draft &mdash; A &amp; J OASIS Rental Agreement</p>
+    <p class="text-muted small mb-3">Draft &mdash; A &amp; J CITY OASIS Rental Agreement</p>
 
-    <p><strong>1. Parties.</strong> This agreement is between A &amp; J OASIS, a sole proprietorship owned and operated by Jose Valle ("the Owner"), and <strong>{{ $tenantName }}</strong> ("the Tenant"), for the rental unit described below.</p>
+    <p><strong>1. Parties.</strong> This agreement is between A &amp; J CITY OASIS, a sole proprietorship owned and operated by Jose Valle ("the Owner"), and <strong>{{ $tenantName }}</strong> ("the Tenant"), for the rental unit described below.</p>
 
     <p><strong>2. Premises.</strong> Room {{ $room->room_number }}, {{ $room->property->name }}{{ $room->floor ? ', '.$room->floorLabel() : '' }}.</p>
 
@@ -36,5 +36,5 @@
 
     <p><strong>11. Maintenance.</strong> The Tenant may report maintenance concerns for the unit through the tenant portal. The Owner will address reported issues in a reasonable timeframe but is not responsible for damage caused by the Tenant's own negligence.</p>
 
-    <p><strong>12. Acknowledgment.</strong> By proceeding, the Tenant confirms they have read and understood the terms above and agree to be bound by them for the duration of their stay at A &amp; J OASIS.</p>
+    <p><strong>12. Acknowledgment.</strong> By proceeding, the Tenant confirms they have read and understood the terms above and agree to be bound by them for the duration of their stay at A &amp; J CITY OASIS.</p>
 </div>

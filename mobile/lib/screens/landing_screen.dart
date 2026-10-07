@@ -62,7 +62,7 @@ class _LandingScreenState extends State<LandingScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'A & J OASIS',
+                  'A & J CITY OASIS',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,

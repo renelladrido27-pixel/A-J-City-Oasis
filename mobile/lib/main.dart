@@ -42,7 +42,7 @@ class _AJOasisAppState extends State<AJOasisApp> {
     return AppStateScope(
       notifier: widget.appState,
       child: MaterialApp(
-        title: 'A & J OASIS',
+        title: 'A & J CITY OASIS',
         debugShowCheckedModeBanner: false,
         theme: buildOasisTheme(),
         home: widget.appState.isBootstrapping
@@ -61,7 +61,7 @@ class _SplashScreen extends StatelessWidget {
     return const Scaffold(
       body: Center(
         child: Text(
-          'A & J OASIS',
+          'A & J CITY OASIS',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,

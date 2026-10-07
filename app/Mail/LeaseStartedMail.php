@@ -18,7 +18,7 @@ class LeaseStartedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to A & J OASIS — your lease has started',
+            subject: 'Welcome to A & J CITY OASIS — your lease has started',
         );
     }
 
