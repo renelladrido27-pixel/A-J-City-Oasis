@@ -18,7 +18,12 @@ php artisan down --retry=15 || true
 trap 'php artisan up' EXIT
 
 git pull --ff-only origin main
-"$COMPOSER" install --no-dev --optimize-autoloader --no-interaction
+# --no-scripts: Composer's post-install hooks need proc_open(), which shared
+# hosting disables. package:discover is the one hook that matters; run it directly.
+"$COMPOSER" install --no-dev --optimize-autoloader --no-interaction --no-scripts
+php artisan package:discover
+# PHP's symlink() is disabled too, so `artisan storage:link` can't be used.
+[ -e public/storage ] || ln -s ../storage/app/public public/storage
 php artisan migrate --force
 php artisan optimize
 

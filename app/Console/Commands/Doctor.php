@@ -57,7 +57,7 @@ class Doctor extends Command
         }
 
         $this->section('Files');
-        $this->check('public/storage link exists (room photos)', is_link(public_path('storage')) || is_dir(public_path('storage')), 'Run: php artisan storage:link');
+        $this->check('public/storage link exists (room photos)', is_link(public_path('storage')) || is_dir(public_path('storage')), 'Run: ln -s ../storage/app/public public/storage  (artisan storage:link needs symlink(), which shared hosts disable)');
         $this->check('storage/ is writable', is_writable(storage_path('logs')) && is_writable(storage_path('framework/cache')), 'Fix permissions: chmod -R 775 storage bootstrap/cache');
 
         $this->section('Scheduler (cron)');

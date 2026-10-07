@@ -45,7 +45,8 @@ php -v        # must say 8.2 or higher
 cd ~/domains/YOURDOMAIN
 git clone https://github.com/renelladrido27-pixel/A-J-City-Oasis.git app
 cd app
-composer2 install --no-dev --optimize-autoloader   # or "composer" if composer2 isn't found
+composer install --no-dev --optimize-autoloader --no-scripts   # --no-scripts: Hostinger disables proc_open
+php artisan package:discover
 cp .env.production.example .env
 nano .env
 ```
@@ -65,7 +66,7 @@ Then:
 php artisan key:generate
 php artisan migrate --force
 php artisan db:seed --force          # properties, the 53 rooms, sample room photos
-php artisan storage:link
+ln -s ../storage/app/public public/storage   # not `artisan storage:link`: Hostinger disables PHP's symlink()
 php artisan app:create-admin OWNER@EMAIL.COM --first-name=Jose --last-name=Valle
 php artisan app:create-admin STAFF@EMAIL.COM --first-name=Caretaker --last-name=Staff --role=staff
 php artisan optimize
@@ -74,12 +75,6 @@ php artisan optimize
 `app:create-admin` asks for the password at a hidden prompt (at least 8 characters with upper- and lower-case letters, a number and a symbol). The demo
 `admin@ajoasis.test / password` accounts are **not** created on the server —
 that password is public on GitHub.
-
-If `storage:link` fails ("symlink() has been disabled"), run instead:
-
-```bash
-ln -s ../storage/app/public public/storage
-```
 
 ## 4. Point the domain at Laravel's `public` folder
 
