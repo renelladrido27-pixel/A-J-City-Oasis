@@ -6,7 +6,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/dashed_divider.dart';
-import '../widgets/wireframe_placeholder.dart';
+import '../widgets/room_photo.dart';
 
 /// C5 - My Rental (tenant portal home for the Rental tab).
 class MyRentalScreen extends StatelessWidget {
@@ -63,7 +63,7 @@ class _LeaseDetail extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const WireframePlaceholder(label: 'room photo', height: 160),
+          RoomGallery(images: lease.roomImages, height: 170),
           const SizedBox(height: 16),
           Text(
             '${lease.roomLabel} · ${lease.property}',

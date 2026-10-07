@@ -32,6 +32,14 @@ Route::get('/rooms', [RoomController::class, 'browse'])->name('rooms.browse');
 Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('rooms.show');
 Route::get('/payments/return-to-app', [PaymentController::class, 'returnToApp'])->name('payments.return-to-app');
 
+// Short, shareable link to the newest Android build (e.g. for the tenant's first install).
+Route::get('/download-app', function () {
+    $app = \App\Support\AndroidApp::latest();
+    abort_unless($app, 404, 'The Android app has not been published yet.');
+
+    return redirect()->away($app['apk_url']);
+})->name('app.download');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:login');

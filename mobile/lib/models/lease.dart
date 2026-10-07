@@ -8,6 +8,9 @@ class Lease {
   final String leaseStatus;
   final String? documentUrl;
 
+  /// Photos of the leased room (same as on the website).
+  final List<String> roomImages;
+
   const Lease({
     required this.roomLabel,
     required this.property,
@@ -15,6 +18,7 @@ class Lease {
     required this.moveInDate,
     required this.leaseStatus,
     this.documentUrl,
+    this.roomImages = const [],
   });
 
   factory Lease.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,7 @@ class Lease {
       moveInDate: DateTime.parse(json['start_date'] as String),
       leaseStatus: _titleCase(json['status'] as String),
       documentUrl: json['document_url'] as String?,
+      roomImages: room.images,
     );
   }
 

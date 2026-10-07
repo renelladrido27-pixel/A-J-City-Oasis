@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Page Not Found — A &amp; J CITY OASIS</title>
+    <title>Page Not Found — A&amp;J CITY OASIS</title>
     <meta name="robots" content="noindex">
     <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
     <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">

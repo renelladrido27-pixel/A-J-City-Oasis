@@ -18,11 +18,11 @@ class LeaseController extends Controller
     public function show(Request $request): JsonResponse
     {
         $lease = $request->user()->leases()
-            ->with('room.property')
+            ->with(['room.property', 'room.images'])
             ->where('status', 'active')
             ->latest('start_date')
             ->first()
-            ?? $request->user()->leases()->with('room.property')->latest('start_date')->first();
+            ?? $request->user()->leases()->with(['room.property', 'room.images'])->latest('start_date')->first();
 
         return response()->json(['lease' => $lease ? LeaseResource::make($lease) : null]);
     }

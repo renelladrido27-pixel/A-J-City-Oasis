@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AnnouncementController;
+use App\Http\Controllers\Api\AppVersionController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\LeaseController;
@@ -22,6 +23,9 @@ Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
 Route::post('/rooms/{room}/book', [BookingController::class, 'store'])->middleware('throttle:signup');
 
+// Latest published Android build, so the app can offer an in-app update.
+Route::get('/app/version', AppVersionController::class);
+
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:signup');
 
@@ -35,6 +39,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:verify-email');
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
+    Route::post('/profile/photo', [ProfileController::class, 'storePhoto']);
+    Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto']);
 
     Route::middleware('email.verified')->group(function () {
         Route::get('/bookings/{booking}', [BookingController::class, 'show']);

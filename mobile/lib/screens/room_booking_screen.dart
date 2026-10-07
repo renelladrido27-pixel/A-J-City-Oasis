@@ -8,7 +8,7 @@ import '../utils/format.dart';
 import '../widgets/account_fields.dart';
 import '../widgets/dashed_divider.dart';
 import '../widgets/oasis_button.dart';
-import '../widgets/wireframe_placeholder.dart';
+import '../widgets/room_photo.dart';
 import 'booking_payment_screen.dart';
 import 'verify_email_screen.dart';
 
@@ -106,10 +106,7 @@ class _RoomBookingScreenState extends State<RoomBookingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const WireframePlaceholder(
-                    label: 'photo gallery',
-                    height: 170,
-                  ),
+                  RoomGallery(images: room.images),
                   const SizedBox(height: 16),
                   Text(
                     '${room.label} · ${formatPeso(room.monthlyRent)}/mo',

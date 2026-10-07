@@ -3,7 +3,7 @@
 @section('title', 'Admin Dashboard')
 
 @section('content')
-<x-page-header title="Admin Dashboard" subtitle="Overview of A & J CITY OASIS operations" />
+<x-page-header title="Admin Dashboard" subtitle="Overview of A&J CITY OASIS operations" />
 
 <h2 class="h6 text-muted mb-3">Summary cards</h2>
 <div class="row g-3 mb-4">

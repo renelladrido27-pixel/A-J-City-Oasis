@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>A &amp; J CITY OASIS — Rental Apartments in Koronadal City</title>
-    <meta name="description" content="Book a room online at A &amp; J CITY OASIS. {{ $stats['rooms'] }} rooms across {{ $stats['properties'] }} properties in Koronadal City, transparent pricing, and secure online payments.">
+    <title>A&amp;J CITY OASIS — Rental Apartments in Koronadal City</title>
+    <meta name="description" content="Book a room online at A&amp;J CITY OASIS. {{ $stats['rooms'] }} rooms across {{ $stats['properties'] }} properties in Koronadal City, transparent pricing, and secure online payments.">
     <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
     <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -39,7 +39,7 @@
 <body>
     <nav class="navbar navbar-expand-md navbar-oasis sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold text-oasis d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A &amp; J CITY OASIS</a>
+            <a class="navbar-brand fw-bold text-oasis d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A&amp;J CITY OASIS</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landingNav" aria-controls="landingNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -66,7 +66,7 @@
                     <span class="badge bg-white text-oasis mb-3 px-3 py-2">Koronadal City, South Cotabato</span>
                     <h1 class="display-5 fw-bold mb-3">Find your next room. Book it in minutes.</h1>
                     <p class="fs-5 mb-4" style="color: rgba(255,255,255,.85);">
-                        A & J CITY OASIS manages {{ $stats['rooms'] }} rooms across {{ $stats['properties'] }} properties, with transparent pricing, a fully online
+                        A&J CITY OASIS manages {{ $stats['rooms'] }} rooms across {{ $stats['properties'] }} properties, with transparent pricing, a fully online
                         booking flow, and secure payments &mdash; no walk-in required.
                     </p>
                     <div class="d-flex flex-wrap gap-2">
@@ -78,9 +78,9 @@
                     @php($heroImage = $featuredRooms->first()?->images->first())
                     <div class="hero-visual p-2 p-lg-3">
                         @if ($heroImage)
-                            <img src="{{ $heroImage->url() }}" alt="A room at A & J CITY OASIS, Koronadal City" class="w-100 rounded-3 d-block" style="aspect-ratio: 4 / 3; object-fit: cover;">
+                            <img src="{{ $heroImage->url() }}" alt="A room at A&J CITY OASIS, Koronadal City" class="w-100 rounded-3 d-block" style="aspect-ratio: 4 / 3; object-fit: cover;">
                         @else
-                            <img src="{{ asset('images/hero-placeholder.svg') }}" alt="A & J CITY OASIS property photo &mdash; coming soon" class="w-100 rounded-3 d-block" style="aspect-ratio: 4 / 3; object-fit: cover;">
+                            <img src="{{ asset('images/hero-placeholder.svg') }}" alt="A&J CITY OASIS property photo &mdash; coming soon" class="w-100 rounded-3 d-block" style="aspect-ratio: 4 / 3; object-fit: cover;">
                         @endif
                     </div>
                     <div class="row g-2 text-center mt-1">
@@ -161,7 +161,7 @@
                         <h2 class="h5 fw-bold text-oasis mb-0">Find us in Koronadal City</h2>
                     </div>
                     <p class="text-muted mb-0">
-                        Both A & J CITY OASIS properties are based in Koronadal City, South Cotabato &mdash; walk-throughs
+                        Both A&J CITY OASIS properties are based in Koronadal City, South Cotabato &mdash; walk-throughs
                         can be arranged, but every booking, payment, and lease can be handled fully online without
                         ever needing to visit in person first.
                     </p>
@@ -343,7 +343,7 @@
         <div class="container">
             <div class="row g-4">
                 <div class="col-md-4">
-                    <h3 class="h5 fw-bold mb-3 d-flex align-items-center gap-2"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="24" height="24">A &amp; J CITY OASIS</h3>
+                    <h3 class="h5 fw-bold mb-3 d-flex align-items-center gap-2"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="24" height="24">A&amp;J CITY OASIS</h3>
                     <p class="small" style="color: rgba(255,255,255,.7);">Comfortable, secure rentals in Koronadal City &mdash; fully bookable online.</p>
                 </div>
                 <div class="col-md-4">
@@ -360,12 +360,15 @@
                         <li><i class="bi bi-geo-alt me-2"></i>Koronadal City, South Cotabato</li>
                         <li><i class="bi bi-envelope me-2"></i><a href="mailto:ajoasis.system@gmail.com">ajoasis.system@gmail.com</a></li>
                         <li><i class="bi bi-telephone me-2"></i><a href="tel:+639123456789">+63 912 345 6789</a></li>
+                        @if (\App\Support\AndroidApp::latest())
+                            <li><i class="bi bi-android2 me-2"></i><a href="{{ route('app.download') }}">Get the Android app</a></li>
+                        @endif
                     </ul>
                 </div>
             </div>
             <hr class="border-secondary my-4">
             <p class="small text-center mb-0" style="color: rgba(255,255,255,.6);">
-                &copy; {{ now()->year }} A &amp; J CITY OASIS. All rights reserved.
+                &copy; {{ now()->year }} A&amp;J CITY OASIS. All rights reserved.
             </p>
         </div>
     </footer>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/app_updater.dart';
 import '../state/app_state.dart';
 import '../widgets/oasis_bottom_nav.dart';
 import 'auth_screen.dart';
@@ -22,6 +23,15 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> {
   OasisTab _tab = OasisTab.home;
+
+  @override
+  void initState() {
+    super.initState();
+    // Once the first screen is up, see if the server has a newer build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppUpdater.checkAndPrompt(context);
+    });
+  }
 
   Future<void> _selectTab(OasisTab tab) async {
     final app = AppStateScope.of(context);

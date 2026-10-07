@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../services/api_client.dart';
 import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
@@ -83,7 +85,7 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               const SizedBox(height: 48),
               const Text(
-                'A & J City Oasis',
+                'A&J City Oasis',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
@@ -144,7 +146,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       padding: EdgeInsets.zero,
                       foregroundColor: OasisColors.green,
                     ),
-                    onPressed: () {},
+                    // Password resets are emailed by the website.
+                    onPressed: () => launchUrl(
+                      Uri.parse('${ApiClient.siteUrl}/forgot-password'),
+                      mode: LaunchMode.externalApplication,
+                    ),
                     child: const Text('Forgot password?'),
                   ),
                 ),

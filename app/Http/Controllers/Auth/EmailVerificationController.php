@@ -44,7 +44,7 @@ class EmailVerificationController extends Controller
 
         return $request->expectsJson()
             ? response()->json(['verified' => true])
-            : redirect()->intended(route('tenant.dashboard'))->with('status', 'Email verified. Welcome to A & J CITY OASIS!');
+            : redirect()->intended(route('tenant.dashboard'))->with('status', 'Email verified. Welcome to A&J CITY OASIS!');
     }
 
     public function resend(Request $request): JsonResponse|RedirectResponse

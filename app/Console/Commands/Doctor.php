@@ -26,7 +26,7 @@ class Doctor extends Command
 
     public function handle(): int
     {
-        $this->line('<options=bold>A & J CITY OASIS deployment check</>');
+        $this->line('<options=bold>A&J CITY OASIS deployment check</>');
 
         $this->section('Application');
         $this->check('APP_ENV is production', app()->isProduction(), 'Currently "'.app()->environment().'"', warnOnly: true);

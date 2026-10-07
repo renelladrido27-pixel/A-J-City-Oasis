@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>@yield('title', 'Dashboard') — A &amp; J CITY OASIS</title>
+    <title>@yield('title', 'Dashboard') — A&amp;J CITY OASIS</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
     <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
@@ -65,7 +65,7 @@
         <aside class="sidebar p-3" id="sidebar">
             <a href="{{ url('/') }}" class="d-flex align-items-center gap-2 text-decoration-none brand mb-4 px-1">
                 <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">
-                <span>A &amp; J CITY OASIS</span>
+                <span>A&amp;J CITY OASIS</span>
             </a>
 
             <nav class="nav flex-column">

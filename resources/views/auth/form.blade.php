@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $activeTab === 'signup' ? 'Register' : 'Login')
-@section('meta_description', 'Log in or create a tenant account at A &amp; J CITY OASIS, Koronadal City.')
+@section('meta_description', 'Log in or create a tenant account at A&amp;J CITY OASIS, Koronadal City.')
 
 @php
     // A field-level error only ever belongs to one form (e.g. "name" only exists on
@@ -17,7 +17,7 @@
     <div class="card">
         <div class="brandmark">
             <div class="mark"><img src="{{ asset('images/logo-mark.svg') }}" alt=""></div>
-            <span>A &amp; J CITY OASIS</span>
+            <span>A&amp;J CITY OASIS</span>
         </div>
 
         <div class="tabs">

@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>@yield('title', 'Dashboard') — A &amp; J CITY OASIS</title>
-    <meta name="description" content="@yield('meta_description', 'Manage your booking, lease, payments, and maintenance requests at A &amp; J CITY OASIS, Koronadal City.')">
+    <title>@yield('title', 'Dashboard') — A&amp;J CITY OASIS</title>
+    <meta name="description" content="@yield('meta_description', 'Manage your booking, lease, payments, and maintenance requests at A&amp;J CITY OASIS, Koronadal City.')">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
     <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
@@ -40,7 +40,7 @@
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-oasis sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A &amp; J CITY OASIS</a>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A&amp;J CITY OASIS</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -170,6 +170,9 @@
                 <div class="d-flex flex-wrap gap-3 small">
                     <a href="{{ url('/') }}" class="text-decoration-none text-muted">Home</a>
                     <a href="{{ route('rooms.browse') }}" class="text-decoration-none text-muted">Browse Rooms</a>
+                    @if (\App\Support\AndroidApp::latest())
+                        <a href="{{ route('app.download') }}" class="text-decoration-none text-muted"><i class="bi bi-android2 me-1"></i>Get the Android app</a>
+                    @endif
                 </div>
                 <div class="d-flex flex-wrap gap-3 small text-muted">
                     <a href="mailto:ajoasis.system@gmail.com" class="text-decoration-none text-muted"><i class="bi bi-envelope me-1"></i>ajoasis.system@gmail.com</a>
@@ -177,7 +180,7 @@
                 </div>
             </div>
             <div class="text-center text-muted small border-top pt-3">
-                &copy; {{ now()->year }} A &amp; J CITY OASIS &mdash; Web-Based and Mobile Rental Apartment Management System
+                &copy; {{ now()->year }} A&amp;J CITY OASIS &mdash; Web-Based and Mobile Rental Apartment Management System
             </div>
         </div>
     </footer>

@@ -14,6 +14,10 @@ class ApiClient {
     defaultValue: 'http://127.0.0.1:8000/api',
   );
 
+  /// The website the API belongs to (e.g. https://ajcityoasis.online) — for
+  /// pages that only exist on the web, like "Forgot password?".
+  static String get siteUrl => baseUrl.replaceFirst(RegExp(r'/api/?$'), '');
+
   static const _storage = FlutterSecureStorage();
   static const _tokenKey = 'auth_token';
 
@@ -41,6 +45,8 @@ class ApiClient {
 
   Future<Map<String, dynamic>> put(String path, [Map<String, dynamic>? body]) =>
       _send('PUT', path, body);
+
+  Future<Map<String, dynamic>> delete(String path) => _send('DELETE', path);
 
   /// POST as multipart/form-data — for endpoints that take a file upload
   /// (e.g. a maintenance request photo) alongside plain text fields.
@@ -101,6 +107,8 @@ class ApiClient {
             headers: headers,
             body: body == null ? null : jsonEncode(body),
           );
+        case 'DELETE':
+          response = await http.delete(uri, headers: headers);
         default:
           throw ApiException('Unsupported method $method');
       }

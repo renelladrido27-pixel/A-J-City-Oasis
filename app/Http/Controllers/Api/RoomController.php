@@ -14,7 +14,8 @@ class RoomController extends Controller
     {
         $rooms = Room::where('status', 'vacant')
             ->when($request->integer('property_id'), fn ($q, $id) => $q->where('property_id', $id))
-            ->with('property')
+            // `images` too — without it the app has no photos to show.
+            ->with(['property', 'images'])
             ->orderBy('room_number')
             ->get();
 

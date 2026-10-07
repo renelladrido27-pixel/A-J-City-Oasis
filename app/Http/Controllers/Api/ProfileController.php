@@ -9,6 +9,7 @@ use App\Support\AccountRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 
@@ -17,6 +18,35 @@ class ProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         return response()->json(['user' => UserResource::make($request->user())]);
+    }
+
+    public function storePhoto(Request $request): JsonResponse
+    {
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ]);
+
+        $user = $request->user();
+
+        if ($user->photo) {
+            Storage::disk('public')->delete($user->photo);
+        }
+
+        $user->update(['photo' => $request->file('photo')->store('profiles', 'public')]);
+
+        return response()->json(['user' => UserResource::make($user)]);
+    }
+
+    public function destroyPhoto(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->photo) {
+            Storage::disk('public')->delete($user->photo);
+            $user->update(['photo' => null]);
+        }
+
+        return response()->json(['user' => UserResource::make($user)]);
     }
 
     public function update(Request $request): JsonResponse

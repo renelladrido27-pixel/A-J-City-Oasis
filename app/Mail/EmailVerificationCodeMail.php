@@ -19,7 +19,7 @@ class EmailVerificationCodeMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->code.' is your A & J CITY OASIS verification code');
+        return new Envelope(subject: $this->code.' is your A&J CITY OASIS verification code');
     }
 
     public function content(): Content

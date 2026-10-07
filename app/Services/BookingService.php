@@ -142,7 +142,7 @@ class BookingService
             $this->notifications->notify(
                 $booking->tenant,
                 'Lease started',
-                "Your lease for Room {$booking->room->room_number} starts on ".$booking->move_in_date->format('M d, Y').'. Welcome to A & J CITY OASIS!',
+                "Your lease for Room {$booking->room->room_number} starts on ".$booking->move_in_date->format('M d, Y').'. Welcome to A&J CITY OASIS!',
                 'lease',
             );
 

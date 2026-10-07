@@ -367,6 +367,41 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Uploads a new profile picture ([path] is a local file from the picker).
+  Future<void> uploadProfilePhoto(String path) async {
+    final res = await _api.postMultipart(
+      '/profile/photo',
+      fields: const {},
+      files: {'photo': path},
+    );
+    profile = TenantProfile.fromJson(res['user']);
+    notifyListeners();
+  }
+
+  Future<void> removeProfilePhoto() async {
+    final res = await _api.delete('/profile/photo');
+    profile = TenantProfile.fromJson(res['user']);
+    notifyListeners();
+  }
+
+  /// Changes the password; the server checks [currentPassword] first.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final p = profile!;
+    await _api.put('/profile', {
+      'first_name': p.firstName,
+      'middle_name': p.middleName,
+      'last_name': p.lastName,
+      'email': p.email,
+      'phone': p.phone,
+      'current_password': currentPassword,
+      'password': newPassword,
+      'password_confirmation': newPassword,
+    });
+  }
+
   static String _isoDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
