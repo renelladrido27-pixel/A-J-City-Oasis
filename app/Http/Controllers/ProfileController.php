@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\EmailVerificationService;
+use App\Support\AccountRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -21,20 +23,30 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        AccountRules::prepare($request);
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            ...AccountRules::name(),
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => AccountRules::phone(required: $user->isTenant()),
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'current_password' => ['nullable', 'required_with:new_password', 'current_password'],
             'new_password' => ['nullable', 'confirmed', Password::defaults()],
-        ]);
+        ], AccountRules::messages());
 
         $user->fill([
-            'name' => $validated['name'],
+            'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'] ?? null,
+            'last_name' => $validated['last_name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
         ]);
+
+        // A tenant's new email address has to be verified again.
+        $emailChanged = $user->isTenant() && $user->isDirty('email');
+        if ($emailChanged) {
+            $user->email_verified_at = null;
+        }
 
         if ($request->hasFile('photo')) {
             if ($user->photo) {
@@ -49,6 +61,12 @@ class ProfileController extends Controller
         }
 
         $user->save();
+
+        if ($emailChanged) {
+            app(EmailVerificationService::class)->sendCode($user);
+
+            return redirect()->route('verification.notice')->with('status', 'Profile updated. Enter the code we sent to your new email address.');
+        }
 
         return back()->with('status', 'Profile updated.');
     }

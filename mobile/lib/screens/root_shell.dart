@@ -8,6 +8,7 @@ import 'my_payments_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'rental_hub_screen.dart';
+import 'verify_email_screen.dart';
 
 /// Owns the persistent bottom nav (Home/Rental/Pay/Alerts/Profile) shared by
 /// C1, C5-C9, C10. Login/Signup (C2) and the booking checkout step (C4) are
@@ -22,7 +23,7 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> {
   OasisTab _tab = OasisTab.home;
 
-  void _selectTab(OasisTab tab) {
+  Future<void> _selectTab(OasisTab tab) async {
     final app = AppStateScope.of(context);
     if (tab != OasisTab.home && !app.isLoggedIn) {
       Navigator.of(
@@ -30,7 +31,13 @@ class _RootShellState extends State<RootShell> {
       ).push(MaterialPageRoute(builder: (_) => const AuthScreen()));
       return;
     }
-    setState(() => _tab = tab);
+    // The tenant tabs' data is only available to verified accounts.
+    if (tab != OasisTab.home &&
+        tab != OasisTab.profile &&
+        !await VerifyEmailScreen.ensureVerified(context)) {
+      return;
+    }
+    if (mounted) setState(() => _tab = tab);
   }
 
   @override

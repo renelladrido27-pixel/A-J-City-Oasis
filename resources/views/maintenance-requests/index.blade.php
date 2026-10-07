@@ -21,8 +21,8 @@
             <thead class="table-light">
                 <tr>
                     @if (! auth()->user()->isTenant())<th>Tenant</th>@endif
-                    <th>Room</th><th>Category</th><th>Description</th><th>Photo</th><th>Status</th>
-                    @if (! auth()->user()->isTenant())<th>Scheduled</th><th>Update</th>@endif
+                    <th>Room</th><th>Category</th><th>Description</th><th>Photo</th><th>Status</th><th>Assigned To</th><th>Scheduled</th>
+                    @if (! auth()->user()->isTenant())<th>Update</th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -42,13 +42,23 @@
                             @endif
                         </td>
                         <td><x-status-badge :status="$request->status" /></td>
+                        <td>
+                            @if ($request->assignee)
+                                <span class="fw-medium"><i class="bi bi-person-gear me-1"></i>{{ $request->assignee->name }}</span>
+                                @if ($request->assignee->phone)
+                                    <div class="small"><a href="tel:{{ $request->assignee->phone }}" class="text-decoration-none text-muted"><i class="bi bi-telephone me-1"></i>{{ $request->assignee->phone }}</a></div>
+                                @endif
+                            @else
+                                <span class="text-muted">{{ auth()->user()->isTenant() ? 'Not yet assigned' : '—' }}</span>
+                            @endif
+                        </td>
+                        <td>{{ $request->scheduled_date?->format('M d, Y') ?? '—' }}</td>
                         @if (! auth()->user()->isTenant())
-                            <td>{{ $request->scheduled_date?->format('M d, Y') ?? '—' }}</td>
                             <td>
                                 <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.maintenance-requests.update', $request) : route('staff.maintenance.update', $request) }}" class="d-flex flex-wrap gap-1" style="min-width: 340px;">
                                     @csrf @method('PUT')
                                     <select name="status" class="form-select form-select-sm" style="width: auto;">
-                                        @foreach (['pending', 'in_progress', 'completed', 'cancelled'] as $status)
+                                        @foreach (\App\Models\MaintenanceRequest::STATUSES as $status)
                                             <option value="{{ $status }}" @selected($request->status === $status)>{{ ucfirst(str_replace('_', ' ', $status)) }}</option>
                                         @endforeach
                                     </select>
@@ -65,7 +75,7 @@
                         @endif
                     </tr>
                 @empty
-                    <tr><td colspan="{{ auth()->user()->isTenant() ? 5 : 7 }}"><x-empty-state icon="bi-tools" message="No maintenance requests yet." /></td></tr>
+                    <tr><td colspan="{{ auth()->user()->isTenant() ? 7 : 9 }}"><x-empty-state icon="bi-tools" message="No maintenance requests yet." /></td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -16,7 +16,7 @@ class MaintenanceRequestController extends Controller
     public function index(Request $request): JsonResponse
     {
         $requests = MaintenanceRequest::where('tenant_id', $request->user()->id)
-            ->with('room')
+            ->with(['room', 'assignee'])
             ->latest()
             ->get();
 

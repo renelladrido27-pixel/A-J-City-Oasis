@@ -39,7 +39,9 @@ class _BookingPaymentScreenState extends State<BookingPaymentScreen>
   /// back to the app, confirm the payment without making them tap anything.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _awaitingCheckout && !_submitting) {
+    if (state == AppLifecycleState.resumed &&
+        _awaitingCheckout &&
+        !_submitting) {
       _checkStatus();
     }
   }
@@ -133,6 +135,45 @@ class _BookingPaymentScreenState extends State<BookingPaymentScreen>
                           child: Divider(height: 1),
                         ),
                         _CostLine('Total', booking.totalAmount, bold: true),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: OasisColors.green,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'PAY TODAY TO BOOK',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                        Text(
+                          formatPeso(booking.totalAmount),
+                          style: const TextStyle(
+                            color: OasisColors.gold,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'Then ${formatPeso(booking.advanceAmount)} rent every month',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),

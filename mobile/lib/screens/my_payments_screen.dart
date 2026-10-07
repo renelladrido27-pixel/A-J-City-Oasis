@@ -36,7 +36,9 @@ class _MyPaymentsScreenState extends State<MyPaymentsScreen>
   /// back to the app, confirm the payment without making them tap anything.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _awaitingCheckout && !_submitting) {
+    if (state == AppLifecycleState.resumed &&
+        _awaitingCheckout &&
+        !_submitting) {
       _checkStatus();
     }
   }

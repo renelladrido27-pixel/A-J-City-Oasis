@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../utils/format.dart';
 import '../widgets/oasis_button.dart';
 
 const _issueTypes = [
@@ -169,10 +170,33 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
             const SizedBox(height: 24),
             for (final r in app.maintenanceRequests)
               Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '- ${r.issueType} — ${r.status}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '- ${r.issueType} — ${r.status}',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12, top: 2),
+                      child: Text(
+                        r.assignedName == null
+                            ? 'Not yet assigned'
+                            : [
+                                'Assigned to ${r.assignedName}',
+                                if ((r.assignedPhone ?? '').isNotEmpty)
+                                  r.assignedPhone!,
+                                if (r.scheduledDate != null)
+                                  'Scheduled ${formatShortDate(r.scheduledDate!)}',
+                              ].join(' · '),
+                        style: const TextStyle(
+                          color: OasisColors.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
           ],

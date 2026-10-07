@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\RoomTransferController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Webhooks\XenditWebhookController;
 use Illuminate\Support\Facades\Route;
 //abiiiiiii 
@@ -28,27 +29,33 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
 
-    Route::get('/bookings/{booking}', [BookingController::class, 'show']);
-    Route::post('/bookings/{booking}/pay', [BookingController::class, 'pay']);
-    Route::post('/bookings/{booking}/check-status', [BookingController::class, 'checkStatus']);
-
-    Route::get('/lease', [LeaseController::class, 'show']);
-
-    Route::get('/payments', [PaymentController::class, 'index']);
-    Route::post('/payments/{payment}/pay', [PaymentController::class, 'pay']);
-    Route::post('/payments/{payment}/check-status', [PaymentController::class, 'checkStatus']);
-
-    Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
-    Route::post('/maintenance-requests', [MaintenanceRequestController::class, 'store']);
-
-    Route::get('/room-transfers', [RoomTransferController::class, 'index']);
-    Route::post('/room-transfers', [RoomTransferController::class, 'store']);
-
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
-
-    Route::get('/announcements', [AnnouncementController::class, 'index']);
-
+    // Email verification by 6-digit code, and the profile (so a mistyped email
+    // can be corrected) stay reachable before the account is verified.
+    Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->middleware('throttle:verify-email');
+    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:verify-email');
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
+
+    Route::middleware('email.verified')->group(function () {
+        Route::get('/bookings/{booking}', [BookingController::class, 'show']);
+        Route::post('/bookings/{booking}/pay', [BookingController::class, 'pay']);
+        Route::post('/bookings/{booking}/check-status', [BookingController::class, 'checkStatus']);
+
+        Route::get('/lease', [LeaseController::class, 'show']);
+
+        Route::get('/payments', [PaymentController::class, 'index']);
+        Route::post('/payments/{payment}/pay', [PaymentController::class, 'pay']);
+        Route::post('/payments/{payment}/check-status', [PaymentController::class, 'checkStatus']);
+
+        Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
+        Route::post('/maintenance-requests', [MaintenanceRequestController::class, 'store']);
+
+        Route::get('/room-transfers', [RoomTransferController::class, 'index']);
+        Route::post('/room-transfers', [RoomTransferController::class, 'store']);
+
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+
+        Route::get('/announcements', [AnnouncementController::class, 'index']);
+    });
 });

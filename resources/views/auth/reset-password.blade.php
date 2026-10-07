@@ -31,6 +31,7 @@
                 <button type="button" class="pw-toggle" data-pw-toggle><i class="bi bi-eye"></i></button>
             </div>
             @error('password')<p class="field-error">{{ $message }}</p>@enderror
+            @include('partials.password-rules', ['for' => 'password'])
 
             <div class="field-float pw-wrap">
                 <input type="password" name="password_confirmation" id="password_confirmation" placeholder=" " required>

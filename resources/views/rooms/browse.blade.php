@@ -95,7 +95,7 @@
                     </div>
                     <p class="card-text text-muted mb-1 small"><i class="bi bi-geo-alt me-1"></i>{{ $room->property->name }}</p>
                     <p class="card-text mb-2 small">
-                        Floor {{ $room->floor }} &middot; {{ ucfirst($room->type) }}
+                        {{ $room->floorLabel() }} &middot; {{ ucfirst($room->type) }}
                         @if ($room->size_sqm) &middot; {{ $room->size_sqm }} sqm @endif
                     </p>
                     @if (! empty($room->inclusions))
@@ -109,7 +109,7 @@
                         </div>
                     @endif
                     <p class="card-text fs-5 fw-semibold room-browse-price mb-1">₱{{ number_format($room->monthly_rate, 2) }} <span class="fs-6 fw-normal text-muted">/ month</span></p>
-                    <p class="text-muted mb-3" style="font-size: .75rem;"><i class="bi bi-info-circle me-1"></i>3-month upfront payment required</p>
+                    <p class="mb-3"><span class="badge rounded-pill" style="background: var(--oasis-gold, #c9963e); color: var(--oasis-ink, #1f2d27); font-size: .75rem;">₱{{ number_format($room->monthly_rate * 3, 2) }} to book</span> <span class="text-muted" style="font-size: .75rem;">3 months upfront</span></p>
                     <div class="mt-auto">
                         <a href="{{ route('rooms.show', $room) }}" class="btn btn-outline-primary btn-sm w-100">View Details</a>
                     </div>

@@ -3,6 +3,12 @@ class Room {
   final String number;
   final String property;
   final double monthlyRent;
+
+  /// Due on booking: advance + deposit + security deposit (3 months' rent).
+  final double upfrontTotal;
+
+  /// "First Floor", "Second Floor"… as worded by the server.
+  final String floorLabel;
   final double sizeSqm;
   final List<String> amenities;
   final String statusTag;
@@ -14,6 +20,8 @@ class Room {
     required this.number,
     required this.property,
     required this.monthlyRent,
+    required this.upfrontTotal,
+    required this.floorLabel,
     required this.sizeSqm,
     required this.amenities,
     required this.statusTag,
@@ -27,6 +35,10 @@ class Room {
       number: json['number'] as String,
       property: json['property'] as String? ?? '',
       monthlyRent: (json['monthly_rate'] as num).toDouble(),
+      upfrontTotal:
+          (json['upfront_total'] as num?)?.toDouble() ??
+          (json['monthly_rate'] as num).toDouble() * 3,
+      floorLabel: json['floor_label'] as String? ?? '',
       sizeSqm: (json['size_sqm'] as num?)?.toDouble() ?? 0,
       amenities:
           (json['amenities'] as List?)?.map((e) => e.toString()).toList() ??

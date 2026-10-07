@@ -11,14 +11,9 @@
 
 <div class="card border-0 shadow-sm" style="max-width: 560px;">
     <div class="card-body p-4">
-        <h2 class="h6 text-muted mb-3">{{ $room->property->name }} &middot; Floor {{ $room->floor }} &middot; {{ ucfirst($room->type) }}</h2>
+        <h2 class="h6 text-muted mb-3">{{ $room->property->name }} &middot; {{ $room->floorLabel() }} &middot; {{ ucfirst($room->type) }}</h2>
 
-        <dl class="row mb-3">
-            <dt class="col-6 fw-normal text-muted">Monthly rate</dt>
-            <dd class="col-6 text-end">₱{{ number_format($room->monthly_rate, 2) }}</dd>
-            <dt class="col-6 fw-normal text-muted">Upfront payment (advance + deposit + security)</dt>
-            <dd class="col-6 text-end fw-semibold">₱{{ number_format($room->monthly_rate * 3, 2) }}</dd>
-        </dl>
+        @include('partials.upfront-breakdown', ['room' => $room])
 
         <div class="alert alert-info d-flex align-items-start small">
             <i class="bi bi-info-circle-fill me-2 mt-1"></i>
@@ -46,7 +41,7 @@
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
-            <button class="btn btn-primary w-100" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Confirm &amp; Pay</button>
+            <button class="btn btn-primary w-100" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Confirm &amp; Pay ₱{{ number_format($room->monthly_rate * 3, 2) }}</button>
         </form>
     </div>
 </div>

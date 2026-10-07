@@ -52,7 +52,7 @@ class AppState extends ChangeNotifier {
         final res = await _api.get('/user');
         profile = TenantProfile.fromJson(res['user']);
         isLoggedIn = true;
-        await refreshAll();
+        if (!needsEmailVerification) await refreshAll();
       } catch (_) {
         await _api.setToken(null);
         isLoggedIn = false;
@@ -84,19 +84,32 @@ class AppState extends ChangeNotifier {
     await _api.setToken(res['token'] as String);
     profile = TenantProfile.fromJson(res['user']);
     isLoggedIn = true;
-    await refreshAll();
+    if (needsEmailVerification) {
+      notifyListeners();
+    } else {
+      await refreshAll();
+    }
   }
 
-  /// Standalone sign-up (C2's Sign up tab) — no room attached. Booking a room
-  /// creates its own account inline instead (see [submitBookingAndAccount]).
+  /// True while the signed-in account still has to enter its emailed code.
+  bool get needsEmailVerification =>
+      isLoggedIn && profile != null && !profile!.emailVerified;
+
+  /// Creates a tenant account (C2's Sign up tab, and the first step of the
+  /// room-booking form). The server emails a 6-digit code; nothing else is
+  /// available until [verifyEmail] succeeds.
   Future<void> signUp({
-    required String name,
+    required String firstName,
+    required String middleName,
+    required String lastName,
     required String email,
     required String phone,
     required String password,
   }) async {
     final res = await _api.post('/register', {
-      'name': name,
+      'first_name': firstName,
+      'middle_name': middleName,
+      'last_name': lastName,
       'email': email,
       'phone': phone,
       'password': password,
@@ -105,36 +118,19 @@ class AppState extends ChangeNotifier {
     await _api.setToken(res['token'] as String);
     profile = TenantProfile.fromJson(res['user']);
     isLoggedIn = true;
-    await refreshAll();
-  }
-
-  Future<void> submitBookingAndAccount({
-    required String fullName,
-    required String email,
-    required String phone,
-    required String password,
-    required DateTime moveInDate,
-  }) async {
-    final room = draft?.room;
-    if (room == null) return;
-
-    final res = await _api.post('/rooms/${room.id}/book', {
-      'name': fullName,
-      'email': email,
-      'phone': phone,
-      'password': password,
-      'password_confirmation': password,
-      'move_in_date': _isoDate(moveInDate),
-    });
-    await _api.setToken(res['token'] as String);
-    profile = TenantProfile.fromJson(res['user']);
-    currentBooking = BookingSummary.fromJson(res['booking']);
     notifyListeners();
   }
 
-  /// Books as the already-signed-in tenant (e.g. via C2's standalone Sign up)
-  /// — no account-creation fields needed since the session token already
-  /// identifies them. Mirrors web's authenticated BookingController::store.
+  Future<void> verifyEmail(String code) async {
+    await _api.post('/email/verify', {'code': code});
+    profile?.emailVerified = true;
+    await refreshAll();
+  }
+
+  Future<void> resendVerificationCode() => _api.post('/email/resend');
+
+  /// Books the drafted room as the signed-in, verified tenant. Mirrors web's
+  /// authenticated BookingController::store.
   Future<void> submitBookingForCurrentUser({
     required DateTime moveInDate,
   }) async {
@@ -351,13 +347,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Changing the email un-verifies the account until the new address's code
+  /// is entered — check [needsEmailVerification] afterwards.
   Future<void> updateProfile({
-    required String fullName,
+    required String firstName,
+    required String middleName,
+    required String lastName,
     required String email,
     required String phone,
   }) async {
     final res = await _api.put('/profile', {
-      'name': fullName,
+      'first_name': firstName,
+      'middle_name': middleName,
+      'last_name': lastName,
       'email': email,
       'phone': phone,
     });

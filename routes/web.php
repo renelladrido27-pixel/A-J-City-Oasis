@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -45,6 +46,11 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    // Email verification by 6-digit code (tenant pages redirect here until verified).
+    Route::get('/verify-email', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::post('/verify-email', [EmailVerificationController::class, 'verify'])->middleware('throttle:verify-email')->name('verification.verify');
+    Route::post('/verify-email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:verify-email')->name('verification.resend');
 
     Route::get('/payments/success', [PaymentController::class, 'success'])->name('payments.success');
     Route::get('/payments/failure', [PaymentController::class, 'failure'])->name('payments.failure');
@@ -119,7 +125,7 @@ Route::middleware(['auth', 'role:admin,staff'])->prefix('staff')->name('staff.')
 });
 
 // Tenant
-Route::middleware(['auth', 'role:tenant'])->prefix('tenant')->name('tenant.')->group(function () {
+Route::middleware(['auth', 'role:tenant', 'email.verified'])->prefix('tenant')->name('tenant.')->group(function () {
     Route::get('/dashboard', [LeaseController::class, 'index'])->name('dashboard');
 
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');

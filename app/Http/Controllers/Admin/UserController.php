@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\AccountRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -31,20 +32,26 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        AccountRules::prepare($request);
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            ...AccountRules::name(),
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => AccountRules::phone(required: false),
             'role' => ['required', Rule::in(['admin', 'staff', 'tenant'])],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ], AccountRules::messages());
 
         User::create([
-            'name' => $validated['name'],
+            'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'] ?? null,
+            'last_name' => $validated['last_name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'role' => $validated['role'],
             'password' => Hash::make($validated['password']),
+            // An account the admin creates in person is already vouched for.
+            'email_verified_at' => now(),
         ]);
 
         return redirect()->route('admin.users.index')->with('status', 'Account created.');
@@ -57,12 +64,14 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        AccountRules::prepare($request);
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            ...AccountRules::name(),
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => AccountRules::phone(required: false),
             'role' => ['required', Rule::in(['admin', 'staff', 'tenant'])],
-        ]);
+        ], AccountRules::messages());
 
         $user->update($validated);
 

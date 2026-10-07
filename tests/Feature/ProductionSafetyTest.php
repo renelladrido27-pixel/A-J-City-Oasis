@@ -75,8 +75,8 @@ class ProductionSafetyTest extends TestCase
 
     public function test_create_admin_command_creates_a_hashed_admin_account(): void
     {
-        $this->artisan('app:create-admin', ['email' => 'Owner@AJOasis.com', '--name' => 'Jose Valle'])
-            ->expectsQuestion('Password (min. 8 characters)', 'S3cure-pass!')
+        $this->artisan('app:create-admin', ['email' => 'Owner@AJOasis.com', '--first-name' => 'Jose', '--last-name' => 'Valle'])
+            ->expectsQuestion('Password (min. 8 characters, with upper/lower case, a number and a symbol)', 'S3cure-pass!')
             ->expectsQuestion('Confirm password', 'S3cure-pass!')
             ->assertSuccessful();
 
@@ -87,14 +87,14 @@ class ProductionSafetyTest extends TestCase
 
     public function test_create_admin_rejects_short_or_mismatched_passwords(): void
     {
-        $this->artisan('app:create-admin', ['email' => 'a@b.com', '--name' => 'A'])
-            ->expectsQuestion('Password (min. 8 characters)', 'short')
+        $this->artisan('app:create-admin', ['email' => 'a@b.com', '--first-name' => 'A', '--last-name' => 'B'])
+            ->expectsQuestion('Password (min. 8 characters, with upper/lower case, a number and a symbol)', 'short')
             ->expectsQuestion('Confirm password', 'short')
             ->assertFailed();
 
-        $this->artisan('app:create-admin', ['email' => 'a@b.com', '--name' => 'A'])
-            ->expectsQuestion('Password (min. 8 characters)', 'long-enough-1')
-            ->expectsQuestion('Confirm password', 'different-2')
+        $this->artisan('app:create-admin', ['email' => 'a@b.com', '--first-name' => 'A', '--last-name' => 'B'])
+            ->expectsQuestion('Password (min. 8 characters, with upper/lower case, a number and a symbol)', 'Long-enough-1')
+            ->expectsQuestion('Confirm password', 'Different-2')
             ->assertFailed();
 
         $this->assertDatabaseCount('users', 0);
@@ -104,7 +104,7 @@ class ProductionSafetyTest extends TestCase
     {
         $tenant = User::factory()->create();
 
-        $this->artisan('app:create-admin', ['email' => $tenant->email, '--name' => 'x'])->assertFailed();
+        $this->artisan('app:create-admin', ['email' => $tenant->email, '--first-name' => 'X', '--last-name' => 'Y'])->assertFailed();
 
         $this->assertSame('tenant', $tenant->fresh()->role);
     }

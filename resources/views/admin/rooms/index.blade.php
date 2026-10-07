@@ -39,7 +39,7 @@
                         </td>
                         <td class="fw-medium">{{ $room->room_number }}</td>
                         <td>{{ $room->property->name }}</td>
-                        <td>{{ $room->floor }}</td>
+                        <td>{{ $room->floorLabel() }}</td>
                         <td>{{ ucfirst($room->type) }}</td>
                         <td>₱{{ number_format($room->monthly_rate, 2) }}</td>
                         <td><x-status-badge :status="$room->status" /></td>

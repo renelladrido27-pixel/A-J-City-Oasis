@@ -26,8 +26,20 @@ class MailService
 {
     public function send(string $to, Mailable $mailable): void
     {
-        DB::afterCommit(fn () => app()->terminating(
-            fn () => rescue(fn () => Mail::to($to)->send($mailable), report: true)
-        ));
+        DB::afterCommit(function () use ($to, $mailable) {
+            // Terminating callbacks are never removed, so a process that serves
+            // several requests (tests, a long-running worker) would re-run this
+            // on every later request — send exactly once.
+            $sent = false;
+
+            app()->terminating(function () use ($to, $mailable, &$sent) {
+                if ($sent) {
+                    return;
+                }
+                $sent = true;
+
+                rescue(fn () => Mail::to($to)->send($mailable), report: true);
+            });
+        });
     }
 }

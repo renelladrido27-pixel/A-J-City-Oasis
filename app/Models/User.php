@@ -22,7 +22,11 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'middle_name',
+        'last_name',
         'email',
+        'email_verified_at',
         'password',
         'role',
         'phone',
@@ -38,7 +42,22 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'email_verification_code',
     ];
+
+    /**
+     * `name` is the combined display name used all over the app (screens,
+     * emails, reports). Keep it in sync whenever the separate first / middle /
+     * surname fields are set, so nothing else has to know about the split.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (User $user) {
+            if (filled($user->first_name) || filled($user->last_name)) {
+                $user->name = trim(preg_replace('/\s+/', ' ', "{$user->first_name} {$user->middle_name} {$user->last_name}"));
+            }
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -49,6 +68,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_verification_expires_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];

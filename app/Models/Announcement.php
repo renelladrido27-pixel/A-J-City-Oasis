@@ -62,7 +62,7 @@ class Announcement extends Model
         return match ($this->audience) {
             'all' => 'All tenants',
             'property' => 'Property: '.($this->property?->name ?? '—'),
-            'floor' => 'Floor '.$this->floor.' — '.($this->property?->name ?? '—'),
+            'floor' => \App\Support\Floor::label($this->floor).' — '.($this->property?->name ?? '—'),
             'tenant' => 'Tenant: '.($this->tenant?->name ?? '—'),
             default => ucfirst($this->audience),
         };

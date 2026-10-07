@@ -66,12 +66,12 @@ php artisan key:generate
 php artisan migrate --force
 php artisan db:seed --force          # properties, the 53 rooms, sample room photos
 php artisan storage:link
-php artisan app:create-admin OWNER@EMAIL.COM --name="Jose Valle"
-php artisan app:create-admin STAFF@EMAIL.COM --name="Caretaker" --role=staff
+php artisan app:create-admin OWNER@EMAIL.COM --first-name=Jose --last-name=Valle
+php artisan app:create-admin STAFF@EMAIL.COM --first-name=Caretaker --last-name=Staff --role=staff
 php artisan optimize
 ```
 
-`app:create-admin` asks for the password at a hidden prompt. The demo
+`app:create-admin` asks for the password at a hidden prompt (at least 8 characters with upper- and lower-case letters, a number and a symbol). The demo
 `admin@ajoasis.test / password` accounts are **not** created on the server —
 that password is public on GitHub.
 

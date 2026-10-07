@@ -40,7 +40,7 @@
                                data-bs-toggle="modal" data-bs-target="#roomDetailsModal"
                                data-room-number="{{ $room->room_number }}"
                                data-property="{{ $property->name }}"
-                               data-floor="{{ $room->floor }}"
+                               data-floor="{{ $room->floorLabel() }}"
                                data-type="{{ ucfirst($room->type) }}"
                                data-rate="{{ number_format($room->monthly_rate, 2) }}"
                                data-status="{{ $isOverdue ? 'Occupied (overdue payment)' : ucfirst($room->status) }}"

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,5 +31,14 @@ class AppServiceProvider extends ServiceProvider
             ->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
 
         RateLimiter::for('signup', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
+
+        // Entering / re-sending the emailed verification code.
+        RateLimiter::for('verify-email', fn (Request $request) => Limit::perMinute(6)
+            ->by(($request->user()?->id ?? 'guest').'|'.$request->ip()));
+
+        // One password policy for every form that uses Password::defaults():
+        // at least 8 characters with upper- and lower-case letters, a number
+        // and a symbol.
+        Password::defaults(fn () => Password::min(8)->letters()->mixedCase()->numbers()->symbols());
     }
 }

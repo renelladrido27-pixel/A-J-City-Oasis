@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../utils/account_validators.dart';
 import '../utils/format.dart';
+import '../widgets/account_fields.dart';
 import '../widgets/dashed_divider.dart';
 import '../widgets/oasis_button.dart';
 import '../widgets/wireframe_placeholder.dart';
 import 'booking_payment_screen.dart';
+import 'verify_email_screen.dart';
 
 /// C3 - Room details + booking form ("Create account & continue").
 class RoomBookingScreen extends StatefulWidget {
@@ -18,22 +21,14 @@ class RoomBookingScreen extends StatefulWidget {
 }
 
 class _RoomBookingScreenState extends State<RoomBookingScreen> {
-  final _fullName = TextEditingController();
-  final _email = TextEditingController();
-  final _phone = TextEditingController();
-  final _password = TextEditingController();
-  final _confirm = TextEditingController();
+  final _account = AccountFormControllers();
   DateTime? _moveInDate;
   String? _error;
   bool _submitting = false;
 
   @override
   void dispose() {
-    _fullName.dispose();
-    _email.dispose();
-    _phone.dispose();
-    _password.dispose();
-    _confirm.dispose();
+    _account.dispose();
     super.dispose();
   }
 
@@ -53,20 +48,13 @@ class _RoomBookingScreenState extends State<RoomBookingScreen> {
     final app = AppStateScope.of(context);
     final loggedIn = app.isLoggedIn;
 
-    if (!loggedIn &&
-        (_fullName.text.trim().isEmpty ||
-            _email.text.trim().isEmpty ||
-            _phone.text.trim().isEmpty)) {
-      setState(() => _error = 'Please fill in your name, email, and phone.');
+    final problem = loggedIn ? null : _account.validate();
+    if (problem != null) {
+      setState(() => _error = problem);
       return;
     }
     if (_moveInDate == null) {
       setState(() => _error = 'Please select a move-in date.');
-      return;
-    }
-    if (!loggedIn &&
-        (_password.text.isEmpty || _password.text != _confirm.text)) {
-      setState(() => _error = 'Passwords must match.');
       return;
     }
     setState(() {
@@ -74,17 +62,21 @@ class _RoomBookingScreenState extends State<RoomBookingScreen> {
       _submitting = true;
     });
     try {
-      if (loggedIn) {
-        await app.submitBookingForCurrentUser(moveInDate: _moveInDate!);
-      } else {
-        await app.submitBookingAndAccount(
-          fullName: _fullName.text.trim(),
-          email: _email.text.trim(),
-          phone: _phone.text.trim(),
-          password: _password.text,
-          moveInDate: _moveInDate!,
+      // Step 1: create the account (new visitors only).
+      if (!loggedIn) {
+        await app.signUp(
+          firstName: _account.firstName.text.trim(),
+          middleName: _account.middleName.text.trim(),
+          lastName: _account.lastName.text.trim(),
+          email: _account.email.text.trim(),
+          phone: normalizePhone(_account.phone.text),
+          password: _account.password.text,
         );
       }
+      // Step 2: the emailed 6-digit code. The room isn't reserved until this is done.
+      if (!mounted || !await VerifyEmailScreen.ensureVerified(context)) return;
+      // Step 3: reserve the room, then go to payment.
+      await app.submitBookingForCurrentUser(moveInDate: _moveInDate!);
       if (mounted) {
         Navigator.of(
           context,
@@ -128,11 +120,16 @@ class _RoomBookingScreenState extends State<RoomBookingScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${room.sizeSqm.toStringAsFixed(0)} sqm · ${room.amenities.join(', ')} · ${room.statusTag}',
+                    '${room.floorLabel.isEmpty ? '' : '${room.floorLabel} · '}${room.sizeSqm.toStringAsFixed(0)} sqm · ${room.amenities.join(', ')} · ${room.statusTag}',
                     style: const TextStyle(
                       color: OasisColors.muted,
                       fontSize: 12,
                     ),
+                  ),
+                  const SizedBox(height: 14),
+                  _UpfrontSummary(
+                    upfront: room.upfrontTotal,
+                    monthly: room.monthlyRent,
                   ),
                   const DashedDivider(verticalGap: 18),
                   if (loggedIn) ...[
@@ -145,22 +142,7 @@ class _RoomBookingScreenState extends State<RoomBookingScreen> {
                     ),
                     const SizedBox(height: 14),
                   ] else ...[
-                    TextField(
-                      controller: _fullName,
-                      decoration: const InputDecoration(hintText: 'Full name'),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(hintText: 'Email'),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _phone,
-                      keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(hintText: 'Phone'),
-                    ),
+                    AccountIdentityFields(controllers: _account),
                     const SizedBox(height: 14),
                   ],
                   InkWell(
@@ -185,19 +167,7 @@ class _RoomBookingScreenState extends State<RoomBookingScreen> {
                   ),
                   if (!loggedIn) ...[
                     const SizedBox(height: 14),
-                    TextField(
-                      controller: _password,
-                      obscureText: true,
-                      decoration: const InputDecoration(hintText: 'Password'),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _confirm,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Confirm password',
-                      ),
-                    ),
+                    AccountPasswordFields(controllers: _account),
                   ],
                   if (_error != null) ...[
                     const SizedBox(height: 12),
@@ -222,6 +192,74 @@ class _RoomBookingScreenState extends State<RoomBookingScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+/// "Pay today to book" — the 3-month upfront total, made hard to miss, with
+/// the ongoing monthly rent beside it (mirrors the website's breakdown box).
+class _UpfrontSummary extends StatelessWidget {
+  final double upfront;
+  final double monthly;
+  const _UpfrontSummary({required this.upfront, required this.monthly});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: OasisColors.gold, width: 2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            color: OasisColors.green,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+            child: Column(
+              children: [
+                const Text(
+                  'PAY TODAY TO BOOK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                Text(
+                  formatPeso(upfront),
+                  style: const TextStyle(
+                    color: OasisColors.gold,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Text(
+                  '1 month advance + 1 month deposit + security deposit',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            color: OasisColors.sand,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Then, monthly rent'),
+                Text(
+                  '${formatPeso(monthly)} / month',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

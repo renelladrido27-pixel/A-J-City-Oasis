@@ -43,6 +43,10 @@ class BookingController extends Controller
         if ($existingUser) {
             abort_unless($existingUser->isTenant(), 403, 'Only tenants can book rooms.');
 
+            if (! $existingUser->hasVerifiedEmail()) {
+                return response()->json(['message' => 'Verify your email address to continue.', 'code' => 'email_unverified'], 403);
+            }
+
             $validated = $request->validate([
                 'move_in_date' => ['nullable', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
             ]);
@@ -61,38 +65,17 @@ class BookingController extends Controller
             ], 201);
         }
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        // New visitor: create the account first. The room isn't reserved until
+        // they've entered the emailed code — the app then calls this endpoint
+        // again, authenticated, and takes the branch above.
+        $user = AuthController::createTenant($request, [
             'move_in_date' => ['nullable', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
         ]);
-
-        try {
-            [$user, $booking] = DB::transaction(function () use ($validated, $room) {
-                $user = User::create([
-                    'name' => $validated['name'],
-                    'email' => $validated['email'],
-                    'phone' => $validated['phone'] ?? null,
-                    'password' => Hash::make($validated['password']),
-                    'role' => 'tenant',
-                ]);
-
-                $booking = $this->bookings->createBooking($user, $room, $validated['move_in_date'] ?? null);
-
-                return [$user, $booking];
-            });
-        } catch (PaymentGatewayException $e) {
-            return response()->json(['message' => $e->getMessage()], 502);
-        }
-
-        $booking->load(['room.property', 'payments']);
 
         return response()->json([
             'token' => $user->createToken('mobile')->plainTextToken,
             'user' => UserResource::make($user),
-            'booking' => BookingResource::make($booking),
+            'verification_required' => true,
         ], 201);
     }
 

@@ -137,7 +137,7 @@
         <div class="d-flex flex-wrap gap-4 py-3 mb-4 border-bottom">
             <div class="text-center">
                 <i class="bi bi-layers fs-4 text-oasis d-block mb-1"></i>
-                <span class="small text-muted">Floor {{ $room->floor }}</span>
+                <span class="small text-muted">{{ $room->floorLabel() }}</span>
             </div>
             <div class="text-center">
                 <i class="bi bi-door-closed fs-4 text-oasis d-block mb-1"></i>
@@ -185,16 +185,7 @@
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm sticky-top" style="top: 1rem;">
             <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="fs-4 fw-semibold">₱{{ number_format($room->monthly_rate, 2) }}</span>
-                    <span class="text-muted small">/ month</span>
-                </div>
-
-                <dl class="row mb-3 small">
-                    <dt class="col-7 fw-normal text-muted">Upfront payment</dt>
-                    <dd class="col-5 text-end fw-semibold">₱{{ number_format($room->monthly_rate * 3, 2) }}</dd>
-                    <dd class="col-12 text-muted mb-0">Advance + Deposit + Security (3 months)</dd>
-                </dl>
+                @include('partials.upfront-breakdown', ['room' => $room])
 
                 @if ($room->isVacant())
                     @auth

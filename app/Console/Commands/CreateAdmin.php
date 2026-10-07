@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Support\AccountRules;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -17,7 +18,9 @@ class CreateAdmin extends Command
 {
     protected $signature = 'app:create-admin
                             {email : Login email for the account}
-                            {--name= : Display name (asked if omitted)}
+                            {--first-name= : First name (asked if omitted)}
+                            {--middle-name= : Middle name (optional)}
+                            {--last-name= : Surname (asked if omitted)}
                             {--role=admin : admin or staff}';
 
     protected $description = 'Create an admin/staff account, or reset its password if it already exists';
@@ -40,8 +43,10 @@ class CreateAdmin extends Command
             return self::FAILURE;
         }
 
-        $name = $this->option('name') ?: ($existing?->name ?? $this->ask('Full name'));
-        $password = $this->secret('Password (min. 8 characters)');
+        $firstName = $this->option('first-name') ?: ($existing?->first_name ?? $this->ask('First name'));
+        $middleName = $this->option('middle-name') ?: $existing?->middle_name;
+        $lastName = $this->option('last-name') ?: ($existing?->last_name ?? $this->ask('Surname'));
+        $password = $this->secret('Password (min. 8 characters, with upper/lower case, a number and a symbol)');
 
         if ($password !== $this->secret('Confirm password')) {
             $this->error('Passwords do not match.');
@@ -50,8 +55,9 @@ class CreateAdmin extends Command
         }
 
         $validator = Validator::make(
-            ['email' => $email, 'name' => $name, 'password' => $password],
-            ['email' => ['required', 'email'], 'name' => ['required', 'string', 'max:255'], 'password' => ['required', Password::min(8)]],
+            ['email' => $email, 'first_name' => $firstName, 'middle_name' => $middleName, 'last_name' => $lastName, 'password' => $password],
+            ['email' => ['required', 'email'], ...AccountRules::name(), 'password' => ['required', Password::defaults()]],
+            AccountRules::messages(),
         );
 
         if ($validator->fails()) {
@@ -64,7 +70,16 @@ class CreateAdmin extends Command
 
         User::updateOrCreate(
             ['email' => $email],
-            ['name' => $name, 'password' => $password, 'role' => $role, 'is_active' => true],
+            [
+                'first_name' => $firstName,
+                'middle_name' => $middleName,
+                'last_name' => $lastName,
+                'password' => $password,
+                'role' => $role,
+                'is_active' => true,
+                // Created by whoever runs the server — no emailed code needed.
+                'email_verified_at' => now(),
+            ],
         );
 
         $this->info(($existing ? 'Updated' : 'Created')." {$role} account {$email}.");

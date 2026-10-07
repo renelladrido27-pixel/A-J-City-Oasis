@@ -127,16 +127,16 @@ class MaintenanceRequestTest extends TestCase
         $this->assertNull($request->resolved_at);
         $this->assertDatabaseHas('notifications', [
             'user_id' => $request->tenant_id,
-            'message' => 'Your Plumbing request is now in progress.',
+            'title' => 'Maintenance request updated',
         ]);
     }
 
-    public function test_completing_a_request_records_when_it_was_resolved(): void
+    public function test_resolving_a_request_records_when_it_was_resolved(): void
     {
         $request = $this->requestFor(Lease::factory()->create());
 
         $this->actingAs(User::factory()->staff()->create())
-            ->put(route('staff.maintenance.update', $request), ['status' => 'completed'])
+            ->put(route('staff.maintenance.update', $request), ['status' => 'resolved'])
             ->assertRedirect();
 
         $this->assertNotNull($request->fresh()->resolved_at);
@@ -147,7 +147,7 @@ class MaintenanceRequestTest extends TestCase
         $request = $this->requestFor(Lease::factory()->create());
 
         $this->actingAs($request->tenant)
-            ->put(route('admin.maintenance-requests.update', $request), ['status' => 'completed'])
+            ->put(route('admin.maintenance-requests.update', $request), ['status' => 'resolved'])
             ->assertForbidden();
 
         $this->assertSame('pending', $request->fresh()->status);

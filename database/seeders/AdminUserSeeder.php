@@ -21,20 +21,28 @@ class AdminUserSeeder extends Seeder
             return;
         }
 
+        // `name` is set explicitly: DatabaseSeeder runs WithoutModelEvents, so
+        // the User model's saving hook that normally combines it doesn't fire.
         User::create([
             'name' => 'Jose Valle',
+            'first_name' => 'Jose',
+            'last_name' => 'Valle',
             'email' => 'admin@ajoasis.test',
             'password' => Hash::make('password'),
             'role' => 'admin',
             'phone' => null,
+            'email_verified_at' => now(),
         ]);
 
         User::create([
             'name' => 'Caretaker Staff',
+            'first_name' => 'Caretaker',
+            'last_name' => 'Staff',
             'email' => 'staff@ajoasis.test',
             'password' => Hash::make('password'),
             'role' => 'staff',
             'phone' => null,
+            'email_verified_at' => now(),
         ]);
     }
 }

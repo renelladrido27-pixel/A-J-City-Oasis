@@ -19,7 +19,7 @@ class MaintenanceRequestController extends Controller
     {
         $requests = match (true) {
             $request->user()->isAdmin(), $request->user()->isStaff() => MaintenanceRequest::with(['tenant', 'room', 'assignee'])->latest()->paginate(25),
-            default => MaintenanceRequest::where('tenant_id', $request->user()->id)->with('room')->latest()->paginate(25),
+            default => MaintenanceRequest::where('tenant_id', $request->user()->id)->with(['room', 'assignee'])->latest()->paginate(25),
         };
 
         $activeLease = $request->user()->isTenant()
@@ -78,22 +78,39 @@ class MaintenanceRequestController extends Controller
         $this->authorize('update', $maintenanceRequest);
 
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['pending', 'in_progress', 'completed', 'cancelled'])],
-            'assigned_to' => ['nullable', 'exists:users,id'],
+            'status' => ['required', Rule::in(MaintenanceRequest::STATUSES)],
+            // Only staff/admin accounts do maintenance work.
+            'assigned_to' => ['nullable', Rule::exists('users', 'id')->whereIn('role', ['admin', 'staff'])],
             'scheduled_date' => ['nullable', 'date'],
         ]);
 
+        $previousAssignee = $maintenanceRequest->assigned_to;
+
         $maintenanceRequest->update([
             ...$validated,
-            'resolved_at' => $validated['status'] === 'completed' ? now() : $maintenanceRequest->resolved_at,
+            'resolved_at' => $validated['status'] === 'resolved' ? ($maintenanceRequest->resolved_at ?? now()) : null,
         ]);
+        $maintenanceRequest->load('assignee');
 
-        $this->notifications->notify(
-            $maintenanceRequest->tenant,
-            'Maintenance request updated',
-            "Your {$maintenanceRequest->category} request is now ".str_replace('_', ' ', $validated['status']).'.',
-            'maintenance',
-        );
+        // Tell the tenant who is handling it and when, not just the status.
+        $message = "Your {$maintenanceRequest->category} request is now ".str_replace('_', ' ', $validated['status']).'.';
+        if ($maintenanceRequest->assignee && in_array($validated['status'], ['pending', 'in_progress'], true)) {
+            $message .= " Assigned to {$maintenanceRequest->assignee->name}";
+            $message .= $maintenanceRequest->scheduled_date ? ', scheduled for '.$maintenanceRequest->scheduled_date->format('M d, Y').'.' : '.';
+        }
+
+        $this->notifications->notify($maintenanceRequest->tenant, 'Maintenance request updated', $message, 'maintenance');
+
+        // Tell the staff member a job was just handed to them.
+        if ($maintenanceRequest->assignee && $maintenanceRequest->assigned_to !== $previousAssignee && $maintenanceRequest->assigned_to !== $request->user()->id) {
+            $this->notifications->notify(
+                $maintenanceRequest->assignee,
+                'Maintenance job assigned to you',
+                "{$maintenanceRequest->category} in Room {$maintenanceRequest->room->room_number}"
+                    .($maintenanceRequest->scheduled_date ? ', scheduled for '.$maintenanceRequest->scheduled_date->format('M d, Y') : '').'.',
+                'maintenance',
+            );
+        }
 
         return back()->with('status', 'Maintenance request updated.');
     }

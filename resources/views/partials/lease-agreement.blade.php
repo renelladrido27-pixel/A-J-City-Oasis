@@ -16,7 +16,7 @@
 
     <p><strong>1. Parties.</strong> This agreement is between A &amp; J OASIS, a sole proprietorship owned and operated by Jose Valle ("the Owner"), and <strong>{{ $tenantName }}</strong> ("the Tenant"), for the rental unit described below.</p>
 
-    <p><strong>2. Premises.</strong> Room {{ $room->room_number }}, {{ $room->property->name }}{{ $room->floor ? ', Floor '.$room->floor : '' }}.</p>
+    <p><strong>2. Premises.</strong> Room {{ $room->room_number }}, {{ $room->property->name }}{{ $room->floor ? ', '.$room->floorLabel() : '' }}.</p>
 
     <p><strong>3. Rent.</strong> The monthly rental rate for this unit is <strong>₱{{ number_format($monthly, 2) }}</strong>. Billing begins on {{ $startLabel }}, regardless of the date the Tenant physically moves in.</p>
 

@@ -10,6 +10,9 @@ class MaintenanceRequest extends Model
 {
     use HasFactory;
 
+    /** A finished request is "resolved" (it records resolved_at). */
+    public const STATUSES = ['pending', 'in_progress', 'resolved', 'cancelled'];
+
     protected $fillable = [
         'lease_id',
         'tenant_id',

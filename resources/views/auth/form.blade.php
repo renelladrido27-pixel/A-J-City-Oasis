@@ -70,11 +70,23 @@
             </div>
             <p class="field-error text-center" id="avatarError" style="margin-top: -.75rem;">@error('photo'){{ $message }}@enderror</p>
 
-            <div class="field-float {{ $errors->has('name') ? 'is-invalid' : '' }}">
-                <input type="text" name="name" id="signup-name" placeholder=" " value="{{ old('name') }}" required>
-                <label for="signup-name">Full name</label>
+            <div class="field-float {{ $errors->has('first_name') ? 'is-invalid' : '' }}">
+                <input type="text" name="first_name" id="signup-first-name" placeholder=" " value="{{ old('first_name') }}" autocomplete="given-name" required>
+                <label for="signup-first-name">First name</label>
             </div>
-            @error('name')<p class="field-error">{{ $message }}</p>@enderror
+            @error('first_name')<p class="field-error">{{ $message }}</p>@enderror
+
+            <div class="field-float {{ $errors->has('middle_name') ? 'is-invalid' : '' }}">
+                <input type="text" name="middle_name" id="signup-middle-name" placeholder=" " value="{{ old('middle_name') }}" autocomplete="additional-name">
+                <label for="signup-middle-name">Middle name (optional)</label>
+            </div>
+            @error('middle_name')<p class="field-error">{{ $message }}</p>@enderror
+
+            <div class="field-float {{ $errors->has('last_name') ? 'is-invalid' : '' }}">
+                <input type="text" name="last_name" id="signup-last-name" placeholder=" " value="{{ old('last_name') }}" autocomplete="family-name" required>
+                <label for="signup-last-name">Surname</label>
+            </div>
+            @error('last_name')<p class="field-error">{{ $message }}</p>@enderror
 
             <div class="field-float {{ $errors->has('email') && $activeTab === 'signup' ? 'is-invalid' : '' }}">
                 <input type="email" name="email" id="signup-email" placeholder=" " value="{{ old('email') }}" required>
@@ -85,8 +97,9 @@
             @endif
 
             <div class="field-float {{ $errors->has('phone') ? 'is-invalid' : '' }}">
-                <input type="text" name="phone" id="signup-phone" placeholder=" " value="{{ old('phone') }}">
-                <label for="signup-phone">Phone (optional)</label>
+                <input type="tel" name="phone" id="signup-phone" placeholder=" " value="{{ old('phone') }}" inputmode="tel" autocomplete="tel"
+                       pattern="(09|\+639)[0-9]{9}" maxlength="13" title="Philippine mobile number, e.g. 09171234567" required>
+                <label for="signup-phone">Mobile number (09XXXXXXXXX)</label>
             </div>
             @error('phone')<p class="field-error">{{ $message }}</p>@enderror
 
@@ -96,6 +109,7 @@
                 <button type="button" class="pw-toggle" data-pw-toggle><i class="bi bi-eye"></i></button>
             </div>
             @error('password')<p class="field-error">{{ $message }}</p>@enderror
+            @include('partials.password-rules', ['for' => 'signup-password'])
 
             <div class="field-float pw-wrap">
                 <input type="password" name="password_confirmation" id="signup-password-confirmation" placeholder=" " required>

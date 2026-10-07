@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Floor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +36,14 @@ class Room extends Model
     public function property(): BelongsTo
     {
         return $this->belongsTo(Property::class);
+    }
+
+    /**
+     * "First Floor", "Second Floor"… — how the floor is shown everywhere.
+     */
+    public function floorLabel(): string
+    {
+        return Floor::label($this->floor);
     }
 
     public function bookings(): HasMany

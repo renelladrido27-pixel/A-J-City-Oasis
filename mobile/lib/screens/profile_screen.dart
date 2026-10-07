@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../utils/account_validators.dart';
 import '../widgets/oasis_button.dart';
+import 'verify_email_screen.dart';
 
 /// C10 - Profile.
 class ProfileScreen extends StatefulWidget {
@@ -14,8 +16,14 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final _fullName = TextEditingController(
-    text: AppStateScope.of(context).profile?.fullName ?? '',
+  late final _firstName = TextEditingController(
+    text: AppStateScope.of(context).profile?.firstName ?? '',
+  );
+  late final _middleName = TextEditingController(
+    text: AppStateScope.of(context).profile?.middleName ?? '',
+  );
+  late final _lastName = TextEditingController(
+    text: AppStateScope.of(context).profile?.lastName ?? '',
   );
   late final _email = TextEditingController(
     text: AppStateScope.of(context).profile?.email ?? '',
@@ -28,7 +36,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
-    _fullName.dispose();
+    _firstName.dispose();
+    _middleName.dispose();
+    _lastName.dispose();
     _email.dispose();
     _phone.dispose();
     _password.dispose();
@@ -36,13 +46,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _save() async {
+    final problem =
+        validateName(_firstName.text, 'first name') ??
+        validateName(_middleName.text, 'middle name', required: false) ??
+        validateName(_lastName.text, 'surname') ??
+        validatePhone(_phone.text);
+    if (problem != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(problem)));
+      return;
+    }
+
     setState(() => _saving = true);
     try {
-      await AppStateScope.of(context).updateProfile(
-        fullName: _fullName.text.trim(),
+      final app = AppStateScope.of(context);
+      await app.updateProfile(
+        firstName: _firstName.text.trim(),
+        middleName: _middleName.text.trim(),
+        lastName: _lastName.text.trim(),
         email: _email.text.trim(),
-        phone: _phone.text.trim(),
+        phone: normalizePhone(_phone.text),
       );
+      // A changed email has to be confirmed with a new code.
+      if (mounted && app.needsEmailVerification) {
+        await VerifyEmailScreen.ensureVerified(context);
+      }
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -102,8 +131,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           TextField(
-            controller: _fullName,
-            decoration: const InputDecoration(hintText: 'Full name'),
+            controller: _firstName,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(hintText: 'First name'),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _middleName,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              hintText: 'Middle name (optional)',
+            ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _lastName,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(hintText: 'Surname'),
           ),
           const SizedBox(height: 14),
           TextField(
@@ -115,7 +159,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(hintText: 'Phone'),
+            decoration: const InputDecoration(
+              hintText: 'Mobile number (09XXXXXXXXX)',
+            ),
           ),
           const SizedBox(height: 14),
           TextField(

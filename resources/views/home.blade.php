@@ -205,9 +205,9 @@
                                             <h3 class="h6 fw-bold mb-0">Room {{ $room->room_number }}</h3>
                                             <span class="badge text-bg-success">Vacant</span>
                                         </div>
-                                        <p class="text-muted small mb-2">{{ $room->property->name }} &middot; Floor {{ $room->floor }}</p>
+                                        <p class="text-muted small mb-2">{{ $room->property->name }} &middot; {{ $room->floorLabel() }}</p>
                                         <p class="fw-semibold text-oasis mb-1">₱{{ number_format($room->monthly_rate, 2) }} <span class="fw-normal text-muted small">/ month</span></p>
-                                        <p class="text-muted mb-0" style="font-size: .75rem;"><i class="bi bi-info-circle me-1"></i>3-month upfront payment required</p>
+                                        <p class="mb-0"><span class="badge rounded-pill" style="background: var(--oasis-gold, #c9963e); color: var(--oasis-ink, #1f2d27); font-size: .75rem;">₱{{ number_format($room->monthly_rate * 3, 2) }} to book</span> <span class="text-muted" style="font-size: .75rem;">3 months upfront</span></p>
                                     </div>
                                 </div>
                             </a>

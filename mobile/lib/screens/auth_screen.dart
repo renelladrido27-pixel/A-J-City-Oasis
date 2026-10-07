@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
+import '../utils/account_validators.dart';
+import '../widgets/account_fields.dart';
 import '../widgets/oasis_button.dart';
+import 'verify_email_screen.dart';
 
 /// C2 - Log in / Sign up. Full-screen, no bottom nav (matches wireframe).
 class AuthScreen extends StatefulWidget {
@@ -16,31 +19,29 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   late bool _isLogin = widget.initialTabLogin;
-  final _name = TextEditingController();
+  // Log in uses its own two fields; Sign up uses the shared account form.
   final _email = TextEditingController();
-  final _phone = TextEditingController();
   final _password = TextEditingController();
+  final _account = AccountFormControllers();
   String? _error;
   bool _submitting = false;
 
   @override
   void dispose() {
-    _name.dispose();
     _email.dispose();
-    _phone.dispose();
     _password.dispose();
+    _account.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (_email.text.trim().isEmpty ||
-        _password.text.isEmpty ||
-        (!_isLogin && _name.text.trim().isEmpty)) {
-      setState(
-        () => _error = _isLogin
-            ? 'Enter your email and password.'
-            : 'Enter your name, email, and password.',
-      );
+    final problem = _isLogin
+        ? (_email.text.trim().isEmpty || _password.text.isEmpty
+              ? 'Enter your email and password.'
+              : null)
+        : _account.validate();
+    if (problem != null) {
+      setState(() => _error = problem);
       return;
     }
     setState(() {
@@ -53,12 +54,16 @@ class _AuthScreenState extends State<AuthScreen> {
         await app.login(_email.text.trim(), _password.text);
       } else {
         await app.signUp(
-          name: _name.text.trim(),
-          email: _email.text.trim(),
-          phone: _phone.text.trim(),
-          password: _password.text,
+          firstName: _account.firstName.text.trim(),
+          middleName: _account.middleName.text.trim(),
+          lastName: _account.lastName.text.trim(),
+          email: _account.email.text.trim(),
+          phone: normalizePhone(_account.phone.text),
+          password: _account.password.text,
         );
       }
+      // New accounts (and unverified ones logging back in) enter their emailed code first.
+      if (mounted) await VerifyEmailScreen.ensureVerified(context);
       if (mounted) Navigator.of(context).pop();
     } on ApiException catch (e) {
       setState(() => _error = e.message);
@@ -113,32 +118,23 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              if (!_isLogin) ...[
+              if (_isLogin) ...[
                 TextField(
-                  controller: _name,
-                  decoration: const InputDecoration(hintText: 'Full name'),
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(hintText: 'Email'),
                 ),
                 const SizedBox(height: 16),
-              ],
-              TextField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(hintText: 'Email'),
-              ),
-              const SizedBox(height: 16),
-              if (!_isLogin) ...[
                 TextField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(hintText: 'Phone'),
+                  controller: _password,
+                  obscureText: true,
+                  decoration: const InputDecoration(hintText: 'Password'),
                 ),
-                const SizedBox(height: 16),
+              ] else ...[
+                AccountIdentityFields(controllers: _account),
+                const SizedBox(height: 14),
+                AccountPasswordFields(controllers: _account),
               ],
-              TextField(
-                controller: _password,
-                obscureText: true,
-                decoration: const InputDecoration(hintText: 'Password'),
-              ),
               if (_isLogin) ...[
                 const SizedBox(height: 10),
                 Align(

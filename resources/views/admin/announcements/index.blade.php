@@ -41,7 +41,12 @@
             </div>
             <div class="mb-3 audience-field" data-audience="floor">
                 <label class="form-label">Floor</label>
-                <input type="number" name="floor" class="form-control @error('floor') is-invalid @enderror" min="1" value="{{ old('floor') }}">
+                <select name="floor" class="form-select @error('floor') is-invalid @enderror">
+                    <option value="">Select a floor</option>
+                    @foreach (\App\Support\Floor::options() as $number => $label)
+                        <option value="{{ $number }}" @selected((int) old('floor') === $number)>{{ $label }}</option>
+                    @endforeach
+                </select>
                 @error('floor')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3 audience-field" data-audience="tenant">

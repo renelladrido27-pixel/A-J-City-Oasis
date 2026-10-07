@@ -13,7 +13,11 @@ class RoomResource extends JsonResource
             'id' => $this->id,
             'number' => $this->room_number,
             'property' => $this->whenLoaded('property', fn () => $this->property->name),
+            'floor' => $this->floor,
+            'floor_label' => $this->floorLabel(),
             'monthly_rate' => (float) $this->monthly_rate,
+            // Due on booking: advance + deposit + security deposit (3 months).
+            'upfront_total' => (float) $this->monthly_rate * 3,
             'size_sqm' => $this->size_sqm !== null ? (float) $this->size_sqm : null,
             'description' => $this->description,
             'amenities' => $this->inclusions ?? [],

@@ -24,7 +24,11 @@
             <div class="row g-3 mb-3">
                 <div class="col">
                     <label class="form-label">Floor</label>
-                    <input type="number" name="floor" class="form-control" value="{{ old('floor', 1) }}" min="1" required>
+                    <select name="floor" class="form-select @error('floor') is-invalid @enderror" required>
+                        @foreach (\App\Support\Floor::options(max(10, (int) old('floor', 1))) as $number => $label)
+                            <option value="{{ $number }}" @selected((int) old('floor', 1) === $number)>{{ $label }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="col">
                     <label class="form-label">Type</label>
