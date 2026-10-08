@@ -8,7 +8,8 @@ import '../utils/format.dart';
 import '../widgets/oasis_button.dart';
 import 'root_shell.dart';
 
-/// C4 - Cost breakdown + payment method ("Pay ₱total"). No bottom nav.
+/// C4 - Cost breakdown, then straight to the checkout page (where the tenant
+/// picks GCash, Maya, card or bank). No bottom nav.
 class BookingPaymentScreen extends StatefulWidget {
   const BookingPaymentScreen({super.key});
 
@@ -18,7 +19,6 @@ class BookingPaymentScreen extends StatefulWidget {
 
 class _BookingPaymentScreenState extends State<BookingPaymentScreen>
     with WidgetsBindingObserver {
-  String _method = 'GCash';
   bool _submitting = false;
   bool _awaitingCheckout = false;
   String? _error;
@@ -53,7 +53,7 @@ class _BookingPaymentScreenState extends State<BookingPaymentScreen>
     });
     final app = AppStateScope.of(context);
     try {
-      final result = await app.completeBookingPayment(_method);
+      final result = await app.completeBookingPayment();
       if (!mounted) return;
       if (result['status'] == 'paid') {
         Navigator.of(context).pushAndRemoveUntil(
@@ -178,31 +178,6 @@ class _BookingPaymentScreenState extends State<BookingPaymentScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Payment method',
-                    style: TextStyle(
-                      color: OasisColors.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 2.6,
-                    children: [
-                      for (final m in const ['GCash', 'Maya', 'Card', 'Bank'])
-                        _MethodButton(
-                          label: m,
-                          selected: _method == m,
-                          onTap: () => setState(() => _method = m),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
                   if (_error != null) ...[
                     Text(
                       _error!,
@@ -213,8 +188,14 @@ class _BookingPaymentScreenState extends State<BookingPaymentScreen>
                     ),
                     const SizedBox(height: 12),
                   ],
+                  const Text(
+                    'You will choose GCash, Maya, card or bank on the next page.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: OasisColors.muted),
+                  ),
+                  const SizedBox(height: 10),
                   OasisButton(
-                    label: 'Pay ${formatPeso(booking.totalAmount)}',
+                    label: 'Proceed to payment',
                     onPressed: _submitting ? null : _pay,
                   ),
                   if (_awaitingCheckout) ...[
@@ -260,37 +241,6 @@ class _CostLine extends StatelessWidget {
         Text(label, style: style),
         Text(formatPeso(amount), style: style),
       ],
-    );
-  }
-}
-
-class _MethodButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _MethodButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: OasisColors.border,
-            width: selected ? 2 : 1.4,
-          ),
-          color: selected ? const Color(0xFFE9E7DE) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-      ),
     );
   }
 }

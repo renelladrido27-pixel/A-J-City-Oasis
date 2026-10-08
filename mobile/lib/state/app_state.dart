@@ -146,7 +146,7 @@ class AppState extends ChangeNotifier {
 
   /// Returns the raw API result so the screen can react to 'paid' vs.
   /// 'redirect' (real Xendit checkout needs to open invoice_url).
-  Future<Map<String, dynamic>> completeBookingPayment(String method) async {
+  Future<Map<String, dynamic>> completeBookingPayment() async {
     final booking = currentBooking;
     if (booking == null) return {'status': 'error'};
 
@@ -253,6 +253,59 @@ class AppState extends ChangeNotifier {
     notifications = (res['notifications'] as List)
         .map((e) => AppNotification.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  int get unreadNotificationCount =>
+      notifications.where((n) => !n.isRead).length;
+
+  /// Quiet background check for the Alerts tab (the website gets these pushed
+  /// live; the app asks every so often instead). Returns the notifications
+  /// that weren't there before, newest first, so the shell can announce them.
+  Future<List<AppNotification>> pollNotifications() async {
+    if (!isLoggedIn || needsEmailVerification) return const [];
+    final known = notifications.map((n) => n.id).toSet();
+    try {
+      await _loadNotifications();
+    } catch (_) {
+      return const [];
+    }
+    notifyListeners();
+    return notifications
+        .where((n) => !known.contains(n.id) && !n.isRead)
+        .toList();
+  }
+
+  /// Marks one notification read/unread. The list changes straight away and
+  /// is put back if the server refuses.
+  Future<void> setNotificationRead(AppNotification n, bool read) async {
+    if (n.isRead == read) return;
+    _replaceNotification(n.copyWith(isRead: read));
+    try {
+      await _api.post('/notifications/${n.id}/${read ? 'read' : 'unread'}');
+    } catch (_) {
+      _replaceNotification(n);
+      rethrow;
+    }
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    final before = notifications;
+    notifications = [for (final n in before) n.copyWith(isRead: true)];
+    notifyListeners();
+    try {
+      await _api.post('/notifications/mark-all-read');
+    } catch (_) {
+      notifications = before;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  void _replaceNotification(AppNotification updated) {
+    notifications = [
+      for (final n in notifications) n.id == updated.id ? updated : n,
+    ];
+    notifyListeners();
   }
 
   Future<void> _loadAnnouncements() async {

@@ -11,6 +11,7 @@ use App\Services\PaymentCompletionService;
 use App\Services\XenditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PaymentController extends Controller
@@ -61,13 +62,35 @@ class PaymentController extends Controller
 
         $dueDate = now()->addMonth()->startOfMonth();
 
-        Payment::create([
-            'lease_id' => $lease->id,
-            'type' => 'rent',
-            'amount' => $lease->room->monthly_rate,
-            'due_date' => $dueDate,
-            'status' => 'pending',
-        ]);
+        // One rent bill per lease per month. The lease row is locked so a double
+        // click (two requests at once) can't both pass the "already billed?" check.
+        $created = DB::transaction(function () use ($lease, $dueDate) {
+            Lease::whereKey($lease->id)->lockForUpdate()->first();
+
+            $alreadyBilled = Payment::where('lease_id', $lease->id)
+                ->where('type', 'rent')
+                ->whereYear('due_date', $dueDate->year)
+                ->whereMonth('due_date', $dueDate->month)
+                ->exists();
+
+            if ($alreadyBilled) {
+                return false;
+            }
+
+            Payment::create([
+                'lease_id' => $lease->id,
+                'type' => 'rent',
+                'amount' => $lease->room->monthly_rate,
+                'due_date' => $dueDate,
+                'status' => 'pending',
+            ]);
+
+            return true;
+        });
+
+        if (! $created) {
+            return back()->withErrors(['rent' => 'Rent for '.$dueDate->format('F Y').' was already generated for this lease.']);
+        }
 
         return back()->with('status', 'Rent payment generated for '.$dueDate->format('F Y').'.');
     }

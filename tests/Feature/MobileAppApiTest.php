@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Lease;
+use App\Models\Notification;
 use App\Models\Room;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -104,6 +105,28 @@ class MobileAppApiTest extends TestCase
 
         $this->get('/download-app')->assertRedirect(asset('storage/app/AJ-City-Oasis-1.0.1.apk'));
         $this->get('/')->assertOk()->assertSee('Get the Android app');
+    }
+
+    public function test_a_tenant_can_mark_one_notification_read_and_unread(): void
+    {
+        $user = User::factory()->create();
+        $notification = Notification::create(['user_id' => $user->id, 'title' => 'Rent due', 'message' => 'Your rent is due.', 'type' => 'payment']);
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/notifications/{$notification->id}/read")->assertOk()->assertJsonPath('notification.is_read', true);
+        $this->assertNotNull($notification->fresh()->read_at);
+
+        $this->postJson("/api/notifications/{$notification->id}/unread")->assertOk()->assertJsonPath('notification.is_read', false);
+        $this->assertNull($notification->fresh()->read_at);
+    }
+
+    public function test_a_tenant_cannot_touch_someone_elses_notification(): void
+    {
+        $notification = Notification::create(['user_id' => User::factory()->create()->id, 'title' => 'Private', 'message' => 'Not yours.', 'type' => 'payment']);
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson("/api/notifications/{$notification->id}/read")->assertForbidden();
+        $this->assertNull($notification->fresh()->read_at);
     }
 
     public function test_a_version_file_pointing_at_a_missing_apk_is_ignored(): void

@@ -28,7 +28,7 @@
             <div class="d-flex gap-2 mt-3 pt-3 border-top">
                 <form method="POST" action="{{ route('admin.leases.generate-rent', $lease) }}">
                     @csrf
-                    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-cash-coin me-1"></i>Generate Next Month's Rent</button>
+                    <button class="btn btn-sm btn-outline-primary" data-loading-text="Generating…"><i class="bi bi-cash-coin me-1"></i>Generate Next Month's Rent</button>
                 </form>
                 <a href="{{ route('admin.utility-bills.create', $lease) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-lightning-charge me-1"></i>Encode Utility Bill</a>
             </div>

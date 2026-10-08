@@ -5,6 +5,8 @@ import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
+import '../models/payment_record.dart';
+import '../widgets/notification_card.dart' show ListEntrance;
 import '../widgets/oasis_button.dart';
 
 /// C6 - My Payments.
@@ -171,12 +173,13 @@ class _MyPaymentsScreenState extends State<MyPaymentsScreen>
               ),
             ),
             const SizedBox(height: 10),
-            for (final p in app.paymentHistory)
+            for (final (i, p) in app.paymentHistory.indexed)
               Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '· ${p.monthLabel} — ${p.status}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                key: ValueKey(p.id),
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ListEntrance(
+                  index: i,
+                  child: _HistoryRow(payment: p),
                 ),
               ),
             if (app.paymentHistory.isEmpty)
@@ -186,6 +189,61 @@ class _MyPaymentsScreenState extends State<MyPaymentsScreen>
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One paid bill: what it was for, when it was paid, how much.
+class _HistoryRow extends StatelessWidget {
+  final PaymentRecord payment;
+  const _HistoryRow({required this.payment});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = payment;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: OasisColors.hairline),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: const BoxDecoration(
+              color: OasisColors.unreadTint,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check, size: 18, color: OasisColors.green),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${p.typeLabel} · ${p.monthLabel}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  'Paid ${formatShortDate(p.paidOn.toLocal())}',
+                  style: const TextStyle(
+                    color: OasisColors.muted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            formatPeso(p.amount),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ],
       ),
     );
   }

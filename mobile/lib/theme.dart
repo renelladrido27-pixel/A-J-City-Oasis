@@ -12,6 +12,9 @@ class OasisColors {
   static const border = Color(0xFF1F2D27);
   static const muted = Color(0xFF6B7A72);
   static const placeholderGrey = Color(0xFFB9C0BC);
+  static const hairline = Color(0xFFE3E1D9);
+  // Background of an unread notification (the website's bg-primary-subtle).
+  static const unreadTint = Color(0xFFEAF3EE);
 }
 
 ThemeData buildOasisTheme() {

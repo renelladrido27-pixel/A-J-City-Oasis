@@ -28,6 +28,24 @@ class NotificationController extends Controller
         return response()->json(['notifications' => NotificationResource::collection($query->get())]);
     }
 
+    public function markRead(Request $request, Notification $notification): JsonResponse
+    {
+        abort_unless($notification->user_id === $request->user()->id, 403);
+
+        $notification->update(['read_at' => $notification->read_at ?? now()]);
+
+        return response()->json(['notification' => new NotificationResource($notification)]);
+    }
+
+    public function markUnread(Request $request, Notification $notification): JsonResponse
+    {
+        abort_unless($notification->user_id === $request->user()->id, 403);
+
+        $notification->update(['read_at' => null]);
+
+        return response()->json(['notification' => new NotificationResource($notification)]);
+    }
+
     public function markAllRead(Request $request): JsonResponse
     {
         Notification::where('user_id', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);

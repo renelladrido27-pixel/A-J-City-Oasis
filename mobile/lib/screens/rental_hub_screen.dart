@@ -5,7 +5,7 @@ import 'maintenance_screen.dart';
 import 'my_rental_screen.dart';
 import 'request_transfer_screen.dart';
 
-enum _RentalSection { myRental, transfer, maintenance }
+enum RentalSection { myRental, transfer, maintenance }
 
 /// Groups C5 (My Rental), C7 (Request Transfer), and C8 (Maintenance) under
 /// the shared "Rental" bottom-nav tab. The wireframes don't show how a tenant
@@ -13,14 +13,21 @@ enum _RentalSection { myRental, transfer, maintenance }
 /// here purely for navigation — the screen bodies below are otherwise a
 /// direct match of each wireframe.
 class RentalHubScreen extends StatefulWidget {
-  const RentalHubScreen({super.key});
+  /// Which of the three to show first (e.g. Maintenance, when arriving from
+  /// a maintenance notification).
+  final RentalSection initialSection;
+
+  const RentalHubScreen({
+    super.key,
+    this.initialSection = RentalSection.myRental,
+  });
 
   @override
   State<RentalHubScreen> createState() => _RentalHubScreenState();
 }
 
 class _RentalHubScreenState extends State<RentalHubScreen> {
-  _RentalSection _section = _RentalSection.myRental;
+  late RentalSection _section = widget.initialSection;
 
   @override
   Widget build(BuildContext context) {
@@ -34,32 +41,32 @@ class _RentalHubScreenState extends State<RentalHubScreen> {
               _SegButton(
                 icon: Icons.meeting_room_outlined,
                 tooltip: 'My Rental',
-                selected: _section == _RentalSection.myRental,
-                onTap: () => setState(() => _section = _RentalSection.myRental),
+                selected: _section == RentalSection.myRental,
+                onTap: () => setState(() => _section = RentalSection.myRental),
               ),
               const SizedBox(width: 10),
               _SegButton(
                 icon: Icons.swap_horiz,
                 tooltip: 'Transfer',
-                selected: _section == _RentalSection.transfer,
-                onTap: () => setState(() => _section = _RentalSection.transfer),
+                selected: _section == RentalSection.transfer,
+                onTap: () => setState(() => _section = RentalSection.transfer),
               ),
               const SizedBox(width: 10),
               _SegButton(
                 icon: Icons.build_outlined,
                 tooltip: 'Maintenance',
-                selected: _section == _RentalSection.maintenance,
+                selected: _section == RentalSection.maintenance,
                 onTap: () =>
-                    setState(() => _section = _RentalSection.maintenance),
+                    setState(() => _section = RentalSection.maintenance),
               ),
             ],
           ),
         ),
         Expanded(
           child: switch (_section) {
-            _RentalSection.myRental => const MyRentalScreen(),
-            _RentalSection.transfer => const RequestTransferScreen(),
-            _RentalSection.maintenance => const MaintenanceScreen(),
+            RentalSection.myRental => const MyRentalScreen(),
+            RentalSection.transfer => const RequestTransferScreen(),
+            RentalSection.maintenance => const MaintenanceScreen(),
           },
         ),
       ],

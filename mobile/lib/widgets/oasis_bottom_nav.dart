@@ -10,10 +10,14 @@ class OasisBottomNav extends StatelessWidget {
   final OasisTab current;
   final ValueChanged<OasisTab> onSelect;
 
+  /// Unread notifications, shown as a badge on the Alerts tab.
+  final int alertsBadge;
+
   const OasisBottomNav({
     super.key,
     required this.current,
     required this.onSelect,
+    this.alertsBadge = 0,
   });
 
   @override
@@ -43,12 +47,19 @@ class OasisBottomNav extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          item.$2,
-                          size: 22,
-                          color: current == item.$1
-                              ? OasisColors.green
-                              : OasisColors.muted,
+                        Badge(
+                          isLabelVisible:
+                              item.$1 == OasisTab.alerts && alertsBadge > 0,
+                          label: Text(alertsBadge > 9 ? '9+' : '$alertsBadge'),
+                          backgroundColor: OasisColors.gold,
+                          textColor: OasisColors.ink,
+                          child: Icon(
+                            item.$2,
+                            size: 22,
+                            color: current == item.$1
+                                ? OasisColors.green
+                                : OasisColors.muted,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
