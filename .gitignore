@@ -25,3 +25,6 @@ Thumbs.db
 /.claude
 CLAUDE.md
 /release
+
+# Local layout screenshots (SHOTS=1 flutter test)
+mobile/test/zz_shots/

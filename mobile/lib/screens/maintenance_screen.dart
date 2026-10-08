@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/oasis_button.dart';
+import '../widgets/oasis_ui.dart';
 
 const _issueTypes = [
   'Plumbing',
@@ -130,7 +131,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
       color: OasisColors.green,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -167,36 +168,71 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 padding: EdgeInsets.only(top: 12),
                 child: Center(child: CircularProgressIndicator()),
               ),
-            const SizedBox(height: 24),
-            for (final r in app.maintenanceRequests)
+            if (app.maintenanceRequests.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              const SectionLabel('YOUR REQUESTS'),
+              const SizedBox(height: 10),
+            ],
+            for (final (i, r) in app.maintenanceRequests.indexed)
               Padding(
+                key: ValueKey(r.id),
                 padding: const EdgeInsets.only(bottom: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '- ${r.issueType} — ${r.status}',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 12, top: 2),
-                      child: Text(
-                        r.assignedName == null
-                            ? 'Not yet assigned'
-                            : [
-                                'Assigned to ${r.assignedName}',
-                                if ((r.assignedPhone ?? '').isNotEmpty)
-                                  r.assignedPhone!,
-                                if (r.scheduledDate != null)
-                                  'Scheduled ${formatShortDate(r.scheduledDate!)}',
-                              ].join(' · '),
-                        style: const TextStyle(
-                          color: OasisColors.muted,
-                          fontSize: 12,
+                child: ListEntrance(
+                  index: i,
+                  child: OasisCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const IconBadge(Icons.build_outlined, size: 36),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      r.issueType,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  StatusChip.forStatus(r.status),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                r.description,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                r.assignedName == null
+                                    ? 'Not yet assigned'
+                                    : [
+                                        'Assigned to ${r.assignedName}',
+                                        if ((r.assignedPhone ?? '').isNotEmpty)
+                                          r.assignedPhone!,
+                                        if (r.scheduledDate != null)
+                                          'Scheduled ${formatShortDate(r.scheduledDate!)}',
+                                      ].join(' · '),
+                                style: const TextStyle(
+                                  color: OasisColors.muted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
           ],

@@ -26,9 +26,9 @@ class OasisButton extends StatelessWidget {
               onPressed: onPressed,
               style: OutlinedButton.styleFrom(
                 foregroundColor: OasisColors.ink,
-                side: const BorderSide(color: OasisColors.border, width: 1.4),
+                side: const BorderSide(color: OasisColors.placeholderGrey),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: Text(
@@ -49,7 +49,7 @@ class OasisButton extends StatelessWidget {
                 ),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: Text(

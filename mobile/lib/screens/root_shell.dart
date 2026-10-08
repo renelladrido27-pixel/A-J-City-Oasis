@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/notification_card.dart';
 import '../widgets/oasis_bottom_nav.dart';
+import '../widgets/oasis_ui.dart';
 import 'auth_screen.dart';
 import 'landing_screen.dart';
 import 'my_payments_screen.dart';
@@ -178,14 +179,26 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
 
     final body = switch (effectiveTab) {
       OasisTab.home => const LandingScreen(),
-      OasisTab.rental => RentalHubScreen(initialSection: _rentalSection),
+      OasisTab.rental => RentalHubScreen(
+        initialSection: _rentalSection,
+        onPayNow: () => setState(() => _tab = OasisTab.pay),
+      ),
       OasisTab.pay => const MyPaymentsScreen(),
       OasisTab.alerts => NotificationsScreen(onOpen: _openNotification),
       OasisTab.profile => const ProfileScreen(),
     };
 
     return Scaffold(
-      body: SafeArea(bottom: false, child: body),
+      body: SafeArea(
+        bottom: false,
+        // Tabs cross-fade into each other instead of snapping.
+        child: FadeThrough(
+          child: KeyedSubtree(
+            key: ValueKey((effectiveTab, _rentalSection)),
+            child: body,
+          ),
+        ),
+      ),
       bottomNavigationBar: OasisBottomNav(
         current: effectiveTab,
         onSelect: _selectTab,

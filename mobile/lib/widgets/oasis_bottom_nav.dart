@@ -32,7 +32,7 @@ class OasisBottomNav extends StatelessWidget {
     return DecoratedBox(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: OasisColors.ink, width: 1.4)),
+        border: Border(top: BorderSide(color: OasisColors.hairline)),
       ),
       child: SafeArea(
         top: false,

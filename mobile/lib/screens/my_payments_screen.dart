@@ -6,7 +6,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../models/payment_record.dart';
-import '../widgets/notification_card.dart' show ListEntrance;
+import '../widgets/oasis_ui.dart';
 import '../widgets/oasis_button.dart';
 
 /// C6 - My Payments.
@@ -111,16 +111,17 @@ class _MyPaymentsScreenState extends State<MyPaymentsScreen>
       color: OasisColors.green,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: OasisColors.placeholderGrey),
-                borderRadius: BorderRadius.circular(6),
-              ),
+            const Text(
+              'Payments',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            OasisCard(
+              highlighted: hasDue,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -165,13 +166,7 @@ class _MyPaymentsScreenState extends State<MyPaymentsScreen>
                 child: Center(child: CircularProgressIndicator()),
               ),
             const SizedBox(height: 28),
-            const Text(
-              'History',
-              style: TextStyle(
-                color: OasisColors.muted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            const SectionLabel('HISTORY'),
             const SizedBox(height: 10),
             for (final (i, p) in app.paymentHistory.indexed)
               Padding(

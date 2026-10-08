@@ -6,7 +6,6 @@ import '../theme.dart';
 import '../utils/account_validators.dart';
 import '../utils/format.dart';
 import '../widgets/account_fields.dart';
-import '../widgets/dashed_divider.dart';
 import '../widgets/oasis_button.dart';
 import '../widgets/room_photo.dart';
 import 'booking_payment_screen.dart';
@@ -128,7 +127,7 @@ class _RoomBookingScreenState extends State<RoomBookingScreen> {
                     upfront: room.upfrontTotal,
                     monthly: room.monthlyRent,
                   ),
-                  const DashedDivider(verticalGap: 18),
+                  const Divider(height: 36),
                   if (loggedIn) ...[
                     Text(
                       'Booking as ${app.profile?.fullName ?? 'your account'}',

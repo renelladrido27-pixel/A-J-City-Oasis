@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/oasis_button.dart';
+import '../widgets/oasis_ui.dart';
 
 /// C7 - Request Transfer (user-initiated only).
 class RequestTransferScreen extends StatefulWidget {
@@ -33,63 +34,156 @@ class _RequestTransferScreenState extends State<RequestTransferScreen> {
       color: OasisColors.green,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: OasisColors.border, width: 1.4),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text(
-                'User-initiated only',
-                style: TextStyle(fontWeight: FontWeight.w600),
+            const OasisCard(
+              child: Row(
+                children: [
+                  IconBadge(Icons.info_outline),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Pick a room to move to. The admin reviews every '
+                      'request; any difference in deposit is settled on '
+                      'approval.',
+                      style: TextStyle(fontSize: 13, height: 1.35),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            for (final room in app.transferableRooms) ...[
-              Container(
-                padding: const EdgeInsets.all(14),
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  border: Border.all(color: OasisColors.placeholderGrey),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      '${room.label} · ${formatPeso(room.monthlyRent)}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 10),
-                    OasisButton(
-                      label: 'Request transfer',
-                      outlined: true,
-                      onPressed: () => _openReasonSheet(context, room),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (app.transferableRooms.isEmpty)
-              const Text(
-                'No other rooms available right now.',
-                style: TextStyle(color: OasisColors.muted),
-              ),
             if (app.transferRequests.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              for (final t in app.transferRequests)
+              const SizedBox(height: 20),
+              const SectionLabel('YOUR REQUESTS'),
+              const SizedBox(height: 10),
+              for (final (i, t) in app.transferRequests.indexed)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    '${t.fromRoomLabel} → ${t.toRoomLabel} · ${t.status}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  key: ValueKey('request-${t.id}'),
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: ListEntrance(
+                    index: i,
+                    child: OasisCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          const IconBadge(Icons.swap_horiz, size: 36),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      t.fromRoomLabel,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                      ),
+                                      child: Icon(
+                                        Icons.arrow_forward,
+                                        size: 15,
+                                        color: OasisColors.muted,
+                                      ),
+                                    ),
+                                    Flexible(
+                                      child: Text(
+                                        t.toRoomLabel,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  'Requested ${formatShortDate(t.requestedAt.toLocal())}',
+                                  style: const TextStyle(
+                                    color: OasisColors.muted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          StatusChip.forStatus(t.status),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
             ],
+            const SizedBox(height: 20),
+            const SectionLabel('ROOMS YOU CAN MOVE TO'),
+            const SizedBox(height: 10),
+            for (final (i, room) in app.transferableRooms.indexed)
+              Padding(
+                key: ValueKey('room-${room.id}'),
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ListEntrance(
+                  index: i,
+                  child: OasisCard(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                    child: Row(
+                      children: [
+                        const IconBadge(Icons.bed_outlined, size: 36),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Room ${room.number}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                [
+                                  if (room.floorLabel.isNotEmpty)
+                                    room.floorLabel,
+                                  '${formatPeso(room.monthlyRent)} / month',
+                                ].join(' · '),
+                                style: const TextStyle(
+                                  color: OasisColors.muted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        FilledButton(
+                          onPressed: () => _openReasonSheet(context, room),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: OasisColors.green,
+                            foregroundColor: Colors.white,
+                            visualDensity: VisualDensity.compact,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Request'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (app.transferableRooms.isEmpty)
+              const EmptyState(
+                icon: Icons.bed_outlined,
+                message: 'No other rooms available right now.',
+              ),
           ],
         ),
       ),

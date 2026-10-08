@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/room.dart';
 import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
+import '../widgets/oasis_ui.dart';
 import '../widgets/room_photo.dart';
 import 'auth_screen.dart';
 import 'room_booking_screen.dart';
@@ -29,26 +31,37 @@ class _LandingScreenState extends State<LandingScreen> {
   }
 
   Future<void> _load() async {
+    final app = AppStateScope.of(context);
     setState(() {
-      _loading = true;
+      // Coming back to Home with the rooms already in memory: show them at
+      // once and refresh quietly, instead of flashing the loading state.
+      _loading = app.availableRooms.isEmpty;
       _error = null;
     });
     try {
-      await AppStateScope.of(context).loadRooms();
+      await app.loadRooms();
       if (mounted) setState(() => _loading = false);
     } on ApiException catch (e) {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = e.message;
+          _error = app.availableRooms.isEmpty ? e.message : null;
         });
       }
     }
   }
 
+  void _book(Room room) {
+    AppStateScope.of(context).startBooking(room);
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const RoomBookingScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = AppStateScope.of(context);
+    final rooms = app.availableRooms;
     return RefreshIndicator(
       onRefresh: _load,
       color: OasisColors.green,
@@ -56,93 +69,125 @@ class _LandingScreenState extends State<LandingScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            LandingHeader(
-              showAuthButtons: !app.isLoggedIn,
-              onLogIn: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const AuthScreen(initialTabLogin: true),
+            ListEntrance(
+              index: 0,
+              child: LandingHeader(
+                showAuthButtons: !app.isLoggedIn,
+                onLogIn: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AuthScreen(initialTabLogin: true),
+                  ),
                 ),
-              ),
-              onSignUp: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const AuthScreen(initialTabLogin: false),
+                onSignUp: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AuthScreen(initialTabLogin: false),
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            _Hero(availableRooms: _loading ? null : app.availableRooms.length),
+            ListEntrance(
+              index: 1,
+              child: _Hero(availableRooms: _loading ? null : rooms.length),
+            ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Available rooms',
-                  style: TextStyle(
-                    color: OasisColors.muted,
-                    fontWeight: FontWeight.w600,
-                  ),
+            ListEntrance(
+              index: 2,
+              child: SectionLabel(
+                'AVAILABLE ROOMS',
+                trailing: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: _loading || rooms.isEmpty
+                      ? const SizedBox.shrink()
+                      : StatusChip(
+                          '${rooms.length} open',
+                          key: ValueKey(rooms.length),
+                          tone: ChipTone.success,
+                        ),
                 ),
-                const Icon(
-                  Icons.arrow_forward,
-                  size: 18,
-                  color: OasisColors.muted,
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 12),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_error != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _error!,
-                    style: const TextStyle(color: Colors.redAccent),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton(onPressed: _load, child: const Text('Retry')),
-                ],
-              )
-            else
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: app.availableRooms.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 14,
-                  crossAxisSpacing: 14,
-                  childAspectRatio: 0.95,
-                ),
-                itemBuilder: (context, i) {
-                  final room = app.availableRooms[i];
-                  return _RoomCard(
-                    room: room,
-                    onTap: () {
-                      app.startBooking(room);
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const RoomBookingScreen(),
+            // Cross-fades from the loading placeholders to the real cards.
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              child: _loading
+                  ? const _RoomGrid(
+                      key: ValueKey('loading'),
+                      count: 4,
+                      builder: _skeletonCard,
+                    )
+                  : _error != null
+                  ? OasisCard(
+                      key: const ValueKey('error'),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _error!,
+                            style: const TextStyle(color: Colors.redAccent),
+                          ),
+                          const SizedBox(height: 4),
+                          TextButton.icon(
+                            onPressed: _load,
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Try again'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : rooms.isEmpty
+                  ? const EmptyState(
+                      key: ValueKey('empty'),
+                      icon: Icons.bed_outlined,
+                      message: 'All rooms are taken right now.',
+                      hint: 'Pull down to check again.',
+                    )
+                  : _RoomGrid(
+                      key: const ValueKey('rooms'),
+                      count: rooms.length,
+                      builder: (i) => ListEntrance(
+                        index: i,
+                        child: _RoomCard(
+                          room: rooms[i],
+                          onTap: () => _book(rooms[i]),
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
-            const SizedBox(height: 24),
-            const Text(
-              'About · Contact · Location',
-              style: TextStyle(color: OasisColors.muted),
+                      ),
+                    ),
             ),
+            const SizedBox(height: 24),
+            const ListEntrance(index: 3, child: _ContactCard()),
           ],
         ),
       ),
+    );
+  }
+}
+
+Widget _skeletonCard(int _) => const Skeleton();
+
+/// Two-column grid inside the page's own scroll view.
+class _RoomGrid extends StatelessWidget {
+  final int count;
+  final Widget Function(int index) builder;
+  const _RoomGrid({super.key, required this.count, required this.builder});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: count,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        mainAxisExtent: 214,
+      ),
+      itemBuilder: (context, i) => builder(i),
     );
   }
 }
@@ -154,36 +199,138 @@ class _RoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return OasisCard(
+      padding: EdgeInsets.zero,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: OasisColors.border, width: 1.4),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        padding: const EdgeInsets.all(6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: RoomPhoto(
-                  url: room.images.isEmpty ? null : room.images.first,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: RoomPhoto(
+              url: room.images.isEmpty ? null : room.images.first,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Room ${room.number}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (room.floorLabel.isNotEmpty)
+                  Text(
+                    room.floorLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: OasisColors.muted,
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: formatPeso(room.monthlyRent),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: OasisColors.green,
+                          ),
+                        ),
+                        const TextSpan(
+                          text: ' / month',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: OasisColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Where the place is and how to reach it — the website's contact section.
+class _ContactCard extends StatelessWidget {
+  const _ContactCard();
+
+  static const _email = 'ajoasis.system@gmail.com';
+
+  @override
+  Widget build(BuildContext context) {
+    return OasisCard(
+      child: Column(
+        children: [
+          const Row(
+            children: [
+              IconBadge(Icons.place_outlined),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Find us in Koronadal City',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      'South Cotabato · walk-throughs by appointment',
+                      style: TextStyle(color: OasisColors.muted, fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
+            ],
+          ),
+          const Divider(height: 24),
+          InkWell(
+            onTap: () => launchUrl(Uri.parse('mailto:$_email')),
+            child: const Row(
+              children: [
+                IconBadge(Icons.mail_outline),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Email us',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        _email,
+                        style: TextStyle(
+                          color: OasisColors.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: OasisColors.muted),
+              ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              '${room.label} · ${formatPeso(room.monthlyRent)}/mo',
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -198,16 +345,28 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rooms = availableRooms;
+    final line = rooms == null
+        ? 'Transparent pricing and secure online payments.'
+        : rooms == 0
+        ? 'All rooms are taken right now — check back soon.'
+        : '$rooms ${rooms == 1 ? 'room' : 'rooms'} available now · pay securely online';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [OasisColors.green, OasisColors.greenDark],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: OasisColors.green.withValues(alpha: 0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,13 +397,17 @@ class _Hero extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            rooms == null
-                ? 'Transparent pricing and secure online payments.'
-                : rooms == 0
-                ? 'All rooms are taken right now — check back soon.'
-                : '$rooms ${rooms == 1 ? 'room' : 'rooms'} available now · pay securely online',
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.topLeft,
+              children: [...previous, ?current],
+            ),
+            child: Text(
+              line,
+              key: ValueKey(line),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+            ),
           ),
         ],
       ),
@@ -276,7 +439,7 @@ class LandingHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(10),
     );
     final logIn = OutlinedButton(
       onPressed: onLogIn,
@@ -286,7 +449,7 @@ class LandingHeader extends StatelessWidget {
         minimumSize: _compact.minimumSize,
         padding: _compact.padding,
         foregroundColor: OasisColors.ink,
-        side: const BorderSide(color: OasisColors.border),
+        side: const BorderSide(color: OasisColors.placeholderGrey),
         shape: shape,
       ),
       child: const Text('Log in', maxLines: 1, softWrap: false),

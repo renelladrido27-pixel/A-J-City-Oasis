@@ -27,3 +27,7 @@ const _monthNames = [
 
 String formatShortDate(DateTime date) =>
     '${_monthNames[date.month]} ${date.day}';
+
+/// "Nov 1, 2026"
+String formatLongDate(DateTime date) =>
+    '${_monthNames[date.month]} ${date.day}, ${date.year}';

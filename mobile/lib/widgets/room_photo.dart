@@ -68,7 +68,15 @@ class RoomPhotoPlaceholder extends StatelessWidget {
 class RoomGallery extends StatefulWidget {
   final List<String> images;
   final double height;
-  const RoomGallery({super.key, required this.images, this.height = 190});
+
+  /// Corner rounding; 0 when the gallery sits flush inside a card.
+  final double radius;
+  const RoomGallery({
+    super.key,
+    required this.images,
+    this.height = 190,
+    this.radius = 10,
+  });
 
   @override
   State<RoomGallery> createState() => _RoomGalleryState();
@@ -81,7 +89,7 @@ class _RoomGalleryState extends State<RoomGallery> {
   Widget build(BuildContext context) {
     final images = widget.images;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(widget.radius),
       child: SizedBox(
         height: widget.height,
         child: images.isEmpty

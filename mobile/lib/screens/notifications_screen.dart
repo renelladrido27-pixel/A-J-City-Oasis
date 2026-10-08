@@ -7,6 +7,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/notification_card.dart';
+import '../widgets/oasis_ui.dart';
 
 /// C9 - Notifications. Works the way the website's notifications page does:
 /// a category filter, "Mark all as read", and per notification View / Mark as
@@ -145,21 +146,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                for (final (i, f) in _filters.indexed) ...[
-                  if (i > 0) const SizedBox(width: 8),
-                  _FilterPill(
-                    label: f.label,
-                    selected: _filter == f.key,
-                    onTap: () => setState(() => _filter = f.key),
-                  ),
-                ],
-              ],
-            ),
+          PillRow(
+            pills: [
+              for (final f in _filters)
+                OasisPill(
+                  label: f.label,
+                  selected: _filter == f.key,
+                  onTap: () => setState(() => _filter = f.key),
+                ),
+            ],
           ),
           const SizedBox(height: 16),
           Padding(
@@ -186,7 +181,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (items.isEmpty) {
       final label = _filters.firstWhere((f) => f.key == _filter).label;
       return [
-        _EmptyState(
+        EmptyState(
           icon: Icons.notifications_none,
           message: _filter == 'all'
               ? 'No notifications yet.'
@@ -215,7 +210,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<Widget> _announcementRows(List<Announcement> announcements) {
     if (announcements.isEmpty) {
       return const [
-        _EmptyState(
+        EmptyState(
           icon: Icons.campaign_outlined,
           message: 'No announcements yet.',
         ),
@@ -312,71 +307,6 @@ class _AnnouncementCard extends StatelessWidget {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterPill extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _FilterPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? OasisColors.green : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? OasisColors.green : OasisColors.placeholderGrey,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : OasisColors.ink,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  const _EmptyState({required this.icon, required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
-              color: OasisColors.sand,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 30, color: OasisColors.muted),
-          ),
-          const SizedBox(height: 12),
-          Text(message, style: const TextStyle(color: OasisColors.muted)),
         ],
       ),
     );
