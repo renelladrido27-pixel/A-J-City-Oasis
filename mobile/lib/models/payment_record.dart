@@ -6,6 +6,7 @@ class PaymentRecord {
   final String monthLabel;
   final double amount;
   final String status;
+  final DateTime dueDate;
   final DateTime paidOn;
 
   const PaymentRecord({
@@ -14,8 +15,12 @@ class PaymentRecord {
     required this.monthLabel,
     required this.amount,
     required this.status,
+    required this.dueDate,
     required this.paidOn,
   });
+
+  /// Still owed: not yet paid, including bills flagged overdue.
+  bool get isUnpaid => status == 'Pending' || status == 'Overdue';
 
   factory PaymentRecord.fromJson(Map<String, dynamic> json) {
     final dueDate =
@@ -26,6 +31,7 @@ class PaymentRecord {
       monthLabel: _monthName(dueDate),
       amount: (json['amount'] as num).toDouble(),
       status: _titleCase(json['status'] as String),
+      dueDate: dueDate,
       paidOn: DateTime.tryParse(json['paid_at']?.toString() ?? '') ?? dueDate,
     );
   }

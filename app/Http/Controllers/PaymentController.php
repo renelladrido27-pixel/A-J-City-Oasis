@@ -8,10 +8,10 @@ use App\Models\Payment;
 use App\Services\NotificationService;
 use App\Services\PaymentCheckoutService;
 use App\Services\PaymentCompletionService;
+use App\Services\RentBillingService;
 use App\Services\XenditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PaymentController extends Controller
@@ -36,7 +36,7 @@ class PaymentController extends Controller
         $nextDueDate = null;
 
         if ($request->user()->isTenant()) {
-            $pending = Payment::where('status', 'pending')->where(
+            $pending = Payment::whereIn('status', Payment::UNPAID)->where(
                 fn ($q) => $q->whereHas('lease', fn ($q2) => $q2->where('tenant_id', $request->user()->id))
                     ->orWhereHas('booking', fn ($q2) => $q2->where('user_id', $request->user()->id))
             );
@@ -54,41 +54,17 @@ class PaymentController extends Controller
     }
 
     /**
-     * Admin manually generates the next rent payment for an active lease.
+     * Admin manually generates the next rent payment for an active lease
+     * (the daily app:generate-rent-bills job normally does this already).
      */
     public function generateRent(Lease $lease): RedirectResponse
     {
         abort_unless($lease->status === 'active', 422, 'Lease is not active.');
 
-        $dueDate = now()->addMonth()->startOfMonth();
+        $billing = app(RentBillingService::class);
+        $dueDate = $billing->nextDueDate();
 
-        // One rent bill per lease per month. The lease row is locked so a double
-        // click (two requests at once) can't both pass the "already billed?" check.
-        $created = DB::transaction(function () use ($lease, $dueDate) {
-            Lease::whereKey($lease->id)->lockForUpdate()->first();
-
-            $alreadyBilled = Payment::where('lease_id', $lease->id)
-                ->where('type', 'rent')
-                ->whereYear('due_date', $dueDate->year)
-                ->whereMonth('due_date', $dueDate->month)
-                ->exists();
-
-            if ($alreadyBilled) {
-                return false;
-            }
-
-            Payment::create([
-                'lease_id' => $lease->id,
-                'type' => 'rent',
-                'amount' => $lease->room->monthly_rate,
-                'due_date' => $dueDate,
-                'status' => 'pending',
-            ]);
-
-            return true;
-        });
-
-        if (! $created) {
+        if (! $billing->billNextMonth($lease)) {
             return back()->withErrors(['rent' => 'Rent for '.$dueDate->format('F Y').' was already generated for this lease.']);
         }
 
@@ -103,7 +79,7 @@ class PaymentController extends Controller
      */
     public function recordManual(Payment $payment): RedirectResponse
     {
-        abort_unless($payment->status === 'pending', 422, 'This payment is not payable.');
+        abort_unless($payment->isPayable(), 422, 'This payment is not payable.');
 
         $this->completion->complete($payment);
 
@@ -118,7 +94,7 @@ class PaymentController extends Controller
         $tenant = $payment->lease?->tenant ?? $payment->booking?->tenant;
 
         abort_unless($tenant && $tenant->id === auth()->id(), 403);
-        abort_unless($payment->status === 'pending', 422, 'This payment is not payable.');
+        abort_unless($payment->isPayable(), 422, 'This payment is not payable.');
 
         try {
             return redirect()->away(app(PaymentCheckoutService::class)->checkoutUrl($payment, $tenant->email));
@@ -211,7 +187,7 @@ class PaymentController extends Controller
 
         $invoiceId = $this->xendit->resumableInvoiceId($payment->xendit_invoice_id);
 
-        if ($payment->status === 'pending' && $invoiceId) {
+        if ($payment->isPayable() && $invoiceId) {
             try {
                 $invoice = $this->xendit->getInvoice($invoiceId);
 

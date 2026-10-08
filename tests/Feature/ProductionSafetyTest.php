@@ -83,7 +83,7 @@ class ProductionSafetyTest extends TestCase
         $events = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events());
 
         $this->assertEqualsCanonicalizing(
-            ['expire-stale-bookings', 'check-overdue-payments', 'scheduler-heartbeat'],
+            ['expire-stale-bookings', 'check-overdue-payments', 'generate-rent-bills', 'send-payment-reminders', 'scheduler-heartbeat'],
             $events->pluck('description')->all(),
         );
         $events->each(fn ($event) => $this->assertInstanceOf(\Illuminate\Console\Scheduling\CallbackEvent::class, $event));

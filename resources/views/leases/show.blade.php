@@ -53,7 +53,7 @@
                     @forelse ($lease->payments as $payment)
                         @php
                             $displayStatus = match (true) {
-                                $payment->status === 'pending' && $payment->isOverdue() => 'overdue',
+                                $payment->isOverdue() => 'overdue',
                                 $payment->status === 'pending' && $payment->isWithinGracePeriod() => 'grace_period',
                                 default => $payment->status,
                             };
@@ -64,7 +64,7 @@
                             <td>{{ $payment->due_date->format('M d, Y') }}</td>
                             <td><x-status-badge :status="$displayStatus" /></td>
                             <td>
-                                @if (! auth()->user()->isAdmin() && $payment->status === 'pending')
+                                @if (! auth()->user()->isAdmin() && $payment->isPayable())
                                     <form method="POST" action="{{ route('payments.pay', $payment) }}" class="d-inline">
                                         @csrf
                                         <button class="btn btn-sm btn-success" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Pay</button>
@@ -76,7 +76,7 @@
                                         </form>
                                     @endif
                                 @endif
-                                @if (auth()->user()->isAdmin() && $payment->status === 'pending')
+                                @if (auth()->user()->isAdmin() && $payment->isPayable())
                                     <form method="POST" action="{{ route('admin.payments.record-manual', $payment) }}" class="d-inline" onsubmit="return confirm('Record this payment as paid via cash/walk-in? This cannot be undone.')">
                                         @csrf
                                         <button class="btn btn-sm btn-success"><i class="bi bi-cash-coin me-1"></i>Record Payment</button>
@@ -222,7 +222,7 @@
                     @if ($moveOut->balance_due > 0)
                         <dt class="col-sm-4 text-muted fw-normal">Balance Due</dt>
                         <dd class="col-sm-8 fw-semibold">₱{{ number_format($moveOut->balance_due, 2) }}
-                            @if (auth()->user()->isTenant() && $moveOut->balancePayment?->status === 'pending')
+                            @if (auth()->user()->isTenant() && $moveOut->balancePayment?->isPayable())
                                 <form method="POST" action="{{ route('payments.pay', $moveOut->balancePayment) }}" class="d-inline ms-2">
                                     @csrf
                                     <button class="btn btn-sm btn-success" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Pay</button>

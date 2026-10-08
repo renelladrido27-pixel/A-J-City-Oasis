@@ -35,6 +35,9 @@ class AppState extends ChangeNotifier {
 
   List<Room> availableRooms = [];
   List<PaymentRecord> paymentHistory = [];
+
+  /// Bills still owed, soonest due first.
+  List<PaymentRecord> unpaidPayments = [];
   double outstandingBalance = 0;
   DateTime? nextDueDate;
   int? nextDuePaymentId;
@@ -185,6 +188,7 @@ class AppState extends ChangeNotifier {
     profile = null;
     lease = null;
     paymentHistory = [];
+    unpaidPayments = [];
     outstandingBalance = 0;
     nextDueDate = null;
     nextDuePaymentId = null;
@@ -225,11 +229,17 @@ class AppState extends ChangeNotifier {
         ? null
         : DateTime.parse(res['next_due_date'] as String);
     nextDuePaymentId = res['next_due_payment_id'] as int?;
-    paymentHistory = (res['history'] as List)
+    final all = (res['history'] as List)
         .map((e) => PaymentRecord.fromJson(e as Map<String, dynamic>))
-        .where((p) => p.status == 'Paid')
         .toList();
+    paymentHistory = all.where((p) => p.status == 'Paid').toList();
+    unpaidPayments = all.where((p) => p.isUnpaid).toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
   }
+
+  /// The bill due soonest, if anything is owed.
+  PaymentRecord? get nextDuePayment =>
+      unpaidPayments.isEmpty ? null : unpaidPayments.first;
 
   Future<void> _loadMaintenanceRequests() async {
     final res = await _api.get('/maintenance-requests');
@@ -351,10 +361,9 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<Map<String, dynamic>> payOutstanding() async {
-    final id = nextDuePaymentId;
-    if (id == null) return {'status': 'error'};
-
+  /// Starts (or resumes) checkout for one bill. Returns the raw API result so
+  /// the screen can react to 'paid' vs. 'redirect' (open invoice_url).
+  Future<Map<String, dynamic>> payPayment(int id) async {
     final res = await _api.post('/payments/$id/pay');
     if (res['status'] == 'paid') {
       await _loadPayments();
@@ -363,10 +372,7 @@ class AppState extends ChangeNotifier {
     return res;
   }
 
-  Future<Map<String, dynamic>> checkOutstandingPaymentStatus() async {
-    final id = nextDuePaymentId;
-    if (id == null) return {'status': 'error'};
-
+  Future<Map<String, dynamic>> checkPaymentStatus(int id) async {
     final res = await _api.post('/payments/$id/check-status');
     if (res['status'] == 'paid') {
       await _loadPayments();

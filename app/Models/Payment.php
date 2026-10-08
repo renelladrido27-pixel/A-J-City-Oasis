@@ -18,6 +18,7 @@ class Payment extends Model
         'amount',
         'due_date',
         'paid_at',
+        'reminder_sent_at',
         'status',
         'xendit_invoice_id',
         'xendit_payment_id',
@@ -29,6 +30,7 @@ class Payment extends Model
             'amount' => 'decimal:2',
             'due_date' => 'date',
             'paid_at' => 'datetime',
+            'reminder_sent_at' => 'datetime',
         ];
     }
 
@@ -47,6 +49,18 @@ class Payment extends Model
         return $this->hasOne(UtilityBill::class);
     }
 
+    /**
+     * Statuses a tenant still owes. A bill the daily check has flagged
+     * "overdue" is owed just as much as a "pending" one — it must stay payable
+     * and stay in the outstanding balance.
+     */
+    public const UNPAID = ['pending', 'overdue'];
+
+    public function isPayable(): bool
+    {
+        return in_array($this->status, self::UNPAID, true);
+    }
+
     public function isWithinGracePeriod(): bool
     {
         return $this->status === 'pending'
@@ -56,8 +70,8 @@ class Payment extends Model
 
     public function isOverdue(): bool
     {
-        return $this->status === 'pending'
-            && now()->gte($this->due_date->copy()->addDays(30));
+        return $this->status === 'overdue'
+            || ($this->status === 'pending' && now()->gte($this->due_date->copy()->addDays(30)));
     }
 
     /**

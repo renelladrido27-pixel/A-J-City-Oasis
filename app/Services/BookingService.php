@@ -148,6 +148,14 @@ class BookingService
 
             app(MailService::class)->send($booking->tenant->email, new LeaseStartedMail($lease->fresh(['tenant', 'room.property'])));
 
+            // So the tenant's next payment shows straight away instead of
+            // after tonight's app:generate-rent-bills run.
+            $billing = app(RentBillingService::class);
+
+            if ($billing->shouldBillNextMonth($lease)) {
+                $billing->billNextMonth($lease);
+            }
+
             return $lease;
         });
     }

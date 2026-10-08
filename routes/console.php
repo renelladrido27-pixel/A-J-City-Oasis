@@ -21,6 +21,17 @@ Schedule::call(fn () => Artisan::call('app:check-overdue-payments'))
     ->daily()
     ->name('check-overdue-payments');
 
+// Next month's rent bill for every active lease, so tenants always see
+// their next payment without the admin generating it by hand.
+Schedule::call(fn () => Artisan::call('app:generate-rent-bills'))
+    ->daily()
+    ->name('generate-rent-bills');
+
+// "Your payment is due in a week" — in the morning, not at midnight.
+Schedule::call(fn () => Artisan::call('app:send-payment-reminders'))
+    ->dailyAt('08:00')
+    ->name('send-payment-reminders');
+
 // Lets `php artisan app:doctor` confirm the server's cron job is really running.
 Schedule::call(fn () => Cache::put('scheduler:heartbeat', now()->toDateTimeString(), now()->addDay()))
     ->everyMinute()

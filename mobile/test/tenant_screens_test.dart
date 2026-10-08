@@ -2,9 +2,13 @@ import 'dart:io';
 
 import 'package:ajoasis_mobile/models/lease.dart';
 import 'package:ajoasis_mobile/models/maintenance_request.dart';
+import 'package:ajoasis_mobile/models/payment_record.dart';
 import 'package:ajoasis_mobile/models/room.dart';
+import 'package:ajoasis_mobile/models/tenant_profile.dart';
 import 'package:ajoasis_mobile/models/transfer_request.dart';
 import 'package:ajoasis_mobile/screens/landing_screen.dart';
+import 'package:ajoasis_mobile/screens/my_payments_screen.dart';
+import 'package:ajoasis_mobile/screens/profile_screen.dart';
 import 'package:ajoasis_mobile/screens/rental_hub_screen.dart';
 import 'package:ajoasis_mobile/state/app_state.dart';
 import 'package:ajoasis_mobile/theme.dart';
@@ -110,6 +114,36 @@ AppState _tenant({double due = 3500}) => AppState()
   ..outstandingBalance = due
   ..nextDueDate = due > 0 ? DateTime(2026, 11, 1) : null
   ..nextDuePaymentId = due > 0 ? 4 : null;
+
+PaymentRecord _bill(
+  int id,
+  String type,
+  double amount, {
+  String status = 'Pending',
+  required DateTime due,
+}) => PaymentRecord(
+  id: id,
+  type: type,
+  monthLabel: const [
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ][due.month],
+  amount: amount,
+  status: status,
+  dueDate: due,
+  paidOn: due,
+);
 
 void main() {
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
@@ -258,6 +292,123 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await _pump(tester, _tenant(), const RentalHubScreen(), width: 320);
 
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Pay tab', () {
+    testWidgets('lists every bill still owed, each with its own Pay button', (
+      tester,
+    ) async {
+      final app = _tenant(due: 4320)
+        ..unpaidPayments = [
+          _bill(4, 'rent', 3500, due: DateTime(2026, 11, 1)),
+          _bill(5, 'utility', 820, due: DateTime(2026, 11, 5)),
+        ]
+        ..paymentHistory = [
+          _bill(2, 'rent', 3500, status: 'Paid', due: DateTime(2026, 10, 1)),
+        ];
+      await _pump(tester, app, const MyPaymentsScreen(), shot: 'pay');
+
+      expect(find.text('Outstanding balance'), findsOneWidget);
+      expect(find.text('₱4,320'), findsOneWidget);
+      expect(find.text('Next due Nov 1, 2026'), findsOneWidget);
+      expect(find.text('BILLS TO PAY'), findsOneWidget);
+      expect(find.text('Rent · Nov'), findsOneWidget);
+      expect(find.text('Utility · Nov'), findsOneWidget);
+      expect(find.text('Due Nov 5, 2026'), findsOneWidget);
+      expect(find.text('Pay now'), findsNWidgets(2));
+      expect(find.text('Rent · Oct'), findsOneWidget);
+      expect(find.text('Paid Oct 1, 2026'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('says so when nothing is owed', (tester) async {
+      await _pump(tester, _tenant(due: 0), const MyPaymentsScreen());
+
+      expect(find.text('You are all paid up.'), findsOneWidget);
+      expect(find.text('BILLS TO PAY'), findsNothing);
+      expect(find.text('Pay now'), findsNothing);
+      expect(find.text('No payments yet.'), findsOneWidget);
+    });
+
+    testWidgets('fits a small phone with a large system font', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final app = _tenant()
+        ..unpaidPayments = [
+          _bill(
+            4,
+            'transfer_adjustment',
+            12500,
+            status: 'Overdue',
+            due: DateTime(2026, 9, 1),
+          ),
+        ];
+      await _pump(tester, app, const MyPaymentsScreen(), width: 320);
+
+      expect(find.text('Overdue'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Profile tab', () {
+    AppState signedIn({bool verified = true}) =>
+        _tenant()
+          ..profile = TenantProfile(
+            fullName: 'Maria Santos Reyes',
+            firstName: 'Maria',
+            middleName: 'Santos',
+            lastName: 'Reyes',
+            email: 'maria@example.com',
+            phone: '09171234567',
+            emailVerified: verified,
+          );
+
+    testWidgets('shows who is signed in and their details in cards', (
+      tester,
+    ) async {
+      await _pump(tester, signedIn(), const ProfileScreen(), shot: 'profile');
+
+      expect(find.text('Maria Santos Reyes'), findsOneWidget);
+      expect(find.text('maria@example.com'), findsWidgets);
+      expect(find.text('Email verified'), findsOneWidget);
+      expect(find.text('PERSONAL DETAILS'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Maria'), findsOneWidget);
+      expect(find.widgetWithText(TextField, '09171234567'), findsOneWidget);
+      expect(find.text('Save changes'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('asks before logging out', (tester) async {
+      final app = signedIn();
+      await _pump(tester, app, const ProfileScreen());
+
+      await tester.scrollUntilVisible(
+        find.text('Log out'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Log out'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log out?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(app.isLoggedIn, isTrue);
+    });
+
+    testWidgets('fits a small phone with a large system font', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await _pump(
+        tester,
+        signedIn(verified: false),
+        const ProfileScreen(),
+        width: 320,
+      );
+
+      expect(find.text('Email not verified'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

@@ -39,6 +39,8 @@ class MyRentalScreen extends StatelessWidget {
               lease: lease,
               outstandingBalance: app.outstandingBalance,
               nextDueDate: app.nextDueDate,
+              nextDueAmount:
+                  app.nextDuePayment?.amount ?? app.outstandingBalance,
               onPayNow: onPayNow,
             ),
     );
@@ -49,11 +51,15 @@ class _LeaseDetail extends StatelessWidget {
   final Lease lease;
   final double outstandingBalance;
   final DateTime? nextDueDate;
+
+  /// The amount of the bill due on [nextDueDate].
+  final double nextDueAmount;
   final VoidCallback? onPayNow;
   const _LeaseDetail({
     required this.lease,
     required this.outstandingBalance,
     required this.nextDueDate,
+    required this.nextDueAmount,
     required this.onPayNow,
   });
 
@@ -162,7 +168,7 @@ class _LeaseDetail extends StatelessWidget {
                 ),
                 if (hasDue)
                   Text(
-                    formatPeso(outstandingBalance),
+                    formatPeso(nextDueAmount),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,

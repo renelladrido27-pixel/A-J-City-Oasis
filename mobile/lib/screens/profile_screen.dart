@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/account_validators.dart';
 import '../widgets/oasis_button.dart';
+import '../widgets/oasis_ui.dart';
 import 'verify_email_screen.dart';
 
 /// C10 - Profile.
@@ -187,184 +188,285 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _confirmLogout() async {
+    final app = AppStateScope.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text(
+          'You will need to sign in again to see your rental.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: OasisColors.green),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+    if (yes == true) await app.logout();
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = AppStateScope.of(context);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: _photoBusy ? null : _changePhoto,
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFE6ECE8),
-                          border: Border.all(
-                            color: OasisColors.border,
-                            width: 1.4,
-                          ),
+    final profile = app.profile;
+    final photoUrl = profile?.photoUrl;
+    const gap = SizedBox(height: 12);
+
+    final sections = <Widget>[
+      // Who is signed in.
+      OasisCard(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: _photoBusy ? null : _changePhoto,
+              child: Stack(
+                children: [
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFE6ECE8),
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: _photoBusy
-                            ? const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: OasisColors.green,
-                                ),
-                              )
-                            : app.profile?.photoUrl != null
-                            ? Image.network(
-                                app.profile!.photoUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => const Icon(
-                                  Icons.person_outline,
-                                  size: 42,
-                                  color: OasisColors.muted,
-                                ),
-                              )
-                            : const Icon(
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 260),
+                      child: _photoBusy
+                          ? const Center(
+                              key: ValueKey('busy'),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: OasisColors.green,
+                              ),
+                            )
+                          : photoUrl != null
+                          ? Image.network(
+                              photoUrl,
+                              key: ValueKey(photoUrl),
+                              width: 96,
+                              height: 96,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const Icon(
                                 Icons.person_outline,
                                 size: 42,
                                 color: OasisColors.muted,
                               ),
+                            )
+                          : const Icon(
+                              Icons.person_outline,
+                              key: ValueKey('none'),
+                              size: 42,
+                              color: OasisColors.muted,
+                            ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: OasisColors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: OasisColors.green,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.photo_camera,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ),
+                      child: const Icon(
+                        Icons.photo_camera,
+                        size: 15,
+                        color: Colors.white,
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  app.profile?.fullName ?? '',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
-                ),
-                TextButton(
-                  onPressed: _photoBusy ? null : _changePhoto,
-                  style: TextButton.styleFrom(
-                    foregroundColor: OasisColors.green,
-                  ),
-                  child: Text(
-                    app.profile?.photoUrl == null
-                        ? 'Add profile photo'
-                        : 'Change photo',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _firstName,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(hintText: 'First name'),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _middleName,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              hintText: 'Middle name (optional)',
-            ),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _lastName,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(hintText: 'Surname'),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _email,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(hintText: 'Email'),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _phone,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              hintText: 'Mobile number (09XXXXXXXXX)',
-            ),
-          ),
-          const SizedBox(height: 14),
-          const SizedBox(height: 6),
-          OasisButton(label: 'Save', onPressed: _saving ? null : _save),
-          const SizedBox(height: 28),
-          const Text(
-            'Change password',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _currentPassword,
-            obscureText: true,
-            decoration: const InputDecoration(hintText: 'Current password'),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _newPassword,
-            obscureText: true,
-            decoration: const InputDecoration(
-              hintText: 'New password',
-              helperText:
-                  '8+ characters with upper & lower case, a number and a symbol',
-              helperMaxLines: 2,
-            ),
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton(
-            onPressed: _saving ? null : _changePassword,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: OasisColors.green,
-              side: const BorderSide(color: OasisColors.green),
-              minimumSize: const Size.fromHeight(46),
-            ),
-            child: const Text('Change password'),
-          ),
-          if (_saving)
-            const Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          const SizedBox(height: 20),
-          InkWell(
-            onTap: () => app.logout(),
-            child: const Text(
-              'Log out',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                decoration: TextDecoration.underline,
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              profile?.fullName ?? '',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            ),
+            if ((profile?.email ?? '').isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                profile!.email,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: OasisColors.muted, fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: 8),
+            if (profile != null)
+              profile.emailVerified
+                  ? const StatusChip('Email verified', tone: ChipTone.success)
+                  : const StatusChip(
+                      'Email not verified',
+                      tone: ChipTone.warning,
+                    ),
+            TextButton.icon(
+              onPressed: _photoBusy ? null : _changePhoto,
+              icon: const Icon(Icons.photo_camera_outlined, size: 18),
+              label: Text(
+                photoUrl == null ? 'Add profile photo' : 'Change photo',
+              ),
+              style: TextButton.styleFrom(foregroundColor: OasisColors.green),
+            ),
+          ],
+        ),
       ),
+
+      const SectionLabel('PERSONAL DETAILS'),
+      OasisCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _firstName,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'First name'),
+            ),
+            gap,
+            TextField(
+              controller: _middleName,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Middle name (optional)',
+              ),
+            ),
+            gap,
+            TextField(
+              controller: _lastName,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Surname'),
+            ),
+            gap,
+            TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.mail_outline, size: 20),
+              ),
+            ),
+            gap,
+            TextField(
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Mobile number',
+                hintText: '09XXXXXXXXX',
+                prefixIcon: Icon(Icons.phone_outlined, size: 20),
+              ),
+            ),
+            const SizedBox(height: 16),
+            OasisButton(
+              label: _saving ? 'Saving…' : 'Save changes',
+              onPressed: _saving ? null : _save,
+            ),
+          ],
+        ),
+      ),
+
+      const SectionLabel('CHANGE PASSWORD'),
+      OasisCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _currentPassword,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Current password',
+                prefixIcon: Icon(Icons.lock_outline, size: 20),
+              ),
+            ),
+            gap,
+            TextField(
+              controller: _newPassword,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'New password',
+                prefixIcon: Icon(Icons.lock_reset_outlined, size: 20),
+                helperText:
+                    '8+ characters with upper & lower case, a number and a symbol',
+                helperMaxLines: 2,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OasisButton(
+              label: 'Change password',
+              outlined: true,
+              onPressed: _saving ? null : _changePassword,
+            ),
+          ],
+        ),
+      ),
+
+      OasisCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        onTap: _confirmLogout,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFBE4E2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.logout,
+                size: 20,
+                color: Color(0xFFA1281E),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Log out',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFA1281E),
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: OasisColors.muted),
+          ],
+        ),
+      ),
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      children: [
+        const Text(
+          'Profile',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 14),
+        for (final (i, section) in sections.indexed)
+          Padding(
+            // Section labels sit close to the card they introduce.
+            padding: EdgeInsets.only(bottom: section is SectionLabel ? 10 : 20),
+            child: ListEntrance(index: i, child: section),
+          ),
+      ],
     );
   }
 }

@@ -27,7 +27,7 @@ class PaymentController extends Controller
             ->latest('due_date')
             ->get();
 
-        $pending = $payments->where('status', 'pending');
+        $pending = $payments->whereIn('status', Payment::UNPAID);
         $outstandingBalance = (float) $pending->sum('amount');
         $nextDue = $pending->sortBy('due_date')->first();
 
@@ -42,7 +42,7 @@ class PaymentController extends Controller
     public function pay(Request $request, Payment $payment): JsonResponse
     {
         $this->authorizePaymentOwner($request, $payment);
-        abort_unless($payment->status === 'pending', 422, 'This payment is not payable.');
+        abort_unless($payment->isPayable(), 422, 'This payment is not payable.');
 
         try {
             $result = $this->startOrResumePayment($payment, $request->user()->email);

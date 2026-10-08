@@ -30,7 +30,7 @@
                 @forelse ($payments as $payment)
                     @php
                         $displayStatus = match (true) {
-                            $payment->status === 'pending' && $payment->isOverdue() => 'overdue',
+                            $payment->isOverdue() => 'overdue',
                             $payment->status === 'pending' && $payment->isWithinGracePeriod() => 'grace_period',
                             default => $payment->status,
                         };
@@ -50,7 +50,7 @@
                                     <i class="bi bi-image me-1"></i>Bill photo
                                 </button>
                             @endif
-                            @if (! auth()->user()->isAdmin() && $payment->status === 'pending')
+                            @if (! auth()->user()->isAdmin() && $payment->isPayable())
                                 <form method="POST" action="{{ route('payments.pay', $payment) }}" class="d-inline">
                                     @csrf
                                     <button class="btn btn-sm btn-success" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Pay</button>
@@ -62,7 +62,7 @@
                                     </form>
                                 @endif
                             @endif
-                            @if (auth()->user()->isAdmin() && $payment->status === 'pending')
+                            @if (auth()->user()->isAdmin() && $payment->isPayable())
                                 <form method="POST" action="{{ route('admin.payments.record-manual', $payment) }}" class="d-inline" onsubmit="return confirm('Record this payment as paid via cash/walk-in? This cannot be undone.')">
                                     @csrf
                                     <button class="btn btn-sm btn-success"><i class="bi bi-cash-coin me-1"></i>Record Payment</button>
