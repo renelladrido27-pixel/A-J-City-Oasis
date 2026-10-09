@@ -397,6 +397,20 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The tenant confirms the work on one of their requests is done.
+  Future<void> resolveMaintenanceRequest(int id) async {
+    await _api.post('/maintenance-requests/$id/resolve');
+    await _loadMaintenanceRequests();
+    notifyListeners();
+  }
+
+  /// The tenant withdraws a request that nobody has been assigned to yet.
+  Future<void> cancelMaintenanceRequest(int id) async {
+    await _api.post('/maintenance-requests/$id/cancel');
+    await _loadMaintenanceRequests();
+    notifyListeners();
+  }
+
   Future<void> requestTransfer(Room toRoom, String reason) async {
     await _api.post('/room-transfers', {
       'to_room_id': int.parse(toRoom.id),

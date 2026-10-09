@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class MaintenanceRequestTest extends TestCase
@@ -106,7 +107,7 @@ class MaintenanceRequestTest extends TestCase
      * Regression: this update crashed with "Unknown column 'scheduled_date'" on
      * databases where a duplicate migration had blocked the later migrations.
      */
-    public function test_admin_can_update_status_assignee_and_schedule(): void
+    public function test_admin_assigns_who_and_when_and_the_request_becomes_in_progress(): void
     {
         $admin = User::factory()->admin()->create();
         $staff = User::factory()->staff()->create();
@@ -114,11 +115,11 @@ class MaintenanceRequestTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('admin.maintenance-requests.update', $request), [
-                'status' => 'in_progress',
                 'assigned_to' => $staff->id,
                 'scheduled_date' => now()->addDays(2)->toDateString(),
             ])
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Maintenance request assigned.');
 
         $request->refresh();
         $this->assertSame('in_progress', $request->status);
@@ -131,15 +132,127 @@ class MaintenanceRequestTest extends TestCase
         ]);
     }
 
-    public function test_resolving_a_request_records_when_it_was_resolved(): void
+    public function test_admin_and_staff_cannot_set_the_status_themselves(): void
     {
         $request = $this->requestFor(Lease::factory()->create());
+        $staff = User::factory()->staff()->create();
 
-        $this->actingAs(User::factory()->staff()->create())
-            ->put(route('staff.maintenance.update', $request), ['status' => 'resolved'])
+        // A status sent anyway (e.g. from an old page) is ignored.
+        $this->actingAs(User::factory()->admin()->create())
+            ->put(route('admin.maintenance-requests.update', $request), ['status' => 'resolved'])
             ->assertRedirect();
+        $this->assertSame('pending', $request->fresh()->status);
 
-        $this->assertNotNull($request->fresh()->resolved_at);
+        $this->actingAs($staff)
+            ->put(route('staff.maintenance.update', $request), ['status' => 'resolved', 'assigned_to' => $staff->id])
+            ->assertRedirect();
+        $this->assertSame('in_progress', $request->fresh()->status);
+        $this->assertNull($request->fresh()->resolved_at);
+
+        // The page offers assigning only.
+        $this->actingAs($staff)->get(route('staff.maintenance.index'))->assertOk()
+            ->assertSee('name="assigned_to"', false)
+            ->assertDontSee('name="status"', false)
+            ->assertSee('Waiting for the tenant to confirm');
+    }
+
+    public function test_unassigning_puts_the_request_back_to_pending(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $request = $this->requestFor(Lease::factory()->create());
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), [
+            'assigned_to' => $admin->id, 'scheduled_date' => now()->addDay()->toDateString(),
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => ''])
+            ->assertSessionHas('status', 'Maintenance request unassigned.');
+
+        $request->refresh();
+        $this->assertSame('pending', $request->status);
+        $this->assertNull($request->assigned_to);
+        $this->assertNull($request->scheduled_date);
+    }
+
+    public function test_the_tenant_confirms_the_work_is_done(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = User::factory()->staff()->create();
+        $request = $this->requestFor(Lease::factory()->create());
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id]);
+
+        $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
+            ->assertSee(route('tenant.maintenance-requests.resolve', $request))
+            ->assertSee('Mark as resolved')
+            // Cancelling is only for a request nobody has been assigned to.
+            ->assertDontSee(route('tenant.maintenance-requests.cancel', $request));
+
+        $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))
+            ->assertRedirect()->assertSessionHas('status');
+
+        $request->refresh();
+        $this->assertSame('resolved', $request->status);
+        $this->assertNotNull($request->resolved_at);
+        foreach ([$admin, $staff] as $recipient) {
+            $this->assertDatabaseHas('notifications', [
+                'user_id' => $recipient->id,
+                'title' => 'Maintenance request resolved',
+                'message' => "{$request->tenant->name} confirmed the Plumbing issue in Room {$request->room->room_number} is fixed.",
+            ]);
+        }
+
+        // Closed: nothing left to press, for the tenant or the admin.
+        $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertDontSee('Mark as resolved');
+        $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))->assertSee('Confirmed by tenant')
+            ->assertDontSee('name="assigned_to"', false);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id])->assertStatus(422);
+        $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertStatus(422);
+    }
+
+    public function test_the_tenant_can_cancel_only_before_anyone_is_assigned(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $pending = $this->requestFor(Lease::factory()->create());
+        $assigned = $this->requestFor(Lease::factory()->create());
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id]);
+
+        $this->actingAs($pending->tenant)->post(route('tenant.maintenance-requests.cancel', $pending))->assertRedirect();
+        $this->assertSame('cancelled', $pending->fresh()->status);
+        $this->assertDatabaseHas('notifications', ['user_id' => $admin->id, 'title' => 'Maintenance request cancelled']);
+
+        $this->actingAs($assigned->tenant)->post(route('tenant.maintenance-requests.cancel', $assigned))->assertStatus(422);
+        $this->assertSame('in_progress', $assigned->fresh()->status);
+    }
+
+    public function test_only_the_tenant_who_reported_it_can_close_it(): void
+    {
+        $request = $this->requestFor(Lease::factory()->create());
+        $stranger = Lease::factory()->create()->tenant;
+
+        $this->actingAs($stranger)->post(route('tenant.maintenance-requests.resolve', $request))->assertForbidden();
+        $this->actingAs($stranger)->post(route('tenant.maintenance-requests.cancel', $request))->assertForbidden();
+        // Admins assign; closing is the tenant's call (the tenant routes aren't theirs at all).
+        $this->actingAs(User::factory()->admin()->create())->post(route('tenant.maintenance-requests.resolve', $request))->assertForbidden();
+
+        $this->assertSame('pending', $request->fresh()->status);
+    }
+
+    public function test_the_mobile_app_can_resolve_and_cancel(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $assigned = $this->requestFor(Lease::factory()->create());
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id]);
+        $pending = $this->requestFor(Lease::factory()->create());
+
+        Sanctum::actingAs($assigned->tenant);
+        $this->postJson("/api/maintenance-requests/{$assigned->id}/cancel")->assertStatus(422);
+        $this->postJson("/api/maintenance-requests/{$assigned->id}/resolve")->assertOk()
+            ->assertJsonPath('request.status', 'resolved')
+            ->assertJsonPath('request.assigned_to.name', $admin->name);
+        // Someone else's request.
+        $this->postJson("/api/maintenance-requests/{$pending->id}/resolve")->assertForbidden();
+
+        Sanctum::actingAs($pending->tenant);
+        $this->postJson("/api/maintenance-requests/{$pending->id}/cancel")->assertOk()->assertJsonPath('request.status', 'cancelled');
     }
 
     public function test_a_tenant_cannot_use_the_admin_update_route(): void
@@ -147,18 +260,10 @@ class MaintenanceRequestTest extends TestCase
         $request = $this->requestFor(Lease::factory()->create());
 
         $this->actingAs($request->tenant)
-            ->put(route('admin.maintenance-requests.update', $request), ['status' => 'resolved'])
+            ->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $request->tenant_id])
             ->assertForbidden();
 
         $this->assertSame('pending', $request->fresh()->status);
-    }
-
-    public function test_status_must_be_one_of_the_allowed_values(): void
-    {
-        $request = $this->requestFor(Lease::factory()->create());
-
-        $this->actingAs(User::factory()->admin()->create())
-            ->put(route('admin.maintenance-requests.update', $request), ['status' => 'done'])
-            ->assertSessionHasErrors('status');
+        $this->assertNull($request->fresh()->assigned_to);
     }
 }

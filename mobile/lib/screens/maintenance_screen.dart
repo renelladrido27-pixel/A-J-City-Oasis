@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/maintenance_request.dart';
 import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
@@ -33,6 +34,9 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   final _picker = ImagePicker();
   XFile? _photo;
   bool _submitting = false;
+
+  /// The request being resolved/cancelled right now.
+  int? _closingId;
 
   @override
   void dispose() {
@@ -84,6 +88,63 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           ),
         ),
       );
+    }
+  }
+
+  /// Closing a request is the tenant's call: confirm the work is done, or
+  /// withdraw a request nobody has started. Asks first — it can't be undone.
+  Future<void> _close(MaintenanceRequest r, {required bool resolve}) async {
+    final app = AppStateScope.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(resolve ? 'Is it fixed?' : 'Cancel this request?'),
+        content: Text(
+          resolve
+              ? 'Confirm that the ${r.issueType.toLowerCase()} issue has been '
+                    'fixed. This closes the request.'
+              : 'Your ${r.issueType.toLowerCase()} request will be withdrawn.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(resolve ? 'Not yet' : 'Keep it'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: OasisColors.green),
+            child: Text(resolve ? 'Yes, it\'s fixed' : 'Cancel request'),
+          ),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+
+    setState(() => _closingId = r.id);
+    try {
+      if (resolve) {
+        await app.resolveMaintenanceRequest(r.id);
+      } else {
+        await app.cancelMaintenanceRequest(r.id);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            resolve
+                ? 'Thanks — marked as resolved.'
+                : 'Maintenance request cancelled.',
+          ),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _closingId = null);
     }
   }
 
@@ -179,64 +240,147 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: ListEntrance(
                   index: i,
-                  child: OasisCard(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const IconBadge(Icons.build_outlined, size: 36),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      r.issueType,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  StatusChip.forStatus(r.status),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                r.description,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                r.assignedName == null
-                                    ? 'Not yet assigned'
-                                    : [
-                                        'Assigned to ${r.assignedName}',
-                                        if ((r.assignedPhone ?? '').isNotEmpty)
-                                          r.assignedPhone!,
-                                        if (r.scheduledDate != null)
-                                          'Scheduled ${formatShortDate(r.scheduledDate!)}',
-                                      ].join(' · '),
-                                style: const TextStyle(
-                                  color: OasisColors.muted,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: _RequestCard(
+                    request: r,
+                    busy: _closingId == r.id,
+                    enabled: _closingId == null,
+                    onResolve: () => _close(r, resolve: true),
+                    onCancel: () => _close(r, resolve: false),
                   ),
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One of the tenant's requests: what it is, who is on it, and — while it is
+/// still open — the button to close it.
+class _RequestCard extends StatelessWidget {
+  final MaintenanceRequest request;
+  final bool busy;
+  final bool enabled;
+  final VoidCallback onResolve;
+  final VoidCallback onCancel;
+  const _RequestCard({
+    required this.request,
+    required this.busy,
+    required this.enabled,
+    required this.onResolve,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final r = request;
+    return OasisCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const IconBadge(Icons.build_outlined, size: 36),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            r.issueType,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        StatusChip.forStatus(r.status),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      r.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      r.assignedName == null
+                          ? 'Not yet assigned'
+                          : [
+                              'Assigned to ${r.assignedName}',
+                              if ((r.assignedPhone ?? '').isNotEmpty)
+                                r.assignedPhone!,
+                              if (r.scheduledDate != null)
+                                'Scheduled ${formatShortDate(r.scheduledDate!)}',
+                            ].join(' · '),
+                      style: const TextStyle(
+                        color: OasisColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (r.isOpen) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: enabled ? onResolve : null,
+                    icon: busy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_circle_outline, size: 18),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Mark as resolved'),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: OasisColors.green,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(42),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+                if (r.canCancel) ...[
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: enabled ? onCancel : null,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: OasisColors.ink,
+                      side: const BorderSide(
+                        color: OasisColors.placeholderGrey,
+                      ),
+                      minimumSize: const Size(0, 42),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

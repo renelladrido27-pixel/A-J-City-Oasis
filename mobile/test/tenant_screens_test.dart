@@ -278,12 +278,60 @@ void main() {
         find.text('Assigned to Juan Dela Cruz · Scheduled Oct 10'),
         findsOneWidget,
       );
+      // In progress: the tenant confirms it's fixed; too late to cancel.
+      expect(find.text('Mark as resolved'), findsOneWidget);
+      expect(find.text('Cancel'), findsNothing);
       if (_shots) {
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile('zz_shots/maintenance.png'),
         );
       }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the tenant closes a request, after being asked to confirm', (
+      tester,
+    ) async {
+      MaintenanceRequest request(int id, String status) => MaintenanceRequest(
+        id: id,
+        issueType: 'Plumbing',
+        description: 'Request $id',
+        status: status,
+        submittedAt: DateTime(2026, 10, 5),
+      );
+      final app = _tenant()
+        ..maintenanceRequests = [
+          request(1, 'Pending'),
+          request(2, 'Resolved'),
+          request(3, 'Cancelled'),
+        ];
+      await _pump(
+        tester,
+        app,
+        const RentalHubScreen(initialSection: RentalSection.maintenance),
+      );
+      final list = find.byType(Scrollable).last;
+
+      // Only the open request has buttons; a pending one can also be cancelled.
+      await tester.scrollUntilVisible(
+        find.text('Request 3'),
+        200,
+        scrollable: list,
+      );
+      expect(find.text('Mark as resolved'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Mark as resolved'));
+      await tester.tap(find.text('Mark as resolved'));
+      await tester.pumpAndSettle();
+      expect(find.text('Is it fixed?'), findsOneWidget);
+
+      // "Not yet" leaves it open.
+      await tester.tap(find.text('Not yet'));
+      await tester.pumpAndSettle();
+      expect(find.text('Is it fixed?'), findsNothing);
+      expect(app.maintenanceRequests.first.status, 'Pending');
       expect(tester.takeException(), isNull);
     });
 

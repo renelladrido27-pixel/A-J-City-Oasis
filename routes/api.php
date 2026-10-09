@@ -55,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
         Route::post('/maintenance-requests', [MaintenanceRequestController::class, 'store']);
+        Route::post('/maintenance-requests/{maintenanceRequest}/resolve', [MaintenanceRequestController::class, 'resolve']);
+        Route::post('/maintenance-requests/{maintenanceRequest}/cancel', [MaintenanceRequestController::class, 'cancel']);
 
         Route::get('/room-transfers', [RoomTransferController::class, 'index']);
         Route::post('/room-transfers', [RoomTransferController::class, 'store']);

@@ -13,6 +13,12 @@ class MaintenanceRequest extends Model
     /** A finished request is "resolved" (it records resolved_at). */
     public const STATUSES = ['pending', 'in_progress', 'resolved', 'cancelled'];
 
+    /** Still being worked on: not yet resolved or cancelled. */
+    public function isOpen(): bool
+    {
+        return in_array($this->status, ['pending', 'in_progress'], true);
+    }
+
     protected $fillable = [
         'lease_id',
         'tenant_id',

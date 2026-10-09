@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MaintenanceRequestResource;
 use App\Models\MaintenanceRequest;
+use App\Services\MaintenanceService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -59,5 +60,25 @@ class MaintenanceRequestController extends Controller
         );
 
         return response()->json(['request' => MaintenanceRequestResource::make($maintenanceRequest)], 201);
+    }
+
+    /** The tenant confirms the work is done. */
+    public function resolve(Request $request, MaintenanceRequest $maintenanceRequest): JsonResponse
+    {
+        abort_unless($maintenanceRequest->tenant_id === $request->user()->id, 403);
+
+        app(MaintenanceService::class)->resolve($maintenanceRequest);
+
+        return response()->json(['request' => MaintenanceRequestResource::make($maintenanceRequest->load('assignee'))]);
+    }
+
+    /** The tenant withdraws a request that hasn't been assigned yet. */
+    public function cancel(Request $request, MaintenanceRequest $maintenanceRequest): JsonResponse
+    {
+        abort_unless($maintenanceRequest->tenant_id === $request->user()->id, 403);
+
+        app(MaintenanceService::class)->cancel($maintenanceRequest);
+
+        return response()->json(['request' => MaintenanceRequestResource::make($maintenanceRequest->load('assignee'))]);
     }
 }

@@ -21,6 +21,12 @@ class MaintenanceRequest {
     this.scheduledDate,
   });
 
+  /// Not yet resolved or cancelled — the tenant can still close it.
+  bool get isOpen => status == 'Pending' || status == 'In progress';
+
+  /// Nobody has been assigned yet, so it can still be withdrawn.
+  bool get canCancel => status == 'Pending';
+
   factory MaintenanceRequest.fromJson(Map<String, dynamic> json) {
     final assignee = json['assigned_to'] as Map<String, dynamic>?;
     return MaintenanceRequest(

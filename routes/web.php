@@ -153,6 +153,8 @@ Route::middleware(['auth', 'role:tenant', 'email.verified'])->prefix('tenant')->
     Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index'])->name('maintenance-requests.index');
     Route::get('/leases/{lease}/maintenance-requests/create', [MaintenanceRequestController::class, 'create'])->name('maintenance-requests.create');
     Route::post('/leases/{lease}/maintenance-requests', [MaintenanceRequestController::class, 'store'])->name('maintenance-requests.store');
+    Route::post('/maintenance-requests/{maintenanceRequest}/resolve', [MaintenanceRequestController::class, 'resolve'])->name('maintenance-requests.resolve');
+    Route::post('/maintenance-requests/{maintenanceRequest}/cancel', [MaintenanceRequestController::class, 'cancel'])->name('maintenance-requests.cancel');
 
     Route::get('/leases/{lease}/transfer', [RoomTransferController::class, 'create'])->name('room-transfers.create');
     Route::post('/leases/{lease}/transfer', [RoomTransferController::class, 'store'])->name('room-transfers.store');

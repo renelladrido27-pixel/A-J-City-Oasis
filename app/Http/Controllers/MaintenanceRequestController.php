@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Lease;
 use App\Models\MaintenanceRequest;
 use App\Models\User;
+use App\Services\MaintenanceService;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,45 +74,47 @@ class MaintenanceRequestController extends Controller
         return redirect()->route('tenant.maintenance-requests.index')->with('status', 'Maintenance request submitted.');
     }
 
+    /**
+     * Admin/staff assign the work (who, and when). They don't set the status:
+     * it follows the assignment, and the tenant closes the request.
+     */
     public function update(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
     {
         $this->authorize('update', $maintenanceRequest);
 
         $validated = $request->validate([
-            'status' => ['required', Rule::in(MaintenanceRequest::STATUSES)],
             // Only staff/admin accounts do maintenance work.
             'assigned_to' => ['nullable', Rule::exists('users', 'id')->whereIn('role', ['admin', 'staff'])],
             'scheduled_date' => ['nullable', 'date'],
         ]);
 
-        $previousAssignee = $maintenanceRequest->assigned_to;
+        app(MaintenanceService::class)->assign(
+            $maintenanceRequest,
+            isset($validated['assigned_to']) ? (int) $validated['assigned_to'] : null,
+            $validated['scheduled_date'] ?? null,
+            $request->user(),
+        );
 
-        $maintenanceRequest->update([
-            ...$validated,
-            'resolved_at' => $validated['status'] === 'resolved' ? ($maintenanceRequest->resolved_at ?? now()) : null,
-        ]);
-        $maintenanceRequest->load('assignee');
+        return back()->with('status', $maintenanceRequest->assigned_to ? 'Maintenance request assigned.' : 'Maintenance request unassigned.');
+    }
 
-        // Tell the tenant who is handling it and when, not just the status.
-        $message = "Your {$maintenanceRequest->category} request is now ".str_replace('_', ' ', $validated['status']).'.';
-        if ($maintenanceRequest->assignee && in_array($validated['status'], ['pending', 'in_progress'], true)) {
-            $message .= " Assigned to {$maintenanceRequest->assignee->name}";
-            $message .= $maintenanceRequest->scheduled_date ? ', scheduled for '.$maintenanceRequest->scheduled_date->format('M d, Y').'.' : '.';
-        }
+    /** The tenant confirms the work is done. */
+    public function resolve(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
+    {
+        abort_unless($maintenanceRequest->tenant_id === $request->user()->id, 403);
 
-        $this->notifications->notify($maintenanceRequest->tenant, 'Maintenance request updated', $message, 'maintenance');
+        app(MaintenanceService::class)->resolve($maintenanceRequest);
 
-        // Tell the staff member a job was just handed to them.
-        if ($maintenanceRequest->assignee && $maintenanceRequest->assigned_to !== $previousAssignee && $maintenanceRequest->assigned_to !== $request->user()->id) {
-            $this->notifications->notify(
-                $maintenanceRequest->assignee,
-                'Maintenance job assigned to you',
-                "{$maintenanceRequest->category} in Room {$maintenanceRequest->room->room_number}"
-                    .($maintenanceRequest->scheduled_date ? ', scheduled for '.$maintenanceRequest->scheduled_date->format('M d, Y') : '').'.',
-                'maintenance',
-            );
-        }
+        return back()->with('status', 'Thanks — the request is marked as resolved.');
+    }
 
-        return back()->with('status', 'Maintenance request updated.');
+    /** The tenant withdraws a request that hasn't been assigned yet. */
+    public function cancel(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
+    {
+        abort_unless($maintenanceRequest->tenant_id === $request->user()->id, 403);
+
+        app(MaintenanceService::class)->cancel($maintenanceRequest);
+
+        return back()->with('status', 'Maintenance request cancelled.');
     }
 }

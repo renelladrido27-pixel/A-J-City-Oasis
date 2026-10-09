@@ -339,7 +339,7 @@ class PanelFeedbackTest extends TestCase
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()->assertSee('Not yet assigned');
 
         $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'status' => 'in_progress', 'assigned_to' => $staff->id, 'scheduled_date' => '2026-10-12',
+            'assigned_to' => $staff->id, 'scheduled_date' => '2026-10-12',
         ])->assertRedirect();
 
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
@@ -347,7 +347,7 @@ class PanelFeedbackTest extends TestCase
 
         $this->assertDatabaseHas('notifications', [
             'user_id' => $request->tenant_id,
-            'message' => 'Your Plumbing request is now in progress. Assigned to Ramon Cruz, scheduled for Oct 12, 2026.',
+            'message' => 'Your Plumbing request is now in progress. Assigned to Ramon Cruz, scheduled for Oct 12, 2026. Once the work is done, please mark it as resolved.',
         ]);
 
         Sanctum::actingAs($request->tenant);
@@ -361,7 +361,7 @@ class PanelFeedbackTest extends TestCase
         $staff = User::factory()->staff()->create();
 
         $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'status' => 'in_progress', 'assigned_to' => $staff->id,
+            'assigned_to' => $staff->id,
         ]);
 
         $this->assertDatabaseHas('notifications', ['user_id' => $staff->id, 'title' => 'Maintenance job assigned to you']);
@@ -372,7 +372,7 @@ class PanelFeedbackTest extends TestCase
         $request = $this->maintenanceRequest();
 
         $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'status' => 'in_progress', 'assigned_to' => User::factory()->create()->id,
+            'assigned_to' => User::factory()->create()->id,
         ])->assertSessionHasErrors('assigned_to');
     }
 
@@ -383,17 +383,14 @@ class PanelFeedbackTest extends TestCase
         $request = $this->maintenanceRequest();
         $admin = User::factory()->admin()->create();
 
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['status' => 'completed'])
-            ->assertSessionHasErrors('status');
+        $this->assertContains('resolved', MaintenanceRequest::STATUSES);
+        $this->assertNotContains('completed', MaintenanceRequest::STATUSES);
 
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['status' => 'resolved'])->assertRedirect();
+        // The tenant is the one who confirms the work is done.
+        $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertRedirect();
         $this->assertSame('resolved', $request->fresh()->status);
         $this->assertNotNull($request->fresh()->resolved_at);
 
         $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))->assertOk()->assertSee('Resolved')->assertDontSee('Completed');
-
-        // Re-opening clears the resolved time.
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['status' => 'in_progress']);
-        $this->assertNull($request->fresh()->resolved_at);
     }
 }
