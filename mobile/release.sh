@@ -38,10 +38,13 @@ fi
 # "a&j water oasis"), so build through a drive letter mapped to the repo.
 BUILD_ROOT="$REPO"
 if [[ "$REPO" == *"&"* ]]; then
-    DRIVE="$(cmd //c subst | tr -d '\r' | grep -F "$(cygpath -w "$REPO")" | cut -c1 | head -1 || true)"
+    # subst.exe is called directly, not through "cmd /c": cmd would itself
+    # trip over the "&" (and over the quotes Git Bash adds around the path).
+    WIN_REPO="$(cygpath -w "$REPO")"
+    DRIVE="$(subst | tr -d '\r' | grep -F "$WIN_REPO" | cut -c1 | head -1 || true)"
     if [ -z "$DRIVE" ]; then
         for D in Q R S T U V W; do
-            [ -e "/${D,,}/" ] || { cmd //c "subst $D: \"$(cygpath -w "$REPO")\"" && DRIVE="$D" && break; }
+            [ -e "/${D,,}/" ] || { subst "$D:" "$WIN_REPO" && DRIVE="$D" && break; }
         done
     fi
     [ -n "$DRIVE" ] || { echo "Could not map a drive letter for the build."; exit 1; }
