@@ -28,3 +28,7 @@ CLAUDE.md
 
 # Local layout screenshots (SHOTS=1 flutter test)
 mobile/test/zz_shots/
+
+# The owner's original phone photos (the web-ready copies live in
+# database/seeders/room-photos/ and public/images/)
+/Image for the rooms/

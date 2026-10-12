@@ -26,6 +26,8 @@
         .stat-strip .num { font-size: 2.25rem; font-weight: 700; color: var(--oasis-green); }
         .feature-icon { width: 3.25rem; height: 3.25rem; border-radius: .9rem; display: flex; align-items: center; justify-content: center; background: #e9f2ec; color: var(--oasis-green); font-size: 1.4rem; }
         .step-num { width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--oasis-gold); color: #1f2d27; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .place-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 1rem; display: block; box-shadow: 0 .5rem 1.25rem rgba(27,67,50,.12); }
+        @media (min-width: 992px) { .place-photo-lg { height: 100%; aspect-ratio: auto; } }
         .room-card { border: none; border-radius: 1rem; overflow: hidden; transition: transform .15s ease, box-shadow .15s ease; }
         .room-card:hover { transform: translateY(-4px); box-shadow: 0 1rem 2rem rgba(27,67,50,.15); }
         .room-card-media { width: 100%; height: 140px; background: linear-gradient(135deg, #2d6a4f, var(--oasis-green)); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.85); font-size: 2.5rem; }
@@ -75,13 +77,8 @@
                     </div>
                 </div>
                 <div class="col-lg-6">
-                    @php($heroImage = $featuredRooms->first()?->images->first())
                     <div class="hero-visual p-2 p-lg-3">
-                        @if ($heroImage)
-                            <img src="{{ $heroImage->url() }}" alt="A room at A&J CITY OASIS, Koronadal City" class="w-100 rounded-3 d-block" style="aspect-ratio: 4 / 3; object-fit: cover;">
-                        @else
-                            <img src="{{ asset('images/hero-placeholder.svg') }}" alt="A&J CITY OASIS property photo &mdash; coming soon" class="w-100 rounded-3 d-block" style="aspect-ratio: 4 / 3; object-fit: cover;">
-                        @endif
+                        <img src="{{ asset('images/building-front.jpg') }}" alt="The A&J CITY OASIS apartment building in Koronadal City" class="w-100 rounded-3 d-block" style="aspect-ratio: 4 / 3; object-fit: cover;" width="1600" height="1200">
                     </div>
                     <div class="row g-2 text-center mt-1">
                         <div class="col-4">
@@ -148,6 +145,35 @@
                     <h3 class="h6 fw-bold">Transparent Billing</h3>
                     <p class="text-muted small mb-0">Clear due dates, a one-month grace period, and a full payment history on record.</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    @php($placePhotos = \App\Support\StockRoomPhotos::urls())
+    <section id="the-place" class="bg-sand py-5">
+        <div class="container py-4">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-oasis">Take a look</h2>
+                <p class="text-muted mb-0">Newly built studio units, each with a loft bed, a kitchenette and its own bathroom.</p>
+            </div>
+            <div class="row g-3">
+                <div class="col-12 col-lg-6 reveal">
+                    <img src="{{ asset('images/building-side.jpg') }}" alt="A&J CITY OASIS building, upper and ground floor units" class="place-photo place-photo-lg" loading="lazy" width="1600" height="1200">
+                </div>
+                @if (count($placePhotos) >= 4)
+                    <div class="col-12 col-lg-6">
+                        <div class="row g-3">
+                            @foreach ([['Loft bed and kitchenette', 0], ['The unit from the door', 1], ['Kitchenette and bathroom', 2], ['Kitchen counter with cabinets', 3]] as [$alt, $i])
+                                <div class="col-6 reveal">
+                                    <img src="{{ $placePhotos[$i] }}" alt="{{ $alt }}" class="place-photo" loading="lazy">
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+            <div class="text-center mt-4">
+                <a href="{{ route('rooms.browse') }}" class="btn btn-oasis"><i class="bi bi-search me-1"></i>See available rooms</a>
             </div>
         </div>
     </section>

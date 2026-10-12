@@ -97,9 +97,7 @@ class RoomController extends Controller
 
     public function destroy(Room $room): RedirectResponse
     {
-        foreach ($room->images as $image) {
-            Storage::disk('public')->delete($image->path);
-        }
+        $room->images->each->removeWithFile();
 
         $room->delete();
 
@@ -110,8 +108,7 @@ class RoomController extends Controller
     {
         abort_unless($image->room_id === $room->id, 404);
 
-        Storage::disk('public')->delete($image->path);
-        $image->delete();
+        $image->removeWithFile();
 
         return back()->with('status', 'Image removed.');
     }

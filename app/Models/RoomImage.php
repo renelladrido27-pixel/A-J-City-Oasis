@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class RoomImage extends Model
 {
@@ -22,5 +23,18 @@ class RoomImage extends Model
     public function url(): string
     {
         return asset('storage/'.$this->path);
+    }
+
+    /**
+     * Deletes this photo, and its file too unless another room still shows the
+     * same file (the stock photos in rooms/stock/ are shared by many rooms).
+     */
+    public function removeWithFile(): void
+    {
+        $this->delete();
+
+        if (! static::where('path', $this->path)->exists()) {
+            Storage::disk('public')->delete($this->path);
+        }
     }
 }
