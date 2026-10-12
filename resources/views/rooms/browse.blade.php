@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Available Rooms')
-@section('meta_description', 'Browse vacant rental rooms at A&amp;J CITY OASIS across two properties in Koronadal City, with transparent monthly pricing.')
+@section('meta_description', 'Browse vacant studio units at A&amp;J CITY OASIS in Koronadal City, with transparent monthly pricing.')
 
 @section('content')
 <style>
@@ -31,8 +31,10 @@
     }
 </style>
 
-<x-page-header title="Available Rooms" subtitle="Browse vacant rooms across our properties" />
+<x-page-header title="Available Rooms" subtitle="Vacant rooms you can book online" />
 
+{{-- Only worth showing when there is more than one property to choose between. --}}
+@if ($properties->count() > 1)
 <div class="d-flex flex-wrap gap-2 mb-4">
     <a href="{{ route('rooms.browse') }}"
        class="btn btn-sm {{ request()->filled('property_id') ? 'btn-outline-secondary' : 'btn-primary' }}">
@@ -48,6 +50,7 @@
         </a>
     @endforeach
 </div>
+@endif
 
 <div class="row g-3">
     @forelse ($rooms as $room)

@@ -3,20 +3,17 @@
 namespace Database\Seeders;
 
 use App\Models\Property;
+use App\Support\BuildingLayout;
 use Illuminate\Database\Seeder;
 
 class PropertySeeder extends Seeder
 {
+    /** The one real property (see BuildingLayout). */
     public function run(): void
     {
         Property::create([
-            'name' => 'A&J CITY OASIS - Main Building',
-            'address' => 'Koronadal City, South Cotabato',
-        ]);
-
-        Property::create([
-            'name' => 'A&J CITY OASIS - Annex Building',
-            'address' => 'Koronadal City, South Cotabato',
+            'name' => BuildingLayout::PROPERTY_NAME,
+            'address' => BuildingLayout::ADDRESS,
         ]);
     }
 }
