@@ -12,6 +12,7 @@ import 'package:ajoasis_mobile/screens/my_payments_screen.dart';
 import 'package:ajoasis_mobile/screens/profile_screen.dart';
 import 'package:ajoasis_mobile/screens/receipt_screen.dart';
 import 'package:ajoasis_mobile/screens/rental_hub_screen.dart';
+import 'package:ajoasis_mobile/services/receipt_export.dart';
 import 'package:ajoasis_mobile/state/app_state.dart';
 import 'package:ajoasis_mobile/theme.dart';
 import 'package:ajoasis_mobile/utils/format.dart';
@@ -657,6 +658,52 @@ void main() {
       expect(saved[1].bytes.take(4), [0x89, 0x50, 0x4E, 0x47]);
       expect(saved[1].bytes.length, greaterThan(5000));
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('saving hands the file to the system save screen', (
+      tester,
+    ) async {
+      const channel = MethodChannel('ajoasis/save_file');
+      final calls = <MethodCall>[];
+      var answer = true;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+        call,
+      ) async {
+        calls.add(call);
+        return answer;
+      });
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      final bytes = Uint8List.fromList([1, 2, 3]);
+
+      expect(
+        await ReceiptExport.saveWithSystemDialog(
+          fileName: 'receipt.pdf',
+          extension: 'pdf',
+          bytes: bytes,
+        ),
+        isTrue,
+      );
+      expect(calls.single.method, 'saveFile');
+      expect(calls.single.arguments['fileName'], 'receipt.pdf');
+      expect(calls.single.arguments['mimeType'], 'application/pdf');
+      expect(calls.single.arguments['bytes'], bytes);
+
+      // Backing out of the save screen.
+      answer = false;
+      expect(
+        await ReceiptExport.saveWithSystemDialog(
+          fileName: 'receipt.png',
+          extension: 'png',
+          bytes: bytes,
+        ),
+        isFalse,
+      );
+      expect(calls.last.arguments['mimeType'], 'image/png');
     });
 
     testWidgets('backing out of the save screen says nothing', (tester) async {

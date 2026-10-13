@@ -1,8 +1,7 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -18,21 +17,21 @@ typedef ReceiptSaver =
 
 /// Turns the receipt as it appears on screen into a picture or a PDF.
 class ReceiptExport {
-  /// The system save dialog — needs no storage permission, since the tenant
-  /// chooses the destination themselves.
+  static const _channel = MethodChannel('ajoasis/save_file');
+
+  /// Android's own "Save to…" screen (see MainActivity.kt) — needs no storage
+  /// permission, since the tenant chooses the destination themselves.
   static Future<bool> saveWithSystemDialog({
     required String fileName,
     required String extension,
     required Uint8List bytes,
   }) async {
-    final path = await FilePicker.saveFile(
-      dialogTitle: 'Save receipt',
-      fileName: fileName,
-      type: FileType.custom,
-      allowedExtensions: [extension],
-      bytes: bytes,
-    );
-    return path != null;
+    final saved = await _channel.invokeMethod<bool>('saveFile', {
+      'fileName': fileName,
+      'mimeType': extension == 'pdf' ? 'application/pdf' : 'image/png',
+      'bytes': bytes,
+    });
+    return saved ?? false;
   }
 
   /// A sharp PNG of whatever [boundaryKey]'s RepaintBoundary shows.

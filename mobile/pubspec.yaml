@@ -43,8 +43,6 @@ dependencies:
   package_info_plus: ^9.0.1
   ota_update: ^7.1.0
   pdf: ^3.13.1
-  file_picker: ^11.0.3
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
