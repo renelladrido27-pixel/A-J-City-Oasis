@@ -22,7 +22,10 @@
     <div class="container">
         <div class="d-flex justify-content-between align-items-center no-print pt-4" style="max-width: 640px; margin: 0 auto;">
             <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
-            <button onclick="window.print()" class="btn btn-primary btn-sm"><i class="bi bi-printer me-1"></i>Print / Save as PDF</button>
+            <div class="d-flex gap-2">
+                <button onclick="window.print()" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Print</button>
+                <a href="{{ route('payments.receipt.pdf', $payment) }}" class="btn btn-primary btn-sm"><i class="bi bi-file-earmark-pdf me-1"></i>Save as PDF</a>
+            </div>
         </div>
 
         <div class="card receipt-card border-0 shadow-sm">

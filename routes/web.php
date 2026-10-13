@@ -65,6 +65,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/payments/{payment}/pay', [PaymentController::class, 'pay'])->name('payments.pay');
     Route::post('/payments/{payment}/check-status', [PaymentController::class, 'checkStatus'])->name('payments.check-status');
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+    Route::get('/payments/{payment}/receipt/pdf', [PaymentController::class, 'receiptPdf'])->name('payments.receipt.pdf');
     Route::get('/payments/fake-complete/{reference}', [PaymentController::class, 'fakeComplete'])->name('payments.fake-complete');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');

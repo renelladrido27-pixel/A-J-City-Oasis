@@ -10,8 +10,11 @@ use App\Services\PaymentCheckoutService;
 use App\Services\PaymentCompletionService;
 use App\Services\RentBillingService;
 use App\Services\XenditService;
+use Dompdf\Dompdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
 
 class PaymentController extends Controller
@@ -169,6 +172,42 @@ class PaymentController extends Controller
         $payment->load(['lease.room.property', 'lease.tenant', 'booking.room.property', 'booking.tenant']);
 
         return view('payments.receipt', compact('payment'));
+    }
+
+    /**
+     * The same receipt as a PDF file to keep — a real document (selectable
+     * text, prints cleanly), not a picture of the page.
+     */
+    public function receiptPdf(Payment $payment): Response
+    {
+        $tenant = $payment->lease?->tenant ?? $payment->booking?->tenant;
+
+        abort_unless(auth()->user()->isAdmin() || ($tenant && $tenant->id === auth()->id()), 403);
+        abort_unless($payment->status === 'paid', 404);
+
+        $payment->load(['lease.room.property', 'lease.tenant', 'booking.room.property', 'booking.tenant']);
+
+        // dompdf keeps its font cache where it can write — not inside vendor/.
+        $cache = storage_path('app/dompdf');
+        File::ensureDirectoryExists($cache);
+
+        $pdf = new Dompdf([
+            'defaultFont' => 'DejaVu Sans',
+            'fontCache' => $cache,
+            'tempDir' => $cache,
+            'isRemoteEnabled' => false,
+            'isPhpEnabled' => false,
+        ]);
+        $pdf->setPaper('A5');
+        $pdf->loadHtml(view('payments.receipt-pdf', compact('payment'))->render());
+        $pdf->render();
+
+        $name = 'AJ-City-Oasis-receipt-'.str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT).'.pdf';
+
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$name.'"',
+        ]);
     }
 
     /**
