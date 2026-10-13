@@ -22,7 +22,6 @@ class HomeController extends Controller
 
         $stats = [
             'rooms' => Room::count(),
-            'vacant' => Room::where('status', 'vacant')->count(),
             'properties' => Property::count(),
             'tenants' => User::where('role', 'tenant')->count(),
         ];

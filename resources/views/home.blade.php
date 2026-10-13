@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>A&amp;J CITY OASIS — Rental Apartments in Koronadal City</title>
-    <meta name="description" content="Book a room online at A&amp;J CITY OASIS: {{ $stats['rooms'] }} studio units in Koronadal City, with transparent pricing and secure online payments.">
+    <meta name="description" content="Book a room online at A&amp;J CITY OASIS. {{ $stats['rooms'] }} rooms across {{ $stats['properties'] }} properties in Koronadal City, transparent pricing, and secure online payments.">
     <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
     <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -68,7 +68,7 @@
                     <span class="badge bg-white text-oasis mb-3 px-3 py-2">Koronadal City, South Cotabato</span>
                     <h1 class="display-5 fw-bold mb-3">Find your next room. Book it in minutes.</h1>
                     <p class="fs-5 mb-4" style="color: rgba(255,255,255,.85);">
-                        A&J CITY OASIS has {{ $stats['rooms'] }} studio units in Koronadal City, with transparent pricing, a fully online
+                        A&J CITY OASIS manages {{ $stats['rooms'] }} rooms across {{ $stats['properties'] }} properties, with transparent pricing, a fully online
                         booking flow, and secure payments &mdash; no walk-in required.
                     </p>
                     <div class="d-flex flex-wrap gap-2">
@@ -104,11 +104,11 @@
             <div class="row g-4 text-center stat-strip">
                 <div class="col-md-4 reveal">
                     <div class="num">{{ $stats['rooms'] }}</div>
-                    <p class="text-muted mb-0">Studio units in one building</p>
+                    <p class="text-muted mb-0">Rooms across our properties</p>
                 </div>
                 <div class="col-md-4 reveal">
-                    <div class="num">{{ $stats['vacant'] }}</div>
-                    <p class="text-muted mb-0">Available to book right now</p>
+                    <div class="num">{{ $stats['properties'] }}</div>
+                    <p class="text-muted mb-0">Properties in Koronadal City</p>
                 </div>
                 <div class="col-md-4 reveal">
                     <div class="num">100%</div>
@@ -187,7 +187,7 @@
                         <h2 class="h5 fw-bold text-oasis mb-0">Find us in Koronadal City</h2>
                     </div>
                     <p class="text-muted mb-0">
-                        A&J CITY OASIS is in Koronadal City, South Cotabato &mdash; walk-throughs
+                        Both A&J CITY OASIS properties are based in Koronadal City, South Cotabato &mdash; walk-throughs
                         can be arranged, but every booking, payment, and lease can be handled fully online without
                         ever needing to visit in person first.
                     </p>
