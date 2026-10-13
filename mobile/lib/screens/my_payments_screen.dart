@@ -382,46 +382,82 @@ class _HistoryRow extends StatelessWidget {
       onTap: () => Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => ReceiptScreen(payment: p))),
-      child: Row(
+      child: Column(
         children: [
-          const IconBadge(Icons.check, size: 36),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${p.typeLabel} · ${p.monthLabel}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  'Paid ${formatLongDate(p.paidOn.toLocal())}',
-                  style: const TextStyle(
-                    color: OasisColors.muted,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
-              Text(
-                formatPeso(p.amount),
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const Text(
-                'View receipt',
-                style: TextStyle(
-                  color: OasisColors.green,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+              const IconBadge(Icons.check, size: 36),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${p.typeLabel} · ${p.monthLabel}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      'Paid ${formatLongDate(p.paidOn.toLocal())}',
+                      style: const TextStyle(
+                        color: OasisColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatPeso(p.amount),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const Text(
+                    'View receipt',
+                    style: TextStyle(
+                      color: OasisColors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: OasisColors.green,
+                size: 20,
               ),
             ],
           ),
-          const Icon(Icons.chevron_right, color: OasisColors.green, size: 20),
+          // The upfront booking payment: what the total was made up of.
+          if (p.breakdown.isNotEmpty) ...[
+            const Divider(height: 20),
+            for (final line in p.breakdown)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4, right: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        line.label,
+                        style: const TextStyle(
+                          color: OasisColors.muted,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      formatPeso(line.amount),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ],
       ),
     );

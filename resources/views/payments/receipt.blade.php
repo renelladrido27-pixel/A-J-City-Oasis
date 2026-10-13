@@ -60,10 +60,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>{{ ucfirst(str_replace('_', ' ', $payment->type)) }}</td>
-                            <td class="text-end">₱{{ number_format($payment->amount, 2) }}</td>
-                        </tr>
+                        @foreach ($payment->lines() as $line)
+                            <tr>
+                                <td>
+                                    {{ $line['label'] }}
+                                    @if ($line['note'])
+                                        <div class="text-muted small">{{ $line['note'] }}</div>
+                                    @endif
+                                </td>
+                                <td class="text-end">₱{{ number_format($line['amount'], 2) }}</td>
+                            </tr>
+                        @endforeach
                     </tbody>
                 </table>
 

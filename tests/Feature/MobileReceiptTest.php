@@ -35,6 +35,7 @@ class MobileReceiptTest extends TestCase
             'billed_to' => ['name' => $tenant->name, 'email' => $tenant->email],
             'room' => ['number' => $payment->lease->room->room_number, 'property' => $payment->lease->room->property->name],
             'description' => 'Rent',
+            'lines' => [['label' => 'Rent', 'note' => null, 'amount' => 3500]],
             'amount' => 3500,
             'paid_at' => now()->toIso8601String(),
             'reference' => 'pay-abc-123',
@@ -94,6 +95,45 @@ class MobileReceiptTest extends TestCase
             ->assertJsonPath('receipt.description', 'Booking upfront')
             ->assertJsonPath('receipt.amount', 10500)
             ->assertJsonPath('receipt.room.number', $booking->room->room_number);
+    }
+
+    public function test_the_upfront_payment_is_broken_down_into_advance_deposit_and_security(): void
+    {
+        $booking = Booking::factory()->confirmed()->create([
+            'advance_amount' => 3500, 'deposit_amount' => 3500, 'security_amount' => 3500, 'total_amount' => 10500,
+        ]);
+        $upfront = Payment::create([
+            'booking_id' => $booking->id, 'type' => 'booking_upfront', 'amount' => 10500,
+            'due_date' => now(), 'status' => 'paid', 'paid_at' => now(),
+        ]);
+        $parts = [
+            ['label' => '1 month advance', 'note' => "Your first month's rent", 'amount' => 3500],
+            ['label' => '1 month deposit', 'note' => 'Applied as rent · not refundable', 'amount' => 3500],
+            ['label' => 'Security deposit', 'note' => 'Refundable at move-out, less any damages', 'amount' => 3500],
+        ];
+
+        // In the app: on the history row and on the receipt.
+        Sanctum::actingAs($booking->tenant);
+        $this->getJson('/api/payments')->assertOk()->assertJsonPath('history.0.breakdown', $parts);
+        $this->getJson("/api/payments/{$upfront->id}/receipt")->assertOk()->assertJsonPath('receipt.lines', $parts);
+        // The parts add up to what was paid.
+        $this->assertEquals(10500, array_sum(array_column($parts, 'amount')));
+
+        // On the website: in the payment history and on the printable receipt.
+        foreach ([route('tenant.payments.index'), route('payments.receipt', $upfront)] as $page) {
+            $this->actingAs($booking->tenant)->get($page)->assertOk()
+                ->assertSee('1 month advance')->assertSee('1 month deposit')->assertSee('Security deposit')
+                ->assertSee('₱10,500.00');
+        }
+    }
+
+    public function test_an_ordinary_bill_has_no_breakdown(): void
+    {
+        $rent = Payment::factory()->create(['status' => 'paid', 'paid_at' => now()]);
+        Sanctum::actingAs($rent->lease->tenant);
+
+        $this->getJson('/api/payments')->assertOk()->assertJsonPath('history.0.breakdown', []);
+        $this->actingAs($rent->lease->tenant)->get(route('tenant.payments.index'))->assertOk()->assertDontSee('1 month advance');
     }
 
     public function test_a_utility_bill_carries_the_photo_the_admin_attached(): void

@@ -36,7 +36,17 @@
                         };
                     @endphp
                     <tr>
-                        <td>{{ ucfirst(str_replace('_', ' ', $payment->type)) }}</td>
+                        <td>
+                            {{ ucfirst(str_replace('_', ' ', $payment->type)) }}
+                            {{-- The upfront payment is three amounts paid at once — show what they were. --}}
+                            @if ($payment->hasBreakdown())
+                                <ul class="list-unstyled small text-muted mb-0 mt-1">
+                                    @foreach ($payment->lines() as $line)
+                                        <li class="d-flex justify-content-between gap-3"><span>{{ $line['label'] }}</span><span>₱{{ number_format($line['amount'], 2) }}</span></li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </td>
                         <td class="text-muted">
                             @if ($payment->lease) Lease #{{ $payment->lease_id }} @elseif ($payment->booking) Booking #{{ $payment->booking_id }} @endif
                         </td>

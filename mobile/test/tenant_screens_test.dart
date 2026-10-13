@@ -504,6 +504,200 @@ void main() {
       billPhotoUrl: billPhotoUrl,
     );
 
+    const upfrontParts = [
+      PaymentLine(
+        label: '1 month advance',
+        note: "Your first month's rent",
+        amount: 3500,
+      ),
+      PaymentLine(
+        label: '1 month deposit',
+        note: 'Applied as rent · not refundable',
+        amount: 3500,
+      ),
+      PaymentLine(
+        label: 'Security deposit',
+        note: 'Refundable at move-out, less any damages',
+        amount: 3500,
+      ),
+    ];
+
+    testWidgets('the upfront payment is in the history, broken down', (
+      tester,
+    ) async {
+      final app = _tenant(due: 0)
+        ..paymentHistory = [
+          PaymentRecord(
+            id: 1,
+            type: 'booking_upfront',
+            monthLabel: 'Oct',
+            amount: 10500,
+            status: 'Paid',
+            dueDate: DateTime(2026, 10, 1),
+            paidOn: DateTime(2026, 10, 1),
+            breakdown: upfrontParts,
+          ),
+          _bill(2, 'rent', 3500, status: 'Paid', due: DateTime(2026, 11, 1)),
+        ];
+      await _pump(tester, app, const MyPaymentsScreen(), shot: 'pay-upfront');
+
+      expect(find.text('Booking upfront · Oct'), findsOneWidget);
+      expect(find.text('₱10,500'), findsOneWidget);
+      expect(find.text('1 month advance'), findsOneWidget);
+      expect(find.text('1 month deposit'), findsOneWidget);
+      expect(find.text('Security deposit'), findsOneWidget);
+      // The three parts, plus the ordinary rent bill's own amount.
+      expect(find.text('₱3,500'), findsNWidgets(4));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the upfront receipt lists each part and what it is for', (
+      tester,
+    ) async {
+      final r = receipt(amount: 10500);
+      final app = _ReceiptApp(
+        Receipt(
+          number: r.number,
+          business: r.business,
+          businessAddress: r.businessAddress,
+          billedToName: r.billedToName,
+          billedToEmail: r.billedToEmail,
+          roomNumber: r.roomNumber,
+          property: r.property,
+          description: 'Booking upfront',
+          lines: upfrontParts,
+          amount: 10500,
+          paidAt: r.paidAt,
+          reference: r.reference,
+        ),
+      );
+      final payment = _bill(
+        1,
+        'booking_upfront',
+        10500,
+        status: 'Paid',
+        due: DateTime(2026, 10, 1),
+      );
+      await _pump(
+        tester,
+        app,
+        ReceiptScreen(payment: payment),
+        shot: 'receipt-upfront',
+      );
+
+      expect(find.text('1 month advance'), findsOneWidget);
+      expect(find.text("Your first month's rent"), findsOneWidget);
+      expect(find.text('1 month deposit'), findsOneWidget);
+      expect(find.text('Security deposit'), findsOneWidget);
+      expect(
+        find.text('Refundable at move-out, less any damages'),
+        findsOneWidget,
+      );
+      expect(find.text('₱3,500.00'), findsNWidgets(3));
+      expect(find.text('₱10,500.00'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the receipt can be saved as a PDF or as an image', (
+      tester,
+    ) async {
+      final saved = <({String fileName, String extension, Uint8List bytes})>[];
+      final payment = _bill(
+        12,
+        'rent',
+        3500,
+        status: 'Paid',
+        due: DateTime(2026, 10, 1),
+      );
+      await _pump(
+        tester,
+        _ReceiptApp(receipt()),
+        ReceiptScreen(
+          payment: payment,
+          saver:
+              ({
+                required String fileName,
+                required String extension,
+                required Uint8List bytes,
+              }) async {
+                saved.add((
+                  fileName: fileName,
+                  extension: extension,
+                  bytes: bytes,
+                ));
+                return true;
+              },
+        ),
+      );
+
+      // Taking the picture and writing the PDF are real work, not frames.
+      Future<void> press(String label) async {
+        await tester.ensureVisible(find.text(label));
+        await tester.runAsync(() async {
+          await tester.tap(find.text(label));
+          for (var i = 0; i < 100 && saved.length < 2; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            if (label.contains('PDF') && saved.isNotEmpty) break;
+          }
+        });
+        await tester.pump();
+      }
+
+      await press('Save as PDF');
+      expect(saved, hasLength(1));
+      expect(saved[0].fileName, 'AJ-City-Oasis-receipt-000012.pdf');
+      expect(saved[0].extension, 'pdf');
+      expect(String.fromCharCodes(saved[0].bytes.take(5)), '%PDF-');
+      expect(find.text('Receipt saved as a PDF.'), findsOneWidget);
+
+      await press('Save as image');
+      expect(saved, hasLength(2));
+      expect(saved[1].fileName, 'AJ-City-Oasis-receipt-000012.png');
+      // PNG signature.
+      expect(saved[1].bytes.take(4), [0x89, 0x50, 0x4E, 0x47]);
+      expect(saved[1].bytes.length, greaterThan(5000));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('backing out of the save screen says nothing', (tester) async {
+      final payment = _bill(
+        12,
+        'rent',
+        3500,
+        status: 'Paid',
+        due: DateTime(2026, 10, 1),
+      );
+      var asked = 0;
+      await _pump(
+        tester,
+        _ReceiptApp(receipt()),
+        ReceiptScreen(
+          payment: payment,
+          saver:
+              ({
+                required String fileName,
+                required String extension,
+                required Uint8List bytes,
+              }) async {
+                asked++;
+                return false;
+              },
+        ),
+      );
+
+      await tester.ensureVisible(find.text('Save as image'));
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Save as image'));
+        for (var i = 0; i < 100 && asked == 0; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+      });
+      await tester.pump();
+
+      expect(asked, 1);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
     test('amounts are shown to the centavo, dates with the time', () {
       expect(formatPesoExact(450.75), '₱450.75');
       expect(formatPesoExact(10500), '₱10,500.00');

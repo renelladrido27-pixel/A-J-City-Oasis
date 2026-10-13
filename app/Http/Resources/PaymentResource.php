@@ -17,6 +17,9 @@ class PaymentResource extends JsonResource
             'paid_at' => $this->paid_at?->toIso8601String(),
             'status' => $this->status,
             'xendit_invoice_id' => $this->xendit_invoice_id,
+            // The parts of the upfront booking payment (advance, deposit, security
+            // deposit); empty for ordinary single-amount bills.
+            'breakdown' => $this->hasBreakdown() ? $this->lines() : [],
             // The photo of the actual utility bill the admin attached, if any.
             'bill_photo_url' => $this->utilityBill?->receiptUrl(),
         ];

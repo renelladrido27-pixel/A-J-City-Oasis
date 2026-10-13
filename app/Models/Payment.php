@@ -75,6 +75,32 @@ class Payment extends Model
     }
 
     /**
+     * What a payment is made up of. The upfront booking payment is three
+     * amounts paid at once (advance, deposit, security deposit); everything
+     * else is a single line.
+     *
+     * @return list<array{label: string, note: ?string, amount: float}>
+     */
+    public function lines(): array
+    {
+        if ($this->type === 'booking_upfront' && $this->booking) {
+            return [
+                ['label' => '1 month advance', 'note' => "Your first month's rent", 'amount' => (float) $this->booking->advance_amount],
+                ['label' => '1 month deposit', 'note' => 'Applied as rent · not refundable', 'amount' => (float) $this->booking->deposit_amount],
+                ['label' => 'Security deposit', 'note' => 'Refundable at move-out, less any damages', 'amount' => (float) $this->booking->security_amount],
+            ];
+        }
+
+        return [['label' => ucfirst(str_replace('_', ' ', $this->type)), 'note' => null, 'amount' => (float) $this->amount]];
+    }
+
+    /** Whether lines() splits this payment into several amounts. */
+    public function hasBreakdown(): bool
+    {
+        return count($this->lines()) > 1;
+    }
+
+    /**
      * Line shown to the payer on Xendit's checkout page — shared by the web
      * and mobile pay flows so both invoices read the same.
      */

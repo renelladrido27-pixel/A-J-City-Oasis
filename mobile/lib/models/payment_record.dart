@@ -1,3 +1,5 @@
+import 'receipt.dart';
+
 class PaymentRecord {
   final int id;
 
@@ -12,6 +14,10 @@ class PaymentRecord {
   /// Photo of the utility bill itself, when the admin attached one.
   final String? billPhotoUrl;
 
+  /// The parts of the upfront booking payment (advance, deposit, security
+  /// deposit); empty for ordinary bills.
+  final List<PaymentLine> breakdown;
+
   const PaymentRecord({
     required this.id,
     required this.type,
@@ -21,6 +27,7 @@ class PaymentRecord {
     required this.dueDate,
     required this.paidOn,
     this.billPhotoUrl,
+    this.breakdown = const [],
   });
 
   /// Still owed: not yet paid, including bills flagged overdue.
@@ -37,6 +44,7 @@ class PaymentRecord {
       status: _titleCase(json['status'] as String),
       dueDate: dueDate,
       billPhotoUrl: json['bill_photo_url'] as String?,
+      breakdown: PaymentLine.listFrom(json['breakdown']),
       paidOn: DateTime.tryParse(json['paid_at']?.toString() ?? '') ?? dueDate,
     );
   }

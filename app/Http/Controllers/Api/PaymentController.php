@@ -26,7 +26,7 @@ class PaymentController extends Controller
             // The upfront booking payment is paid through the booking screens, but once
             // paid it belongs in the history here so its receipt can be opened.
             ->orWhere(fn ($q) => $q->where('status', 'paid')->whereHas('booking', fn ($b) => $b->where('user_id', $tenant->id)))
-            ->with(['lease', 'utilityBill'])
+            ->with(['lease', 'booking', 'utilityBill'])
             ->latest('due_date')
             ->get();
 
@@ -80,6 +80,8 @@ class PaymentController extends Controller
             'billed_to' => ['name' => $tenant->name, 'email' => $tenant->email],
             'room' => ['number' => $room?->room_number, 'property' => $room?->property?->name],
             'description' => ucfirst(str_replace('_', ' ', $payment->type)),
+            // One line per amount: three for the upfront booking payment, else one.
+            'lines' => $payment->lines(),
             'amount' => (float) $payment->amount,
             'paid_at' => $payment->paid_at?->toIso8601String(),
             'reference' => $payment->xendit_payment_id ?? $payment->xendit_invoice_id ?? 'Recorded manually',
