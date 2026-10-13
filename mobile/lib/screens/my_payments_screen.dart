@@ -7,6 +7,7 @@ import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/oasis_ui.dart';
+import 'receipt_screen.dart';
 
 /// C6 - My Payments: what is owed (each bill with its own Pay button, like
 /// the website's payments table) and what has been paid.
@@ -293,7 +294,25 @@ class _BillCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          if (p.billPhotoUrl != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => BillPhotoScreen(url: p.billPhotoUrl!),
+                  ),
+                ),
+                icon: const Icon(Icons.image_outlined, size: 18),
+                label: const Text('View bill photo'),
+                style: TextButton.styleFrom(
+                  foregroundColor: OasisColors.green,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            )
+          else
+            const SizedBox(height: 14),
           FilledButton(
             onPressed: enabled ? onPay : null,
             style: FilledButton.styleFrom(
@@ -349,7 +368,8 @@ class _BillCard extends StatelessWidget {
   }
 }
 
-/// One paid bill: what it was for, when it was paid, how much.
+/// One paid bill: what it was for, when it was paid, how much. Tapping it
+/// opens the receipt.
 class _HistoryRow extends StatelessWidget {
   final PaymentRecord payment;
   const _HistoryRow({required this.payment});
@@ -358,7 +378,10 @@ class _HistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = payment;
     return OasisCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => ReceiptScreen(payment: p))),
       child: Row(
         children: [
           const IconBadge(Icons.check, size: 36),
@@ -381,10 +404,24 @@ class _HistoryRow extends StatelessWidget {
               ],
             ),
           ),
-          Text(
-            formatPeso(p.amount),
-            style: const TextStyle(fontWeight: FontWeight.w700),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                formatPeso(p.amount),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const Text(
+                'View receipt',
+                style: TextStyle(
+                  color: OasisColors.green,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
+          const Icon(Icons.chevron_right, color: OasisColors.green, size: 20),
         ],
       ),
     );

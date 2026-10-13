@@ -23,7 +23,10 @@ class PaymentController extends Controller
         $tenant = $request->user();
 
         $payments = Payment::whereHas('lease', fn ($q) => $q->where('tenant_id', $tenant->id))
-            ->with('lease')
+            // The upfront booking payment is paid through the booking screens, but once
+            // paid it belongs in the history here so its receipt can be opened.
+            ->orWhere(fn ($q) => $q->where('status', 'paid')->whereHas('booking', fn ($b) => $b->where('user_id', $tenant->id)))
+            ->with(['lease', 'utilityBill'])
             ->latest('due_date')
             ->get();
 
@@ -55,6 +58,33 @@ class PaymentController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    /**
+     * The receipt for a paid payment — the same details as the website's
+     * printable receipt page, for the app to lay out itself.
+     */
+    public function receipt(Request $request, Payment $payment): JsonResponse
+    {
+        $this->authorizePaymentOwner($request, $payment);
+        abort_unless($payment->status === 'paid', 404, 'There is no receipt for this payment yet.');
+
+        $payment->load(['lease.room.property', 'lease.tenant', 'booking.room.property', 'booking.tenant', 'utilityBill']);
+        $tenant = $payment->lease?->tenant ?? $payment->booking?->tenant;
+        $room = $payment->lease?->room ?? $payment->booking?->room;
+
+        return response()->json(['receipt' => [
+            'number' => str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT),
+            'business' => 'A&J CITY OASIS',
+            'business_address' => 'Koronadal City, South Cotabato',
+            'billed_to' => ['name' => $tenant->name, 'email' => $tenant->email],
+            'room' => ['number' => $room?->room_number, 'property' => $room?->property?->name],
+            'description' => ucfirst(str_replace('_', ' ', $payment->type)),
+            'amount' => (float) $payment->amount,
+            'paid_at' => $payment->paid_at?->toIso8601String(),
+            'reference' => $payment->xendit_payment_id ?? $payment->xendit_invoice_id ?? 'Recorded manually',
+            'bill_photo_url' => $payment->utilityBill?->receiptUrl(),
+        ]]);
     }
 
     public function checkStatus(Request $request, Payment $payment): JsonResponse

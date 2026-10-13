@@ -6,6 +6,7 @@ import '../models/booking_summary.dart';
 import '../models/lease.dart';
 import '../models/maintenance_request.dart';
 import '../models/payment_record.dart';
+import '../models/receipt.dart';
 import '../models/room.dart';
 import '../models/tenant_profile.dart';
 import '../models/transfer_request.dart';
@@ -370,6 +371,12 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
     return res;
+  }
+
+  /// The receipt for a paid payment.
+  Future<Receipt> fetchReceipt(int paymentId) async {
+    final res = await _api.get('/payments/$paymentId/receipt');
+    return Receipt.fromJson(res['receipt'] as Map<String, dynamic>);
   }
 
   Future<Map<String, dynamic>> checkPaymentStatus(int id) async {

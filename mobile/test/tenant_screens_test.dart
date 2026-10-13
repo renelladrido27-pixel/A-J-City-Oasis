@@ -3,15 +3,18 @@ import 'dart:io';
 import 'package:ajoasis_mobile/models/lease.dart';
 import 'package:ajoasis_mobile/models/maintenance_request.dart';
 import 'package:ajoasis_mobile/models/payment_record.dart';
+import 'package:ajoasis_mobile/models/receipt.dart';
 import 'package:ajoasis_mobile/models/room.dart';
 import 'package:ajoasis_mobile/models/tenant_profile.dart';
 import 'package:ajoasis_mobile/models/transfer_request.dart';
 import 'package:ajoasis_mobile/screens/landing_screen.dart';
 import 'package:ajoasis_mobile/screens/my_payments_screen.dart';
 import 'package:ajoasis_mobile/screens/profile_screen.dart';
+import 'package:ajoasis_mobile/screens/receipt_screen.dart';
 import 'package:ajoasis_mobile/screens/rental_hub_screen.dart';
 import 'package:ajoasis_mobile/state/app_state.dart';
 import 'package:ajoasis_mobile/theme.dart';
+import 'package:ajoasis_mobile/utils/format.dart';
 import 'package:ajoasis_mobile/widgets/oasis_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -41,6 +44,20 @@ class _FakeApp extends AppState {
     await null;
     availableRooms = rooms;
     notifyListeners();
+  }
+}
+
+/// App state that hands back a ready-made receipt instead of asking the server.
+class _ReceiptApp extends AppState {
+  _ReceiptApp(this.receipt);
+  final Receipt receipt;
+  final asked = <int>[];
+
+  @override
+  Future<Receipt> fetchReceipt(int paymentId) async {
+    await null;
+    asked.add(paymentId);
+    return receipt;
   }
 }
 
@@ -467,6 +484,139 @@ void main() {
       );
 
       expect(find.text('Email not verified'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Receipt', () {
+    Receipt receipt({String? billPhotoUrl, double amount = 3500}) => Receipt(
+      number: '000012',
+      business: 'A&J CITY OASIS',
+      businessAddress: 'Koronadal City, South Cotabato',
+      billedToName: 'Maria Santos Reyes',
+      billedToEmail: 'maria@example.com',
+      roomNumber: '101',
+      property: 'A&J CITY OASIS - Main Building',
+      description: 'Rent',
+      amount: amount,
+      paidAt: DateTime(2026, 10, 2, 15, 15),
+      reference: 'pay-abc-123',
+      billPhotoUrl: billPhotoUrl,
+    );
+
+    test('amounts are shown to the centavo, dates with the time', () {
+      expect(formatPesoExact(450.75), '₱450.75');
+      expect(formatPesoExact(10500), '₱10,500.00');
+      expect(formatPesoExact(0.5), '₱0.50');
+      expect(
+        formatDateTime(DateTime(2026, 10, 2, 15, 15)),
+        'Oct 2, 2026 3:15 PM',
+      );
+      expect(
+        formatDateTime(DateTime(2026, 1, 9, 0, 5)),
+        'Jan 9, 2026 12:05 AM',
+      );
+    });
+
+    testWidgets('a paid bill in the Pay tab opens its receipt', (tester) async {
+      final app = _ReceiptApp(receipt())
+        ..isLoggedIn = true
+        ..paymentHistory = [
+          _bill(12, 'rent', 3500, status: 'Paid', due: DateTime(2026, 10, 1)),
+        ];
+      await _pump(tester, app, const MyPaymentsScreen());
+
+      expect(find.text('View receipt'), findsOneWidget);
+      await tester.tap(find.text('View receipt'));
+      await tester.pumpAndSettle();
+
+      expect(app.asked, [12]);
+      expect(find.byType(ReceiptScreen), findsOneWidget);
+      expect(find.text('#000012'), findsOneWidget);
+      expect(find.text('A&J CITY OASIS'), findsOneWidget);
+      expect(find.text('Maria Santos Reyes'), findsOneWidget);
+      expect(find.text('maria@example.com'), findsOneWidget);
+      expect(find.text('101'), findsOneWidget);
+      expect(find.text('A&J CITY OASIS - Main Building'), findsOneWidget);
+      expect(find.text('Rent'), findsOneWidget);
+      // Once on the line, once as the total.
+      expect(find.text('₱3,500.00'), findsNWidgets(2));
+      expect(find.text('Oct 2, 2026 3:15 PM'), findsOneWidget);
+      expect(find.text('pay-abc-123'), findsOneWidget);
+      expect(find.text('Paid in Full'), findsOneWidget);
+      // No bill photo for rent.
+      expect(find.text('View bill photo'), findsNothing);
+      expect(tester.takeException(), isNull);
+      if (_shots) {
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('zz_shots/receipt.png'),
+        );
+      }
+    });
+
+    testWidgets('a utility receipt also offers the photo of the bill', (
+      tester,
+    ) async {
+      final app = _ReceiptApp(
+        receipt(billPhotoUrl: 'https://example.test/bill.jpg', amount: 450.75),
+      );
+      final payment = _bill(
+        5,
+        'utility',
+        450.75,
+        status: 'Paid',
+        due: DateTime(2026, 10, 5),
+      );
+      await _pump(tester, app, ReceiptScreen(payment: payment));
+
+      expect(find.text('₱450.75'), findsNWidgets(2));
+      expect(find.text('View bill photo'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('an unpaid utility bill shows its photo link before paying', (
+      tester,
+    ) async {
+      final app = _tenant(due: 820)
+        ..unpaidPayments = [
+          PaymentRecord(
+            id: 5,
+            type: 'utility',
+            monthLabel: 'Nov',
+            amount: 820,
+            status: 'Pending',
+            dueDate: DateTime(2026, 11, 5),
+            paidOn: DateTime(2026, 11, 5),
+            billPhotoUrl: 'https://example.test/bill.jpg',
+          ),
+          _bill(4, 'rent', 3500, due: DateTime(2026, 11, 1)),
+        ];
+      await _pump(tester, app, const MyPaymentsScreen());
+
+      // Only the bill that has a photo gets the link.
+      expect(find.text('View bill photo'), findsOneWidget);
+      expect(find.text('Pay now'), findsNWidgets(2));
+    });
+
+    testWidgets('fits a small phone with a large system font', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final payment = _bill(
+        12,
+        'rent',
+        3500,
+        status: 'Paid',
+        due: DateTime(2026, 10, 1),
+      );
+      await _pump(
+        tester,
+        _ReceiptApp(receipt(billPhotoUrl: 'https://example.test/bill.jpg')),
+        ReceiptScreen(payment: payment),
+        width: 320,
+      );
+
+      expect(find.text('Paid in Full'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

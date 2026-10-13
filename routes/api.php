@@ -52,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments/{payment}/pay', [PaymentController::class, 'pay']);
         Route::post('/payments/{payment}/check-status', [PaymentController::class, 'checkStatus']);
+        Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt']);
 
         Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
         Route::post('/maintenance-requests', [MaintenanceRequestController::class, 'store']);

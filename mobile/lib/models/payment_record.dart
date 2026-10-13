@@ -9,6 +9,9 @@ class PaymentRecord {
   final DateTime dueDate;
   final DateTime paidOn;
 
+  /// Photo of the utility bill itself, when the admin attached one.
+  final String? billPhotoUrl;
+
   const PaymentRecord({
     required this.id,
     required this.type,
@@ -17,6 +20,7 @@ class PaymentRecord {
     required this.status,
     required this.dueDate,
     required this.paidOn,
+    this.billPhotoUrl,
   });
 
   /// Still owed: not yet paid, including bills flagged overdue.
@@ -32,6 +36,7 @@ class PaymentRecord {
       amount: (json['amount'] as num).toDouble(),
       status: _titleCase(json['status'] as String),
       dueDate: dueDate,
+      billPhotoUrl: json['bill_photo_url'] as String?,
       paidOn: DateTime.tryParse(json['paid_at']?.toString() ?? '') ?? dueDate,
     );
   }
