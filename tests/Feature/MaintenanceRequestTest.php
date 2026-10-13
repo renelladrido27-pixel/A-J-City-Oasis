@@ -183,8 +183,8 @@ class MaintenanceRequestTest extends TestCase
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
             ->assertSee(route('tenant.maintenance-requests.resolve', $request))
             ->assertSee('Mark as resolved')
-            // Cancelling is only for a request nobody has been assigned to.
-            ->assertDontSee(route('tenant.maintenance-requests.cancel', $request));
+            // Deleting is only for a request nobody has been assigned to.
+            ->assertDontSee('bi-trash');
 
         $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))
             ->assertRedirect()->assertSessionHas('status');
@@ -253,6 +253,83 @@ class MaintenanceRequestTest extends TestCase
 
         Sanctum::actingAs($pending->tenant);
         $this->postJson("/api/maintenance-requests/{$pending->id}/cancel")->assertOk()->assertJsonPath('request.status', 'cancelled');
+    }
+
+    public function test_a_tenant_who_changed_their_mind_can_delete_a_request_nobody_has_started(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->admin()->create();
+        $request = $this->requestFor(Lease::factory()->create());
+        Storage::disk('public')->put('maintenance/leak.jpg', 'jpg');
+        $request->update(['photo' => 'maintenance/leak.jpg']);
+        $tenant = $request->tenant;
+
+        $this->actingAs($tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
+            ->assertSee(route('tenant.maintenance-requests.destroy', $request))
+            ->assertSee('Delete');
+
+        $this->actingAs($tenant)->delete(route('tenant.maintenance-requests.destroy', $request))
+            ->assertRedirect()->assertSessionHas('status', 'Maintenance request deleted.');
+
+        $this->assertNull($request->fresh());
+        Storage::disk('public')->assertMissing('maintenance/leak.jpg');
+        // The admin heard about the request when it came in, so is told it was withdrawn.
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $admin->id,
+            'title' => 'Maintenance request withdrawn',
+            'message' => "{$tenant->name} withdrew the Plumbing request for Room {$request->room->room_number}.",
+        ]);
+        $this->actingAs($tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()->assertDontSee('Leaking sink');
+    }
+
+    public function test_a_request_being_worked_on_or_already_resolved_cannot_be_deleted(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $inProgress = $this->requestFor(Lease::factory()->create());
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assigned_to' => $admin->id]);
+        $resolved = $this->requestFor(Lease::factory()->create());
+        $resolved->update(['status' => 'resolved', 'resolved_at' => now()]);
+
+        foreach ([$inProgress, $resolved] as $request) {
+            $this->actingAs($request->tenant)->delete(route('tenant.maintenance-requests.destroy', $request))->assertStatus(422);
+            $this->assertNotNull($request->fresh());
+            $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertDontSee('bi-trash');
+        }
+    }
+
+    public function test_only_the_tenant_who_reported_it_can_delete_it_and_a_cancelled_one_can_be_tidied_away(): void
+    {
+        $request = $this->requestFor(Lease::factory()->create());
+        $stranger = Lease::factory()->create()->tenant;
+
+        $this->actingAs($stranger)->delete(route('tenant.maintenance-requests.destroy', $request))->assertForbidden();
+        $this->actingAs(User::factory()->admin()->create())->delete(route('tenant.maintenance-requests.destroy', $request))->assertForbidden();
+        $this->assertNotNull($request->fresh());
+
+        $request->update(['status' => 'cancelled']);
+        $this->actingAs($request->tenant)->delete(route('tenant.maintenance-requests.destroy', $request))->assertRedirect();
+        $this->assertNull($request->fresh());
+        // Nobody needs telling about a request that was already cancelled.
+        $this->assertDatabaseMissing('notifications', ['title' => 'Maintenance request withdrawn']);
+    }
+
+    public function test_the_mobile_app_can_delete_a_pending_request(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $pending = $this->requestFor(Lease::factory()->create());
+        $assigned = $this->requestFor(Lease::factory()->create());
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id]);
+
+        Sanctum::actingAs($pending->tenant);
+        $this->deleteJson("/api/maintenance-requests/{$assigned->id}")->assertForbidden();
+        $this->deleteJson("/api/maintenance-requests/{$pending->id}")->assertNoContent();
+        $this->assertNull($pending->fresh());
+        $this->getJson('/api/maintenance-requests')->assertOk()->assertJsonCount(0, 'requests');
+
+        Sanctum::actingAs($assigned->tenant);
+        $this->deleteJson("/api/maintenance-requests/{$assigned->id}")->assertStatus(422)
+            ->assertJsonPath('message', 'This request is already being handled, so it can no longer be deleted. Mark it as resolved once the work is done.');
+        $this->assertNotNull($assigned->fresh());
     }
 
     public function test_a_tenant_cannot_use_the_admin_update_route(): void

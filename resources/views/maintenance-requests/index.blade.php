@@ -78,24 +78,25 @@
                                 @endif
                             </td>
                         @else
-                            {{-- The tenant closes their own request. --}}
+                            {{-- The tenant closes their own request — or deletes it if they changed their mind. --}}
                             <td>
-                                @if ($request->isOpen())
-                                    <div class="d-flex flex-wrap gap-1">
+                                <div class="d-flex flex-wrap gap-1">
+                                    @if ($request->isOpen())
                                         <form method="POST" action="{{ route('tenant.maintenance-requests.resolve', $request) }}" onsubmit="return confirm('Confirm that this issue has been fixed? This closes the request.')">
                                             @csrf
                                             <button class="btn btn-sm btn-success" data-loading-text="Saving…"><i class="bi bi-check2-circle me-1"></i>Mark as resolved</button>
                                         </form>
-                                        @if ($request->status === 'pending')
-                                            <form method="POST" action="{{ route('tenant.maintenance-requests.cancel', $request) }}" onsubmit="return confirm('Cancel this maintenance request?')">
-                                                @csrf
-                                                <button class="btn btn-sm btn-outline-secondary" data-loading-text="Cancelling…">Cancel</button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                @else
-                                    <span class="text-muted">—</span>
-                                @endif
+                                    @endif
+                                    @if ($request->isDeletable())
+                                        <form method="POST" action="{{ route('tenant.maintenance-requests.destroy', $request) }}" onsubmit="return confirm('Delete this maintenance request? This cannot be undone.')">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-sm btn-outline-danger" data-loading-text="Deleting…"><i class="bi bi-trash me-1"></i>Delete</button>
+                                        </form>
+                                    @endif
+                                    @unless ($request->isOpen() || $request->isDeletable())
+                                        <span class="text-muted">—</span>
+                                    @endunless
+                                </div>
                             </td>
                         @endif
                     </tr>

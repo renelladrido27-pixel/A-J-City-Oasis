@@ -92,18 +92,19 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   }
 
   /// Closing a request is the tenant's call: confirm the work is done, or
-  /// withdraw a request nobody has started. Asks first — it can't be undone.
+  /// delete a request nobody has started. Asks first — it can't be undone.
   Future<void> _close(MaintenanceRequest r, {required bool resolve}) async {
     final app = AppStateScope.of(context);
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(resolve ? 'Is it fixed?' : 'Cancel this request?'),
+        title: Text(resolve ? 'Is it fixed?' : 'Delete this request?'),
         content: Text(
           resolve
               ? 'Confirm that the ${r.issueType.toLowerCase()} issue has been '
                     'fixed. This closes the request.'
-              : 'Your ${r.issueType.toLowerCase()} request will be withdrawn.',
+              : 'Your ${r.issueType.toLowerCase()} request will be removed. '
+                    'This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -112,8 +113,12 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: OasisColors.green),
-            child: Text(resolve ? 'Yes, it\'s fixed' : 'Cancel request'),
+            style: FilledButton.styleFrom(
+              backgroundColor: resolve
+                  ? OasisColors.green
+                  : const Color(0xFFA1281E),
+            ),
+            child: Text(resolve ? 'Yes, it\'s fixed' : 'Delete'),
           ),
         ],
       ),
@@ -125,7 +130,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
       if (resolve) {
         await app.resolveMaintenanceRequest(r.id);
       } else {
-        await app.cancelMaintenanceRequest(r.id);
+        await app.deleteMaintenanceRequest(r.id);
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -133,7 +138,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           content: Text(
             resolve
                 ? 'Thanks — marked as resolved.'
-                : 'Maintenance request cancelled.',
+                : 'Maintenance request deleted.',
           ),
         ),
       );
@@ -245,7 +250,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                     busy: _closingId == r.id,
                     enabled: _closingId == null,
                     onResolve: () => _close(r, resolve: true),
-                    onCancel: () => _close(r, resolve: false),
+                    onDelete: () => _close(r, resolve: false),
                   ),
                 ),
               ),
@@ -263,13 +268,13 @@ class _RequestCard extends StatelessWidget {
   final bool busy;
   final bool enabled;
   final VoidCallback onResolve;
-  final VoidCallback onCancel;
+  final VoidCallback onDelete;
   const _RequestCard({
     required this.request,
     required this.busy,
     required this.enabled,
     required this.onResolve,
-    required this.onCancel,
+    required this.onDelete,
   });
 
   @override
@@ -329,52 +334,54 @@ class _RequestCard extends StatelessWidget {
               ),
             ],
           ),
-          if (r.isOpen) ...[
+          if (r.isOpen || r.canDelete) ...[
             const SizedBox(height: 12),
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: enabled ? onResolve : null,
-                    icon: busy
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.check_circle_outline, size: 18),
-                    label: const FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('Mark as resolved'),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: OasisColors.green,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(42),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                if (r.isOpen)
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: enabled ? onResolve : null,
+                      icon: busy
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.check_circle_outline, size: 18),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Mark as resolved'),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: OasisColors.green,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(42),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                if (r.canCancel) ...[
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: enabled ? onCancel : null,
+                // Changed your mind? Only while nobody has been assigned.
+                if (r.canDelete) ...[
+                  if (r.isOpen) const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: enabled ? onDelete : null,
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Delete'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: OasisColors.ink,
-                      side: const BorderSide(
-                        color: OasisColors.placeholderGrey,
-                      ),
+                      foregroundColor: const Color(0xFFA1281E),
+                      side: const BorderSide(color: Color(0xFFE5B5B0)),
                       minimumSize: const Size(0, 42),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('Cancel'),
                   ),
                 ],
               ],

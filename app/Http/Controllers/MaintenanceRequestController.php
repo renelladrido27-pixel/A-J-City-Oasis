@@ -117,4 +117,14 @@ class MaintenanceRequestController extends Controller
 
         return back()->with('status', 'Maintenance request cancelled.');
     }
+
+    /** The tenant deletes a request they changed their mind about. */
+    public function destroy(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
+    {
+        abort_unless($maintenanceRequest->tenant_id === $request->user()->id, 403);
+
+        app(MaintenanceService::class)->delete($maintenanceRequest);
+
+        return back()->with('status', 'Maintenance request deleted.');
+    }
 }

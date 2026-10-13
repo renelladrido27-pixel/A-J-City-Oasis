@@ -155,6 +155,7 @@ Route::middleware(['auth', 'role:tenant', 'email.verified'])->prefix('tenant')->
     Route::post('/leases/{lease}/maintenance-requests', [MaintenanceRequestController::class, 'store'])->name('maintenance-requests.store');
     Route::post('/maintenance-requests/{maintenanceRequest}/resolve', [MaintenanceRequestController::class, 'resolve'])->name('maintenance-requests.resolve');
     Route::post('/maintenance-requests/{maintenanceRequest}/cancel', [MaintenanceRequestController::class, 'cancel'])->name('maintenance-requests.cancel');
+    Route::delete('/maintenance-requests/{maintenanceRequest}', [MaintenanceRequestController::class, 'destroy'])->name('maintenance-requests.destroy');
 
     Route::get('/leases/{lease}/transfer', [RoomTransferController::class, 'create'])->name('room-transfers.create');
     Route::post('/leases/{lease}/transfer', [RoomTransferController::class, 'store'])->name('room-transfers.store');

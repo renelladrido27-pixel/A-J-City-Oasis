@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MaintenanceRequest;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Who moves a maintenance request along:
@@ -81,5 +82,29 @@ class MaintenanceService
             "{$request->tenant->name} cancelled the {$request->category} request for Room {$request->room->room_number}.",
             'maintenance',
         );
+    }
+
+    /** The tenant changed their mind: remove the request (and its photo) altogether. */
+    public function delete(MaintenanceRequest $request): void
+    {
+        abort_unless(
+            $request->isDeletable(),
+            422,
+            'This request is already being handled, so it can no longer be deleted. Mark it as resolved once the work is done.',
+        );
+
+        $wasPending = $request->status === 'pending';
+        $summary = "{$request->tenant->name} withdrew the {$request->category} request for Room {$request->room->room_number}.";
+
+        if ($request->photo) {
+            Storage::disk('public')->delete($request->photo);
+        }
+
+        $request->delete();
+
+        // Admins were told about the request when it came in — tell them it's gone.
+        if ($wasPending) {
+            $this->notifications->notifyAdminsAndStaff('Maintenance request withdrawn', $summary, 'maintenance');
+        }
     }
 }

@@ -81,4 +81,14 @@ class MaintenanceRequestController extends Controller
 
         return response()->json(['request' => MaintenanceRequestResource::make($maintenanceRequest->load('assignee'))]);
     }
+
+    /** The tenant deletes a request they changed their mind about. */
+    public function destroy(Request $request, MaintenanceRequest $maintenanceRequest): JsonResponse
+    {
+        abort_unless($maintenanceRequest->tenant_id === $request->user()->id, 403);
+
+        app(MaintenanceService::class)->delete($maintenanceRequest);
+
+        return response()->json(null, 204);
+    }
 }

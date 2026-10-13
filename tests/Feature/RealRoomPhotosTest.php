@@ -2,21 +2,29 @@
 
 namespace Tests\Feature;
 
+use App\Models\Property;
 use App\Models\Room;
+use App\Models\RoomImage;
 use App\Models\User;
+use App\Services\RoomGenerationService;
 use App\Support\StockRoomPhotos;
+use Database\Seeders\PropertySeeder;
 use Database\Seeders\RoomImageSeeder;
+use Database\Seeders\RoomSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * The owner's real photos replace the drawn placeholders: on every room that
- * has no photos of its own, and on the home page.
+ * The owner's real photos are shown on the twelve photographed rooms — the
+ * first six on floors 1 and 2 of the first building — and on the home page.
+ * Every other room keeps a drawn placeholder.
  */
 class RealRoomPhotosTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const PHOTOGRAPHED = ['101', '102', '103', '104', '105', '106', '201', '202', '203', '204', '205', '206'];
 
     protected function setUp(): void
     {
@@ -24,13 +32,22 @@ class RealRoomPhotosTest extends TestCase
         Storage::fake('public');
     }
 
-    private function placeholder(Room $room, int $order = 0): string
+    /** 53 rooms: 27 in Main (three floors), 26 in Annex. */
+    private function buildings(): array
     {
-        $path = "rooms/room-{$room->id}-{$order}.svg";
-        Storage::disk('public')->put($path, '<svg/>');
-        $room->images()->create(['path' => $path, 'sort_order' => $order]);
+        $this->seed([PropertySeeder::class, RoomSeeder::class]);
 
-        return $path;
+        return Property::orderBy('id')->get()->all();
+    }
+
+    private function room(Property $property, string $number): Room
+    {
+        return Room::where('property_id', $property->id)->where('room_number', $number)->firstOrFail();
+    }
+
+    private function paths(Room $room): array
+    {
+        return $room->images()->orderBy('sort_order')->pluck('path')->all();
     }
 
     public function test_the_photo_set_is_in_the_repo_and_small_enough_for_the_web(): void
@@ -46,50 +63,107 @@ class RealRoomPhotosTest extends TestCase
         }
     }
 
-    public function test_placeholder_drawings_are_replaced_with_the_real_photos(): void
+    public function test_the_original_53_rooms_in_two_buildings_are_seeded(): void
     {
-        $room = Room::factory()->create(['description' => 'Spacious corner room, quiet side of the building.', 'inclusions' => ['Shared CR', 'Cable TV']]);
-        $old = [$this->placeholder($room, 0), $this->placeholder($room, 1)];
-        $bare = Room::factory()->create(['description' => null]);
+        [$main, $annex] = $this->buildings();
+
+        $this->assertSame(53, Room::count());
+        $this->assertSame(27, $main->rooms()->count());
+        $this->assertSame(26, $annex->rooms()->count());
+        $this->assertSame('A&J CITY OASIS - Main Building', $main->name);
+        $this->assertSame('A&J CITY OASIS - Annex Building', $annex->name);
+    }
+
+    public function test_only_the_first_six_rooms_on_floors_one_and_two_of_the_first_building_get_real_photos(): void
+    {
+        [$main, $annex] = $this->buildings();
 
         $this->artisan('app:use-real-room-photos')->assertSuccessful();
 
-        foreach ([$room, $bare] as $r) {
-            $paths = $r->images()->orderBy('sort_order')->pluck('path')->all();
-            $this->assertCount(6, $paths);
-            $this->assertSame('rooms/stock/01-loft.jpg', $paths[0]);
-            $this->assertSame('rooms/stock/06-building.jpg', $paths[5]);
-            foreach ($paths as $path) {
-                Storage::disk('public')->assertExists($path);
-            }
+        $withPhotos = Room::whereHas('images', fn ($q) => $q->where('path', 'like', 'rooms/stock/%'))->get();
+        $this->assertSame(12, $withPhotos->count());
+        $this->assertSame([$main->id], $withPhotos->pluck('property_id')->unique()->values()->all());
+        $this->assertEqualsCanonicalizing(self::PHOTOGRAPHED, $withPhotos->pluck('room_number')->all());
+
+        // A photographed room: the six real photos, in order, and details that match them.
+        $photographed = $this->room($main, '203');
+        $this->assertSame([
+            'rooms/stock/01-loft.jpg', 'rooms/stock/02-entry.jpg', 'rooms/stock/03-kitchen-bath.jpg',
+            'rooms/stock/04-kitchen.jpg', 'rooms/stock/05-bathroom.jpg', 'rooms/stock/06-building.jpg',
+        ], $this->paths($photographed));
+        $this->assertSame(StockRoomPhotos::DESCRIPTION, $photographed->description);
+        $this->assertSame(StockRoomPhotos::INCLUSIONS, $photographed->inclusions);
+
+        // Everything else — the 7th room onward, the third floor, the whole Annex — has one drawing, no real photo.
+        foreach ([$this->room($main, '107'), $this->room($main, '210'), $this->room($main, '301'), $this->room($annex, '101'), $this->room($annex, '206')] as $room) {
+            $this->assertSame(["rooms/room-{$room->id}-0.svg"], $this->paths($room), "room {$room->room_number}");
+            Storage::disk('public')->assertExists("rooms/room-{$room->id}-0.svg");
+            $this->assertNull($room->description);
         }
-        // The old drawings are gone from disk, and the made-up details no longer contradict the photos.
-        Storage::disk('public')->assertMissing($old);
-        $this->assertSame(StockRoomPhotos::DESCRIPTION, $room->fresh()->description);
-        $this->assertSame(StockRoomPhotos::INCLUSIONS, $room->fresh()->inclusions);
-        // A room with no details isn't given any.
-        $this->assertNull($bare->fresh()->description);
+        $this->assertSame(41, Room::whereHas('images', fn ($q) => $q->where('path', 'like', '%.svg'))->count());
+        $this->assertSame(12 * 6 + 41, RoomImage::count());
+    }
+
+    public function test_rooms_that_wrongly_had_the_real_photos_go_back_to_a_drawing(): void
+    {
+        [$main, $annex] = $this->buildings();
+        // The state after the photos were first put on every room.
+        $paths = StockRoomPhotos::publish();
+        Room::all()->each(function (Room $room) use ($paths) {
+            foreach ($paths as $order => $path) {
+                $room->images()->create(['path' => $path, 'sort_order' => $order]);
+            }
+        });
+
+        $this->artisan('app:use-real-room-photos')->assertSuccessful();
+
+        $this->assertSame(["rooms/room-{$this->room($annex, '101')->id}-0.svg"], $this->paths($this->room($annex, '101')));
+        $this->assertSame(["rooms/room-{$this->room($main, '305')->id}-0.svg"], $this->paths($this->room($main, '305')));
+        $this->assertCount(6, $this->paths($this->room($main, '101')));
+        $this->assertSame(12, Room::whereHas('images', fn ($q) => $q->where('path', 'like', 'rooms/stock/%'))->count());
+        // The shared files are still there for the twelve rooms that use them.
+        Storage::disk('public')->assertExists('rooms/stock/01-loft.jpg');
     }
 
     public function test_a_room_with_its_own_uploaded_photos_is_left_alone_and_rerunning_changes_nothing(): void
     {
-        $own = Room::factory()->create(['description' => 'Written by the admin.']);
-        Storage::disk('public')->put('rooms/uploaded.jpg', 'jpg');
-        $own->images()->create(['path' => 'rooms/uploaded.jpg', 'sort_order' => 0]);
-        $other = Room::factory()->create();
+        [$main, $annex] = $this->buildings();
+        foreach ([$this->room($main, '102'), $this->room($annex, '103')] as $own) {
+            Storage::disk('public')->put("rooms/uploaded-{$own->id}.jpg", 'jpg');
+            $own->images()->create(['path' => "rooms/uploaded-{$own->id}.jpg", 'sort_order' => 0]);
+            $own->update(['description' => 'Written by the admin.']);
+        }
 
         $this->artisan('app:use-real-room-photos')->assertSuccessful();
+        $before = RoomImage::orderBy('id')->pluck('path', 'id')->all();
         $this->artisan('app:use-real-room-photos')->assertSuccessful();
 
-        $this->assertSame(['rooms/uploaded.jpg'], $own->images()->pluck('path')->all());
-        $this->assertSame('Written by the admin.', $own->fresh()->description);
-        $this->assertSame(6, $other->images()->count());
+        $this->assertSame($before, RoomImage::orderBy('id')->pluck('path', 'id')->all());
+        foreach ([$this->room($main, '102'), $this->room($annex, '103')] as $own) {
+            $this->assertSame(["rooms/uploaded-{$own->id}.jpg"], $this->paths($own));
+            $this->assertSame('Written by the admin.', $own->description);
+        }
+    }
+
+    public function test_made_up_details_on_a_photographed_room_are_replaced_with_what_the_photos_show(): void
+    {
+        [$main, $annex] = $this->buildings();
+        $madeUp = ['description' => 'Spacious corner room, quiet side of the building.', 'inclusions' => ['Shared CR', 'Cable TV']];
+        $this->room($main, '101')->update($madeUp);
+        $this->room($annex, '101')->update($madeUp);
+
+        $this->artisan('app:use-real-room-photos');
+
+        $this->assertSame(StockRoomPhotos::INCLUSIONS, $this->room($main, '101')->inclusions);
+        // A room without the photos keeps whatever it had.
+        $this->assertSame(['Shared CR', 'Cable TV'], $this->room($annex, '101')->inclusions);
     }
 
     public function test_removing_a_shared_photo_from_one_room_keeps_it_for_the_others(): void
     {
-        [$a, $b] = [Room::factory()->create(), Room::factory()->create()];
+        [$main] = $this->buildings();
         $this->artisan('app:use-real-room-photos');
+        [$a, $b] = [$this->room($main, '101'), $this->room($main, '102')];
         $admin = User::factory()->admin()->create();
         $image = $a->images()->orderBy('sort_order')->first();
 
@@ -110,48 +184,57 @@ class RealRoomPhotosTest extends TestCase
         Storage::disk('public')->assertMissing('rooms/only-b.jpg');
     }
 
-    public function test_a_fresh_install_seeds_rooms_with_the_real_photos(): void
+    public function test_a_fresh_install_is_seeded_the_same_way(): void
     {
-        $rooms = Room::factory()->count(4)->create(['property_id' => Room::factory()->create()->property_id]);
-
-        $this->seed(RoomImageSeeder::class);
+        $this->seed([PropertySeeder::class, RoomSeeder::class, RoomImageSeeder::class]);
         $this->seed(RoomImageSeeder::class);
 
-        $this->assertSame(0, \App\Models\RoomImage::where('path', 'like', '%.svg')->count());
-        foreach ($rooms as $room) {
-            $this->assertSame(6, $room->images()->count());
-        }
-        $this->assertSame(3, Room::where('description', StockRoomPhotos::DESCRIPTION)->count());
+        $this->assertSame(12, Room::whereHas('images', fn ($q) => $q->where('path', 'like', 'rooms/stock/%'))->count());
+        $this->assertSame(41, Room::whereHas('images', fn ($q) => $q->where('path', 'like', '%.svg'))->count());
+        $this->assertSame(12, Room::where('description', StockRoomPhotos::DESCRIPTION)->count());
     }
 
-    public function test_the_home_page_shows_the_building_and_the_units(): void
+    public function test_a_building_with_fewer_rooms_per_floor_just_uses_what_is_there(): void
     {
-        Room::factory()->create();
+        $property = Property::create(['name' => 'Small', 'address' => 'Koronadal City']);
+        (new RoomGenerationService)->generate($property, 8, 3500, roomsPerFloor: 4);
 
-        // Before the photos are published: the building photos (they ship with the site) still show.
-        $this->get('/')->assertOk()
-            ->assertSee(asset('images/building-front.jpg'))
-            ->assertSee(asset('images/building-side.jpg'))
-            ->assertDontSee('hero-placeholder.svg');
+        $this->artisan('app:use-real-room-photos')->assertSuccessful();
 
+        $this->assertSame(8, Room::whereHas('images', fn ($q) => $q->where('path', 'like', 'rooms/stock/%'))->count());
+    }
+
+    public function test_the_home_page_shows_the_building_the_units_and_photographed_rooms_first(): void
+    {
+        $this->buildings();
         $this->artisan('app:use-real-room-photos');
 
-        $this->get('/')->assertOk()
+        $response = $this->get('/')->assertOk()
+            ->assertSee(asset('images/building-front.jpg'))
+            ->assertSee(asset('images/building-side.jpg'))
+            ->assertDontSee('hero-placeholder.svg')
             ->assertSee('Take a look')
-            ->assertSee(asset('storage/rooms/stock/01-loft.jpg'))
+            ->assertSee('53 rooms across 2 properties')
             ->assertSee(asset('storage/rooms/stock/04-kitchen.jpg'));
+
+        // The three featured rooms are ones with real photos, not drawings.
+        $this->assertSame(0, substr_count($response->getContent(), '-0.svg'));
     }
 
     public function test_the_app_and_the_room_pages_get_the_real_photos(): void
     {
-        $room = Room::factory()->create(['room_number' => '101']);
+        [$main, $annex] = $this->buildings();
         $this->artisan('app:use-real-room-photos');
 
-        $this->getJson('/api/rooms')->assertOk()
-            ->assertJsonPath('rooms.0.images.0', asset('storage/rooms/stock/01-loft.jpg'))
-            ->assertJsonCount(6, 'rooms.0.images');
+        $rooms = collect($this->getJson('/api/rooms')->assertOk()->json('rooms'));
+        $photographed = $rooms->first(fn ($r) => $r['id'] === $this->room($main, '101')->id);
+        $drawn = $rooms->first(fn ($r) => $r['id'] === $this->room($annex, '101')->id);
 
-        $this->get(route('rooms.show', $room))->assertOk()->assertSee(asset('storage/rooms/stock/01-loft.jpg'));
-        $this->get(route('rooms.browse'))->assertOk()->assertSee(asset('storage/rooms/stock/01-loft.jpg'));
+        $this->assertSame(asset('storage/rooms/stock/01-loft.jpg'), $photographed['images'][0]);
+        $this->assertCount(6, $photographed['images']);
+        $this->assertSame([asset("storage/rooms/room-{$drawn['id']}-0.svg")], $drawn['images']);
+
+        $this->get(route('rooms.show', $this->room($main, '101')))->assertOk()->assertSee(asset('storage/rooms/stock/01-loft.jpg'));
+        $this->get(route('rooms.show', $this->room($annex, '101')))->assertOk()->assertDontSee('rooms/stock/');
     }
 }

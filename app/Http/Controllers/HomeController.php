@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\User;
+use App\Support\StockRoomPhotos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -26,7 +27,13 @@ class HomeController extends Controller
             'tenants' => User::where('role', 'tenant')->count(),
         ];
 
-        $featuredRooms = Room::where('status', 'vacant')->with(['property', 'images'])->latest()->take(3)->get();
+        // Vacant rooms that have real photos come first, so the home page shows
+        // actual pictures of a unit rather than placeholder drawings.
+        $photographed = StockRoomPhotos::photographedRoomIds();
+        $featuredRooms = Room::where('status', 'vacant')->with(['property', 'images'])->orderBy('id')->get()
+            ->sortBy(fn (Room $room) => in_array((int) $room->id, $photographed, true) ? 0 : 1)
+            ->take(3)
+            ->values();
 
         return view('home', compact('stats', 'featuredRooms'));
     }

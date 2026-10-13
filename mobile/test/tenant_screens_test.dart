@@ -278,9 +278,9 @@ void main() {
         find.text('Assigned to Juan Dela Cruz · Scheduled Oct 10'),
         findsOneWidget,
       );
-      // In progress: the tenant confirms it's fixed; too late to cancel.
+      // In progress: the tenant confirms it's fixed; too late to delete it.
       expect(find.text('Mark as resolved'), findsOneWidget);
-      expect(find.text('Cancel'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
       if (_shots) {
         await expectLater(
           find.byType(MaterialApp),
@@ -313,14 +313,24 @@ void main() {
       );
       final list = find.byType(Scrollable).last;
 
-      // Only the open request has buttons; a pending one can also be cancelled.
+      // Only the open request can be resolved. A pending or cancelled one can
+      // be deleted; a resolved one stays on record.
       await tester.scrollUntilVisible(
         find.text('Request 3'),
         200,
         scrollable: list,
       );
       expect(find.text('Mark as resolved'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Delete'), findsNWidgets(2));
+
+      // Delete asks first, and "Keep it" leaves the request alone.
+      await tester.ensureVisible(find.text('Delete').first);
+      await tester.tap(find.text('Delete').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Delete this request?'), findsOneWidget);
+      await tester.tap(find.text('Keep it'));
+      await tester.pumpAndSettle();
+      expect(app.maintenanceRequests.length, 3);
 
       await tester.ensureVisible(find.text('Mark as resolved'));
       await tester.tap(find.text('Mark as resolved'));

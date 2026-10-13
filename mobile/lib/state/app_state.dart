@@ -404,9 +404,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The tenant withdraws a request that nobody has been assigned to yet.
-  Future<void> cancelMaintenanceRequest(int id) async {
-    await _api.post('/maintenance-requests/$id/cancel');
+  /// The tenant changed their mind: removes a request that nobody has been
+  /// assigned to yet.
+  Future<void> deleteMaintenanceRequest(int id) async {
+    await _api.delete('/maintenance-requests/$id');
     await _loadMaintenanceRequests();
     notifyListeners();
   }

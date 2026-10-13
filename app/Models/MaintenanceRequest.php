@@ -19,6 +19,16 @@ class MaintenanceRequest extends Model
         return in_array($this->status, ['pending', 'in_progress'], true);
     }
 
+    /**
+     * The tenant may delete a request they changed their mind about — but
+     * only before anyone has been assigned to it (or after they cancelled it).
+     * Work in progress and finished work stay on record.
+     */
+    public function isDeletable(): bool
+    {
+        return in_array($this->status, ['pending', 'cancelled'], true);
+    }
+
     protected $fillable = [
         'lease_id',
         'tenant_id',
