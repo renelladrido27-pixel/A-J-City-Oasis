@@ -55,7 +55,7 @@ class RealRoomPhotosTest extends TestCase
         $files = StockRoomPhotos::sourceFiles();
 
         $this->assertCount(6, $files);
-        foreach ([...$files, public_path('images/building-front.jpg'), public_path('images/building-side.jpg')] as $file) {
+        foreach ([...$files, public_path('images/building-front.jpg'), public_path('images/building-side.jpg'), public_path('images/hero-building.jpg')] as $file) {
             $this->assertFileExists($file);
             $this->assertLessThan(400 * 1024, filesize($file), basename($file).' is too heavy for a web page');
             [$width, $height] = getimagesize($file);
@@ -210,6 +210,7 @@ class RealRoomPhotosTest extends TestCase
         $this->artisan('app:use-real-room-photos');
 
         $response = $this->get('/')->assertOk()
+            ->assertSee(asset('images/hero-building.jpg'))
             ->assertSee(asset('images/building-front.jpg'))
             ->assertSee(asset('images/building-side.jpg'))
             ->assertDontSee('hero-placeholder.svg')
