@@ -352,14 +352,10 @@ class _Hero extends StatelessWidget {
         : '$rooms ${rooms == 1 ? 'room' : 'rooms'} available now · pay securely online';
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [OasisColors.green, OasisColors.greenDark],
-        ),
+        color: OasisColors.greenDark,
         boxShadow: [
           BoxShadow(
             color: OasisColors.green.withValues(alpha: 0.25),
@@ -368,49 +364,86 @@ class _Hero extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+          // The building, same photo as the website's hero.
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/hero-building.jpg',
+              fit: BoxFit.cover,
+              excludeFromSemantics: true,
             ),
-            child: const Text(
-              'Koronadal City, South Cotabato',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: OasisColors.ink,
+          ),
+          // Green wash: heavy where the text starts, lighter towards the
+          // corner so the building shows through.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    OasisColors.greenDark.withValues(alpha: 0.94),
+                    OasisColors.green.withValues(alpha: 0.82),
+                    OasisColors.green.withValues(alpha: 0.5),
+                  ],
+                  stops: const [0, 0.55, 1],
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'Find your next room.\nBook it in minutes.',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              height: 1.2,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
-            layoutBuilder: (current, previous) => Stack(
-              alignment: Alignment.topLeft,
-              children: [...previous, ?current],
-            ),
-            child: Text(
-              line,
-              key: ValueKey(line),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 22, 18, 26),
+            child: _heroText(line),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _heroText(String line) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text(
+            'Koronadal City, South Cotabato',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: OasisColors.ink,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Find your next room.\nBook it in minutes.',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            height: 1.2,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          layoutBuilder: (current, previous) => Stack(
+            alignment: Alignment.topLeft,
+            children: [...previous, ?current],
+          ),
+          child: Text(
+            line,
+            key: ValueKey(line),
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+          ),
+        ),
+      ],
     );
   }
 }

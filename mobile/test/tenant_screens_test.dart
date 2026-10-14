@@ -113,6 +113,14 @@ Future<void> _pump(
   );
   await tester.pumpAndSettle();
   if (_shots && shot != null) {
+    // Bundled photos only decode in real time, so load them before the shot.
+    await tester.runAsync(() async {
+      for (final element in find.byType(Image).evaluate()) {
+        final image = (element.widget as Image).image;
+        if (image is AssetImage) await precacheImage(image, element);
+      }
+    });
+    await tester.pumpAndSettle();
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('zz_shots/$shot.png'),
@@ -185,6 +193,32 @@ void main() {
         find.text('3 rooms available now · pay securely online'),
         findsOne,
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the banner shows the building photo behind the headline', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _FakeApp(rooms: [_room('101')]),
+        const LandingScreen(),
+      );
+
+      final photo = tester.widget<Image>(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Image &&
+              w.image is AssetImage &&
+              (w.image as AssetImage).assetName ==
+                  'assets/images/hero-building.jpg',
+        ),
+      );
+      expect(photo.fit, BoxFit.cover);
+      // The file is really in the app bundle, not just named in the code.
+      final bytes = await rootBundle.load('assets/images/hero-building.jpg');
+      expect(bytes.lengthInBytes, greaterThan(10000));
+      expect(find.text('Find your next room.\nBook it in minutes.'), findsOne);
       expect(tester.takeException(), isNull);
     });
 
