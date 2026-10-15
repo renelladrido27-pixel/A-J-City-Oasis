@@ -20,7 +20,7 @@
             <div>You'll have 7 days from booking to confirm your move-in date. You can also select it now.</div>
         </div>
 
-        <h2 class="h6 mb-2">Rental Agreement</h2>
+        <h2 class="h6 mb-2">Terms and Conditions</h2>
         <div id="agreementBox" class="border rounded p-3 mb-2 bg-light" style="max-height: 260px; overflow-y: auto;">
             @include('partials.lease-agreement', ['room' => $room])
         </div>
@@ -36,7 +36,7 @@
             </div>
             <div class="form-check mb-3">
                 <input type="checkbox" name="agreed_to_terms" value="1" class="form-check-input" id="agreeCheckbox" disabled required>
-                <label class="form-check-label" for="agreeCheckbox">I have read and agree to the Rental Agreement above.</label>
+                <label class="form-check-label" for="agreeCheckbox">I have read and agree to the Terms and Conditions above.</label>
                 @error('agreed_to_terms')
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror

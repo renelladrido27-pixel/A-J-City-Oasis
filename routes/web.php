@@ -95,6 +95,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('users', UserController::class)->except(['show', 'destroy']);
     Route::post('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
 
+    Route::get('/places/barangays/{city}', [PropertyController::class, 'barangays'])->where('city', '[0-9]{9,10}')->name('places.barangays');
     Route::resource('properties', PropertyController::class)->except(['show']);
     Route::resource('rooms', RoomController::class)->except(['show']);
     Route::delete('/rooms/{room}/images/{image}', [RoomController::class, 'destroyImage'])->name('rooms.images.destroy');

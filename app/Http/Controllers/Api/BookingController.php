@@ -47,8 +47,12 @@ class BookingController extends Controller
                 return response()->json(['message' => 'Verify your email address to continue.', 'code' => 'email_unverified'], 403);
             }
 
+            // Same rule as the website: the Terms and Conditions are agreed to before paying.
             $validated = $request->validate([
                 'move_in_date' => ['nullable', 'date', 'after_or_equal:today', 'before_or_equal:'.now()->addDays(7)->toDateString()],
+                'agreed_to_terms' => ['accepted'],
+            ], [
+                'agreed_to_terms.accepted' => 'Please read and agree to the Terms and Conditions before paying.',
             ]);
 
             try {

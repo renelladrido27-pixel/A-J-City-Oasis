@@ -15,8 +15,8 @@
                 @forelse ($transfers as $transfer)
                     <tr>
                         <td class="fw-medium">{{ $transfer->lease->tenant->name }}</td>
-                        <td>Room {{ $transfer->fromRoom->room_number }}</td>
-                        <td>Room {{ $transfer->toRoom->room_number }}</td>
+                        <td>Room {{ $transfer->fromRoom->room_number }} <span class="text-muted small">· {{ $transfer->fromRoom->property?->shortName() }}</span></td>
+                        <td>Room {{ $transfer->toRoom->room_number }} <span class="text-muted small">· {{ $transfer->toRoom->property?->shortName() }}</span></td>
                         <td>₱{{ number_format($transfer->deposit_adjustment, 2) }}</td>
                         <td>{{ $transfer->requested_at->format('M d, Y') }}</td>
                         <td><x-status-badge :status="$transfer->status" /></td>

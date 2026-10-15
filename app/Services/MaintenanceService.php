@@ -39,7 +39,7 @@ class MaintenanceService
         $message = $request->assignee
             ? "Your {$request->category} request is now in progress. Assigned to {$request->assignee->name}"
                 .($request->scheduled_date ? ', scheduled for '.$request->scheduled_date->format('M d, Y') : '')
-                .'. Once the work is done, please mark it as resolved.'
+                .'. Once the work is done, please mark it as done.'
             : "Your {$request->category} request is waiting to be assigned again.";
 
         $this->notifications->notify($request->tenant, 'Maintenance request updated', $message, 'maintenance');
@@ -60,6 +60,8 @@ class MaintenanceService
     public function resolve(MaintenanceRequest $request): void
     {
         abort_unless($request->isOpen(), 422, 'This request is already closed.');
+        abort_unless($request->assigned_to !== null, 422, 'Nobody has been assigned to this request yet.');
+        abort_unless($request->canBeMarkedDone(), 422, 'You can mark this as done from '.$request->scheduled_date?->format('M d, Y').', the scheduled day.');
 
         $request->update(['status' => 'resolved', 'resolved_at' => now()]);
 
@@ -90,7 +92,7 @@ class MaintenanceService
         abort_unless(
             $request->isDeletable(),
             422,
-            'This request is already being handled, so it can no longer be deleted. Mark it as resolved once the work is done.',
+            'This request is already being handled, so it can no longer be deleted. Mark it as done once the work is done.',
         );
 
         $wasPending = $request->status === 'pending';

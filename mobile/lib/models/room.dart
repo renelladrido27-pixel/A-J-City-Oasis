@@ -2,6 +2,16 @@ class Room {
   final String id;
   final String number;
   final String property;
+
+  /// "Main Building" / "Annex Building" — the same room number exists in
+  /// more than one building, so this is part of how a room is named.
+  final String building;
+
+  /// The building's address, street first.
+  final String address;
+
+  /// "Studio Loft Type".
+  final String type;
   final double monthlyRent;
 
   /// Due on booking: advance + deposit + security deposit (3 months' rent).
@@ -19,6 +29,9 @@ class Room {
     required this.id,
     required this.number,
     required this.property,
+    this.building = '',
+    this.address = '',
+    this.type = '',
     required this.monthlyRent,
     required this.upfrontTotal,
     required this.floorLabel,
@@ -34,6 +47,10 @@ class Room {
       id: json['id'].toString(),
       number: json['number'] as String,
       property: json['property'] as String? ?? '',
+      building:
+          json['building'] as String? ?? json['property'] as String? ?? '',
+      address: json['address'] as String? ?? '',
+      type: json['type'] as String? ?? '',
       monthlyRent: (json['monthly_rate'] as num).toDouble(),
       upfrontTotal:
           (json['upfront_total'] as num?)?.toDouble() ??
@@ -53,5 +70,6 @@ class Room {
     );
   }
 
-  String get label => 'Rm $number';
+  /// "Rm 104, Main Building" — the number alone is not unique.
+  String get label => building.isEmpty ? 'Rm $number' : 'Rm $number, $building';
 }

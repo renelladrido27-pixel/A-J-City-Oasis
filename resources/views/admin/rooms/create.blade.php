@@ -13,13 +13,14 @@
                 <label class="form-label">Property</label>
                 <select name="property_id" class="form-select" required>
                     @foreach ($properties as $property)
-                        <option value="{{ $property->id }}">{{ $property->name }}</option>
+                        <option value="{{ $property->id }}" @selected((int) old('property_id') === $property->id)>{{ $property->name }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="mb-3">
                 <label class="form-label">Room Number</label>
-                <input type="text" name="room_number" class="form-control" value="{{ old('room_number') }}" required>
+                <input type="text" name="room_number" class="form-control @error('room_number') is-invalid @enderror" value="{{ old('room_number') }}" placeholder="e.g. 101" required>
+                @error('room_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="row g-3 mb-3">
                 <div class="col">
@@ -31,8 +32,7 @@
                     </select>
                 </div>
                 <div class="col">
-                    <label class="form-label">Type</label>
-                    <input type="text" name="type" class="form-control" value="{{ old('type', 'standard') }}" required>
+                    <x-room-type-select />
                 </div>
                 <div class="col">
                     <label class="form-label">Size (sqm)</label>

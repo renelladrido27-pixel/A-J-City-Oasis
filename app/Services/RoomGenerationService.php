@@ -11,7 +11,7 @@ class RoomGenerationService
      * Bulk-create rooms for a property, numbered by floor (e.g. 101, 102, ... 201, 202, ...).
      * Skips room numbers that already exist on the property.
      */
-    public function generate(Property $property, int $count, float $monthlyRate, string $type = 'standard', int $roomsPerFloor = 10): int
+    public function generate(Property $property, int $count, float $monthlyRate, string $type = Room::DEFAULT_TYPE, int $roomsPerFloor = 10): int
     {
         $existingNumbers = $property->rooms()->pluck('room_number')->all();
         $existingCount = count($existingNumbers);

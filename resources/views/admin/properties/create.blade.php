@@ -5,7 +5,7 @@
 @section('content')
 <x-page-header title="Add Property" />
 
-<div class="card border-0 shadow-sm" style="max-width: 560px;">
+<div class="card border-0 shadow-sm" style="max-width: 720px;">
     <div class="card-body p-4">
         <form method="POST" action="{{ route('admin.properties.store') }}">
             @csrf
@@ -13,10 +13,9 @@
                 <label class="form-label">Name</label>
                 <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required autofocus>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Address</label>
-                <input type="text" name="address" class="form-control @error('address') is-invalid @enderror" value="{{ old('address') }}" required>
-            </div>
+
+            <h2 class="h6 mt-4 mb-3"><i class="bi bi-geo-alt me-1"></i>Address</h2>
+            <x-address-fields />
 
             <hr class="my-4">
             <h2 class="h6 mb-3"><i class="bi bi-door-closed me-1"></i>Rooms (optional)</h2>

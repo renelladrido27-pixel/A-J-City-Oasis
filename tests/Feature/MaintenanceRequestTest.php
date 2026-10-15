@@ -144,7 +144,7 @@ class MaintenanceRequestTest extends TestCase
         $this->assertSame('pending', $request->fresh()->status);
 
         $this->actingAs($staff)
-            ->put(route('staff.maintenance.update', $request), ['status' => 'resolved', 'assigned_to' => $staff->id])
+            ->put(route('staff.maintenance.update', $request), ['status' => 'resolved', 'assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString()])
             ->assertRedirect();
         $this->assertSame('in_progress', $request->fresh()->status);
         $this->assertNull($request->fresh()->resolved_at);
@@ -178,11 +178,11 @@ class MaintenanceRequestTest extends TestCase
         $admin = User::factory()->admin()->create();
         $staff = User::factory()->staff()->create();
         $request = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString()]);
 
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
             ->assertSee(route('tenant.maintenance-requests.resolve', $request))
-            ->assertSee('Mark as resolved')
+            ->assertSee('Mark as done')
             // Deleting is only for a request nobody has been assigned to.
             ->assertDontSee('bi-trash');
 
@@ -201,10 +201,10 @@ class MaintenanceRequestTest extends TestCase
         }
 
         // Closed: nothing left to press, for the tenant or the admin.
-        $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertDontSee('Mark as resolved');
+        $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertDontSee('Mark as done');
         $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))->assertSee('Confirmed by tenant')
             ->assertDontSee('name="assigned_to"', false);
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id])->assertStatus(422);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString()])->assertStatus(422);
         $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertStatus(422);
     }
 
@@ -213,7 +213,7 @@ class MaintenanceRequestTest extends TestCase
         $admin = User::factory()->admin()->create();
         $pending = $this->requestFor(Lease::factory()->create());
         $assigned = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id, 'scheduled_date' => today()->toDateString()]);
 
         $this->actingAs($pending->tenant)->post(route('tenant.maintenance-requests.cancel', $pending))->assertRedirect();
         $this->assertSame('cancelled', $pending->fresh()->status);
@@ -240,7 +240,7 @@ class MaintenanceRequestTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $assigned = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id, 'scheduled_date' => today()->toDateString()]);
         $pending = $this->requestFor(Lease::factory()->create());
 
         Sanctum::actingAs($assigned->tenant);
@@ -286,7 +286,7 @@ class MaintenanceRequestTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $inProgress = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assigned_to' => $admin->id]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assigned_to' => $admin->id, 'scheduled_date' => today()->toDateString()]);
         $resolved = $this->requestFor(Lease::factory()->create());
         $resolved->update(['status' => 'resolved', 'resolved_at' => now()]);
 
@@ -318,7 +318,7 @@ class MaintenanceRequestTest extends TestCase
         $admin = User::factory()->admin()->create();
         $pending = $this->requestFor(Lease::factory()->create());
         $assigned = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id, 'scheduled_date' => today()->toDateString()]);
 
         Sanctum::actingAs($pending->tenant);
         $this->deleteJson("/api/maintenance-requests/{$assigned->id}")->assertForbidden();
@@ -328,7 +328,7 @@ class MaintenanceRequestTest extends TestCase
 
         Sanctum::actingAs($assigned->tenant);
         $this->deleteJson("/api/maintenance-requests/{$assigned->id}")->assertStatus(422)
-            ->assertJsonPath('message', 'This request is already being handled, so it can no longer be deleted. Mark it as resolved once the work is done.');
+            ->assertJsonPath('message', 'This request is already being handled, so it can no longer be deleted. Mark it as done once the work is done.');
         $this->assertNotNull($assigned->fresh());
     }
 

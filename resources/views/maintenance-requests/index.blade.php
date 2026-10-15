@@ -81,11 +81,16 @@
                             {{-- The tenant closes their own request — or deletes it if they changed their mind. --}}
                             <td>
                                 <div class="d-flex flex-wrap gap-1">
-                                    @if ($request->isOpen())
+                                    {{-- Mark as done only once someone is assigned and the scheduled day has come. --}}
+                                    @if ($request->canBeMarkedDone())
                                         <form method="POST" action="{{ route('tenant.maintenance-requests.resolve', $request) }}" onsubmit="return confirm('Confirm that this issue has been fixed? This closes the request.')">
                                             @csrf
-                                            <button class="btn btn-sm btn-success" data-loading-text="Saving…"><i class="bi bi-check2-circle me-1"></i>Mark as resolved</button>
+                                            <button class="btn btn-sm btn-success" data-loading-text="Saving…"><i class="bi bi-check2-circle me-1"></i>Mark as done</button>
                                         </form>
+                                    @elseif ($request->status === 'in_progress' && $request->scheduled_date)
+                                        <span class="small text-muted"><i class="bi bi-calendar-event me-1"></i>Mark as done opens {{ $request->scheduled_date->format('M d, Y') }}</span>
+                                    @elseif ($request->status === 'pending')
+                                        <span class="small text-muted"><i class="bi bi-hourglass-split me-1"></i>Waiting to be assigned</span>
                                     @endif
                                     @if ($request->isDeletable())
                                         <form method="POST" action="{{ route('tenant.maintenance-requests.destroy', $request) }}" onsubmit="return confirm('Delete this maintenance request? This cannot be undone.')">

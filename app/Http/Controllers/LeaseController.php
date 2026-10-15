@@ -32,7 +32,7 @@ class LeaseController extends Controller
     {
         $this->authorize('view', $lease);
 
-        $lease->load(['payments', 'utilityBills', 'maintenanceRequests', 'roomTransfers', 'moveOut', 'room.property', 'tenant']);
+        $lease->load(['payments', 'utilityBills', 'maintenanceRequests', 'roomTransfers.fromRoom.property', 'roomTransfers.toRoom.property', 'moveOut', 'room.property', 'tenant']);
 
         return view('leases.show', compact('lease'));
     }

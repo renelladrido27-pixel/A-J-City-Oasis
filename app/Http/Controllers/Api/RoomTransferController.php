@@ -21,10 +21,12 @@ class RoomTransferController extends Controller
     {
         $lease = $request->user()->leases()->where('status', 'active')->first();
 
-        $availableRooms = Room::where('status', 'vacant')->with('property')->orderBy('room_number')->get();
+        $availableRooms = Room::where('status', 'vacant')->with('property')
+            ->orderBy('property_id')->orderBy('floor')->orderBy('room_number')
+            ->get();
 
         $transfers = $lease
-            ? RoomTransfer::where('lease_id', $lease->id)->with(['fromRoom', 'toRoom'])->latest('requested_at')->get()
+            ? RoomTransfer::where('lease_id', $lease->id)->with(['fromRoom.property', 'toRoom.property'])->latest('requested_at')->get()
             : collect();
 
         return response()->json([

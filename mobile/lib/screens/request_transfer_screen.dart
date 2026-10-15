@@ -148,8 +148,19 @@ class _RequestTransferScreenState extends State<RequestTransferScreen> {
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
+                              // Which building — Room 103 exists in more than one.
+                              if (room.building.isNotEmpty)
+                                Text(
+                                  room.building,
+                                  style: const TextStyle(
+                                    color: OasisColors.green,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               Text(
                                 [
+                                  if (room.type.isNotEmpty) room.type,
                                   if (room.floorLabel.isNotEmpty)
                                     room.floorLabel,
                                   '${formatPeso(room.monthlyRent)} / month',
@@ -159,6 +170,32 @@ class _RequestTransferScreenState extends State<RequestTransferScreen> {
                                   fontSize: 12,
                                 ),
                               ),
+                              if (room.address.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 1),
+                                      child: Icon(
+                                        Icons.place_outlined,
+                                        size: 13,
+                                        color: OasisColors.muted,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Expanded(
+                                      child: Text(
+                                        room.address,
+                                        style: const TextStyle(
+                                          color: OasisColors.muted,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),

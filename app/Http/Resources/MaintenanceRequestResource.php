@@ -21,6 +21,8 @@ class MaintenanceRequestResource extends JsonResource
                 'phone' => $this->assignee->phone,
             ] : null,
             'scheduled_date' => $this->scheduled_date?->toDateString(),
+            // Assigned and the scheduled day has come (server's date, Asia/Manila).
+            'can_mark_done' => $this->canBeMarkedDone(),
             'resolved_at' => $this->resolved_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

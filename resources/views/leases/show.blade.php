@@ -165,8 +165,8 @@
                 <tbody>
                     @forelse ($lease->roomTransfers as $transfer)
                         <tr>
-                            <td>{{ $transfer->fromRoom->room_number }}</td>
-                            <td>{{ $transfer->toRoom->room_number }}</td>
+                            <td>{{ $transfer->fromRoom->room_number }} <span class="text-muted small">· {{ $transfer->fromRoom->property?->shortName() }}</span></td>
+                            <td>{{ $transfer->toRoom->room_number }} <span class="text-muted small">· {{ $transfer->toRoom->property?->shortName() }}</span></td>
                             <td>₱{{ number_format($transfer->deposit_adjustment, 2) }}</td>
                             <td><x-status-badge :status="$transfer->status" /></td>
                             @if (auth()->user()->isAdmin())

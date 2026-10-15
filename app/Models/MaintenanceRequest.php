@@ -24,6 +24,17 @@ class MaintenanceRequest extends Model
      * only before anyone has been assigned to it (or after they cancelled it).
      * Work in progress and finished work stay on record.
      */
+    /**
+     * The tenant can mark the work done only once someone is assigned and the
+     * scheduled day has come — not before anyone has looked at it.
+     */
+    public function canBeMarkedDone(): bool
+    {
+        return $this->status === 'in_progress'
+            && $this->assigned_to !== null
+            && ($this->scheduled_date === null || ! $this->scheduled_date->isAfter(today()));
+    }
+
     public function isDeletable(): bool
     {
         return in_array($this->status, ['pending', 'cancelled'], true);

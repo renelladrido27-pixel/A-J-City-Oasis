@@ -270,7 +270,7 @@ class PanelFeedbackTest extends TestCase
         $this->postJson('/api/email/verify', ['code' => $code])->assertOk()->assertJson(['verified' => true]);
 
         Sanctum::actingAs($user->fresh());
-        $this->postJson("/api/rooms/{$room->id}/book", ['move_in_date' => now()->addDays(2)->toDateString()])->assertCreated();
+        $this->postJson("/api/rooms/{$room->id}/book", ['move_in_date' => now()->addDays(2)->toDateString(), 'agreed_to_terms' => true])->assertCreated();
         $this->assertSame('reserved', $room->fresh()->status);
     }
 
@@ -347,7 +347,7 @@ class PanelFeedbackTest extends TestCase
 
         $this->assertDatabaseHas('notifications', [
             'user_id' => $request->tenant_id,
-            'message' => 'Your Plumbing request is now in progress. Assigned to Ramon Cruz, scheduled for Oct 12, 2026. Once the work is done, please mark it as resolved.',
+            'message' => 'Your Plumbing request is now in progress. Assigned to Ramon Cruz, scheduled for Oct 12, 2026. Once the work is done, please mark it as done.',
         ]);
 
         Sanctum::actingAs($request->tenant);
@@ -361,7 +361,7 @@ class PanelFeedbackTest extends TestCase
         $staff = User::factory()->staff()->create();
 
         $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'assigned_to' => $staff->id,
+            'assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString(),
         ]);
 
         $this->assertDatabaseHas('notifications', ['user_id' => $staff->id, 'title' => 'Maintenance job assigned to you']);
@@ -387,6 +387,7 @@ class PanelFeedbackTest extends TestCase
         $this->assertNotContains('completed', MaintenanceRequest::STATUSES);
 
         // The tenant is the one who confirms the work is done.
+        $request->update(['assigned_to' => $admin->id, 'scheduled_date' => today(), 'status' => 'in_progress']);
         $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertRedirect();
         $this->assertSame('resolved', $request->fresh()->status);
         $this->assertNotNull($request->fresh()->resolved_at);

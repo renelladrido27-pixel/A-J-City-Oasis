@@ -17,6 +17,8 @@ class RoomTransferResource extends JsonResource
             'requested_at' => $this->requested_at?->toIso8601String(),
             'from_room' => $this->whenLoaded('fromRoom', fn () => $this->fromRoom->room_number),
             'to_room' => $this->whenLoaded('toRoom', fn () => $this->toRoom->room_number),
+            'from_building' => $this->whenLoaded('fromRoom', fn () => $this->fromRoom->property?->shortName()),
+            'to_building' => $this->whenLoaded('toRoom', fn () => $this->toRoom->property?->shortName()),
         ];
     }
 }

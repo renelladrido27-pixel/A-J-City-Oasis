@@ -18,7 +18,7 @@ class RoomTransferController extends Controller
 
     public function index(Request $request): View
     {
-        $transfers = RoomTransfer::with(['lease.tenant', 'fromRoom', 'toRoom'])
+        $transfers = RoomTransfer::with(['lease.tenant', 'fromRoom.property', 'toRoom.property'])
             ->orderByRaw("status = 'pending' desc")
             ->latest('requested_at')
             ->paginate(25);
@@ -32,7 +32,9 @@ class RoomTransferController extends Controller
     {
         $this->authorize('view', $lease);
 
-        $rooms = Room::where('status', 'vacant')->with('property')->get();
+        $rooms = Room::where('status', 'vacant')->with('property')
+            ->orderBy('property_id')->orderBy('floor')->orderBy('room_number')
+            ->get();
 
         return view('room-transfers.create', compact('lease', 'rooms'));
     }

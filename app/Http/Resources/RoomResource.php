@@ -13,6 +13,10 @@ class RoomResource extends JsonResource
             'id' => $this->id,
             'number' => $this->room_number,
             'property' => $this->whenLoaded('property', fn () => $this->property->name),
+            // Which building and where — the same room number exists in more than one building.
+            'building' => $this->whenLoaded('property', fn () => $this->property->shortName()),
+            'address' => $this->whenLoaded('property', fn () => $this->property->address),
+            'type' => $this->typeLabel(),
             'floor' => $this->floor,
             'floor_label' => $this->floorLabel(),
             'monthly_rate' => (float) $this->monthly_rate,

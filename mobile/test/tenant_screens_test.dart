@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:ajoasis_mobile/models/lease.dart';
+import 'package:ajoasis_mobile/screens/room_booking_screen.dart';
+import 'package:ajoasis_mobile/models/rental_terms.dart';
 import 'package:ajoasis_mobile/models/maintenance_request.dart';
 import 'package:ajoasis_mobile/models/payment_record.dart';
 import 'package:ajoasis_mobile/models/receipt.dart';
@@ -22,10 +24,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Room _room(String number, {String floor = 'First Floor'}) => Room(
-  id: number,
+Room _room(
+  String number, {
+  String floor = 'First Floor',
+  String building = 'Main Building',
+}) => Room(
+  id: building == 'Main Building' ? number : '$building $number',
   number: number,
-  property: 'A&J CITY OASIS Main',
+  property: 'A&J CITY OASIS - $building',
+  building: building,
+  type: 'Studio Loft Type',
+  address: 'Maglantay Subd., Bo. 2, City of Koronadal, South Cotabato',
   monthlyRent: 3500,
   upfrontTotal: 10500,
   floorLabel: floor,
@@ -45,6 +54,38 @@ class _FakeApp extends AppState {
     await null;
     availableRooms = rooms;
     notifyListeners();
+  }
+}
+
+/// Booking a room without the server: canned terms, and a record of what
+/// the booking call was sent.
+class _BookingApp extends AppState {
+  final bookedWithTerms = <bool>[];
+
+  @override
+  Future<RentalTerms> fetchRentalTerms(String roomId) async {
+    await null;
+    return const RentalTerms(
+      title: 'Terms and Conditions',
+      sections: [
+        TermsSection(
+          heading: 'Parties',
+          body: 'Between A&J CITY OASIS and the Tenant.',
+        ),
+        TermsSection(
+          heading: 'Rent',
+          body: 'The monthly rental rate is P3,500.00.',
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<void> submitBookingForCurrentUser({
+    required DateTime moveInDate,
+    required bool agreedToTerms,
+  }) async {
+    bookedWithTerms.add(agreedToTerms);
   }
 }
 
@@ -187,7 +228,7 @@ void main() {
 
       expect(find.text('3 open'), findsOneWidget);
       expect(find.text('Room 101'), findsOneWidget);
-      expect(find.text('Second Floor'), findsOneWidget);
+      expect(find.text('Main Building · Second Floor'), findsOneWidget);
       expect(find.textContaining('₱3,500'), findsNWidgets(3));
       expect(
         find.text('3 rooms available now · pay securely online'),
@@ -281,7 +322,10 @@ void main() {
       tester,
     ) async {
       final app = _tenant()
-        ..transferableRooms = [_room('102')]
+        ..transferableRooms = [
+          _room('102'),
+          _room('102', building: 'Annex Building'),
+        ]
         ..transferRequests = [
           TransferRequest(
             id: 1,
@@ -300,6 +344,7 @@ void main() {
             submittedAt: DateTime(2026, 10, 5),
             assignedName: 'Juan Dela Cruz',
             scheduledDate: DateTime(2026, 10, 10),
+            canMarkDone: true,
           ),
         ];
       await _pump(tester, app, const RentalHubScreen());
@@ -309,7 +354,18 @@ void main() {
       expect(find.text('Rm 101'), findsOneWidget);
       expect(find.text('Rm 205'), findsOneWidget);
       expect(find.text('Pending'), findsOneWidget);
-      expect(find.text('Room 102'), findsOneWidget);
+      // Room 102 exists in both buildings: each card says which, where, and what type.
+      expect(find.text('Room 102'), findsNWidgets(2));
+      expect(find.text('Main Building'), findsOneWidget);
+      expect(find.text('Annex Building'), findsOneWidget);
+      expect(
+        find.text('Studio Loft Type · First Floor · ₱3,500 / month'),
+        findsNWidgets(2),
+      );
+      expect(
+        find.text('Maglantay Subd., Bo. 2, City of Koronadal, South Cotabato'),
+        findsNWidgets(2),
+      );
       if (_shots) {
         await expectLater(
           find.byType(MaterialApp),
@@ -330,8 +386,8 @@ void main() {
         find.text('Assigned to Juan Dela Cruz · Scheduled Oct 10'),
         findsOneWidget,
       );
-      // In progress: the tenant confirms it's fixed; too late to delete it.
-      expect(find.text('Mark as resolved'), findsOneWidget);
+      // Assigned and the day has come: the tenant confirms it's done; too late to delete it.
+      expect(find.text('Mark as done'), findsOneWidget);
       expect(find.text('Delete'), findsNothing);
       if (_shots) {
         await expectLater(
@@ -351,12 +407,16 @@ void main() {
         description: 'Request $id',
         status: status,
         submittedAt: DateTime(2026, 10, 5),
+        assignedName: status == 'In progress' ? 'Juan Dela Cruz' : null,
+        scheduledDate: status == 'In progress' ? DateTime(2026, 10, 6) : null,
+        canMarkDone: status == 'In progress',
       );
       final app = _tenant()
         ..maintenanceRequests = [
-          request(1, 'Pending'),
-          request(2, 'Resolved'),
-          request(3, 'Cancelled'),
+          request(1, 'In progress'),
+          request(2, 'Pending'),
+          request(3, 'Resolved'),
+          request(4, 'Cancelled'),
         ];
       await _pump(
         tester,
@@ -365,14 +425,14 @@ void main() {
       );
       final list = find.byType(Scrollable).last;
 
-      // Only the open request can be resolved. A pending or cancelled one can
-      // be deleted; a resolved one stays on record.
+      // Only the assigned request whose day has come can be marked done. A
+      // pending or cancelled one can be deleted; a resolved one stays on record.
       await tester.scrollUntilVisible(
-        find.text('Request 3'),
+        find.text('Request 4'),
         200,
         scrollable: list,
       );
-      expect(find.text('Mark as resolved'), findsOneWidget);
+      expect(find.text('Mark as done'), findsOneWidget);
       expect(find.text('Delete'), findsNWidgets(2));
 
       // Delete asks first, and "Keep it" leaves the request alone.
@@ -382,10 +442,10 @@ void main() {
       expect(find.text('Delete this request?'), findsOneWidget);
       await tester.tap(find.text('Keep it'));
       await tester.pumpAndSettle();
-      expect(app.maintenanceRequests.length, 3);
+      expect(app.maintenanceRequests.length, 4);
 
-      await tester.ensureVisible(find.text('Mark as resolved'));
-      await tester.tap(find.text('Mark as resolved'));
+      await tester.ensureVisible(find.text('Mark as done'));
+      await tester.tap(find.text('Mark as done'));
       await tester.pumpAndSettle();
       expect(find.text('Is it fixed?'), findsOneWidget);
 
@@ -393,7 +453,51 @@ void main() {
       await tester.tap(find.text('Not yet'));
       await tester.pumpAndSettle();
       expect(find.text('Is it fixed?'), findsNothing);
-      expect(app.maintenanceRequests.first.status, 'Pending');
+      expect(app.maintenanceRequests.first.status, 'In progress');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Mark as done waits for an assignment and the scheduled day', (
+      tester,
+    ) async {
+      final app = _tenant()
+        ..maintenanceRequests = [
+          MaintenanceRequest(
+            id: 1,
+            issueType: 'Electrical',
+            description: 'Not assigned yet',
+            status: 'Pending',
+            submittedAt: DateTime(2026, 10, 14),
+          ),
+          MaintenanceRequest(
+            id: 2,
+            issueType: 'Plumbing',
+            description: 'Assigned for later',
+            status: 'In progress',
+            submittedAt: DateTime(2026, 10, 14),
+            assignedName: 'Juan Dela Cruz',
+            scheduledDate: DateTime(2026, 10, 17),
+          ),
+        ];
+      await _pump(
+        tester,
+        app,
+        const RentalHubScreen(initialSection: RentalSection.maintenance),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Assigned for later'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+
+      expect(find.text('Mark as done'), findsNothing);
+      expect(
+        find.text(
+          'You can mark it as done once it is assigned and the scheduled day comes.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Mark as done opens on Oct 17.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -403,6 +507,53 @@ void main() {
       await _pump(tester, _tenant(), const RentalHubScreen(), width: 320);
 
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Booking', () {
+    testWidgets('the Terms and Conditions are agreed to before paying', (
+      tester,
+    ) async {
+      final app = _BookingApp()
+        ..isLoggedIn = true
+        ..draft = BookingDraft(_room('104'));
+      await _pump(
+        tester,
+        app,
+        const RoomBookingScreen(),
+        shot: 'booking-terms',
+      );
+
+      // Pick a move-in date (today), then try to continue without agreeing.
+      await tester.tap(find.text('Move-in date'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Continue'));
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Please read and agree to the Terms and Conditions before paying.',
+        ),
+        findsOneWidget,
+      );
+      expect(app.bookedWithTerms, isEmpty);
+
+      // Ticking the box opens the terms; "I agree" ticks it.
+      await tester.ensureVisible(find.byType(Checkbox));
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+      expect(find.text('Terms and Conditions'), findsOneWidget);
+      expect(find.textContaining('Parties.'), findsOneWidget);
+      await tester.tap(find.text('I agree'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isTrue);
+
+      await tester.ensureVisible(find.text('Continue'));
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+      expect(app.bookedWithTerms, [true]);
     });
   });
 

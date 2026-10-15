@@ -137,7 +137,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         SnackBar(
           content: Text(
             resolve
-                ? 'Thanks — marked as resolved.'
+                ? 'Thanks — marked as done.'
                 : 'Maintenance request deleted.',
           ),
         ),
@@ -334,12 +334,41 @@ class _RequestCard extends StatelessWidget {
               ),
             ],
           ),
-          if (r.isOpen || r.canDelete) ...[
+          // Mark as done only once someone is assigned and the day has come.
+          if (r.isOpen && !r.canMarkDone) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(
+                  r.scheduledDate != null
+                      ? Icons.event_outlined
+                      : Icons.hourglass_empty,
+                  size: 16,
+                  color: OasisColors.muted,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    r.assignedName == null
+                        ? 'You can mark it as done once it is assigned and the scheduled day comes.'
+                        : r.scheduledDate != null
+                        ? 'Mark as done opens on ${formatShortDate(r.scheduledDate!)}.'
+                        : 'Mark as done opens on the scheduled day.',
+                    style: const TextStyle(
+                      color: OasisColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (r.canMarkDone || r.canDelete) ...[
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (r.isOpen)
+                if (r.canMarkDone)
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: enabled ? onResolve : null,
@@ -355,7 +384,7 @@ class _RequestCard extends StatelessWidget {
                           : const Icon(Icons.check_circle_outline, size: 18),
                       label: const FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text('Mark as resolved'),
+                        child: Text('Mark as done'),
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: OasisColors.green,
@@ -369,7 +398,7 @@ class _RequestCard extends StatelessWidget {
                   ),
                 // Changed your mind? Only while nobody has been assigned.
                 if (r.canDelete) ...[
-                  if (r.isOpen) const SizedBox(width: 8),
+                  if (r.canMarkDone) const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: enabled ? onDelete : null,
                     icon: const Icon(Icons.delete_outline, size: 18),

@@ -7,6 +7,7 @@ import '../models/lease.dart';
 import '../models/maintenance_request.dart';
 import '../models/payment_record.dart';
 import '../models/receipt.dart';
+import '../models/rental_terms.dart';
 import '../models/room.dart';
 import '../models/tenant_profile.dart';
 import '../models/transfer_request.dart';
@@ -135,14 +136,22 @@ class AppState extends ChangeNotifier {
 
   /// Books the drafted room as the signed-in, verified tenant. Mirrors web's
   /// authenticated BookingController::store.
+  /// The Terms and Conditions for a room, shown before booking and paying.
+  Future<RentalTerms> fetchRentalTerms(String roomId) async {
+    return RentalTerms.fromJson(await _api.get('/rooms/$roomId/terms'));
+  }
+
+  /// [agreedToTerms] must be true — the server refuses the booking otherwise.
   Future<void> submitBookingForCurrentUser({
     required DateTime moveInDate,
+    required bool agreedToTerms,
   }) async {
     final room = draft?.room;
     if (room == null) return;
 
     final res = await _api.post('/rooms/${room.id}/book', {
       'move_in_date': _isoDate(moveInDate),
+      'agreed_to_terms': agreedToTerms,
     });
     currentBooking = BookingSummary.fromJson(res['booking']);
     notifyListeners();

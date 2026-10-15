@@ -21,6 +21,7 @@ Route::post('/webhooks/xendit', [XenditWebhookController::class, 'handle'])->nam
 // Mobile app API 
 Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
+Route::get('/rooms/{room}/terms', [RoomController::class, 'terms']);
 Route::post('/rooms/{room}/book', [BookingController::class, 'store'])->middleware('throttle:signup');
 
 // Latest published Android build, so the app can offer an in-app update.

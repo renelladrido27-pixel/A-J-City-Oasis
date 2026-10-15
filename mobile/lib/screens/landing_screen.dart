@@ -224,9 +224,12 @@ class _RoomCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (room.floorLabel.isNotEmpty)
+                if (room.building.isNotEmpty || room.floorLabel.isNotEmpty)
                   Text(
-                    room.floorLabel,
+                    [
+                      if (room.building.isNotEmpty) room.building,
+                      if (room.floorLabel.isNotEmpty) room.floorLabel,
+                    ].join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

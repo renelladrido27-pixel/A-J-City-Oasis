@@ -7,7 +7,7 @@
 
 <div class="card border-0 shadow-sm" style="max-width: 560px;">
     <div class="card-body p-4">
-        <p class="mb-2">Current room: <strong>{{ $lease->room->room_number }}</strong> <span class="text-muted">(₱{{ number_format($lease->room->monthly_rate, 2) }}/month)</span></p>
+        <p class="mb-2">Current room: <strong>Room {{ $lease->room->room_number }}, {{ $lease->room->property->shortName() }}</strong> <span class="text-muted">(₱{{ number_format($lease->room->monthly_rate, 2) }}/month)</span></p>
 
         <div class="alert alert-info d-flex align-items-start small">
             <i class="bi bi-info-circle-fill me-2 mt-1"></i>
@@ -18,11 +18,17 @@
             @csrf
             <div class="mb-3">
                 <label class="form-label">New Room</label>
+                {{-- Grouped by building, with its address: the same room number exists in more than one building. --}}
                 <select name="to_room_id" class="form-select" required>
-                    @foreach ($rooms as $room)
-                        <option value="{{ $room->id }}">
-                            {{ $room->room_number }} ({{ $room->property->name }}) — ₱{{ number_format($room->monthly_rate, 2) }}/month
-                        </option>
+                    @foreach ($rooms->groupBy('property_id') as $buildingRooms)
+                        @php($building = $buildingRooms->first()->property)
+                        <optgroup label="{{ $building->shortName() }} — {{ $building->address }}">
+                            @foreach ($buildingRooms as $room)
+                                <option value="{{ $room->id }}">
+                                    Room {{ $room->room_number }}, {{ $building->shortName() }} · {{ $room->typeLabel() }} · {{ $room->floorLabel() }} — ₱{{ number_format($room->monthly_rate, 2) }}/month
+                                </option>
+                            @endforeach
+                        </optgroup>
                     @endforeach
                 </select>
             </div>

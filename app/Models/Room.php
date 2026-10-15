@@ -13,6 +13,9 @@ class Room extends Model
 {
     use HasFactory;
 
+    /** What A&J CITY OASIS units are (the owner's listing: "Studio Loft Type Apartment"). */
+    public const DEFAULT_TYPE = 'Studio Loft Type';
+
     protected $fillable = [
         'property_id',
         'room_number',
@@ -44,6 +47,34 @@ class Room extends Model
     public function floorLabel(): string
     {
         return Floor::label($this->floor);
+    }
+
+    /** "Studio Loft Type"; old rows saved as "standard" read "Standard". */
+    public function typeLabel(): string
+    {
+        return ucfirst((string) $this->type);
+    }
+
+    /**
+     * Room types to choose from on the room forms: the default plus whatever
+     * the admin has already used.
+     *
+     * @return list<string>
+     */
+    public static function typeOptions(): array
+    {
+        return collect([self::DEFAULT_TYPE])
+            ->merge(self::query()->distinct()->orderBy('type')->pluck('type'))
+            ->filter()
+            ->unique(fn ($type) => mb_strtolower($type))
+            ->values()
+            ->all();
+    }
+
+    /** "Room 103" typed into the room number box is saved as "103". */
+    public static function normalizeNumber(string $number): string
+    {
+        return trim(preg_replace('/^\s*(room|rm\.?)\s*/i', '', $number));
     }
 
     public function bookings(): HasMany

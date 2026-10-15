@@ -10,6 +10,10 @@ class MaintenanceRequest {
   final String? assignedPhone;
   final DateTime? scheduledDate;
 
+  /// Someone is assigned and the scheduled day has come — only then can the
+  /// tenant mark the work done (decided by the server, on Manila time).
+  final bool canMarkDone;
+
   const MaintenanceRequest({
     required this.id,
     required this.issueType,
@@ -19,6 +23,7 @@ class MaintenanceRequest {
     this.assignedName,
     this.assignedPhone,
     this.scheduledDate,
+    this.canMarkDone = false,
   });
 
   /// Not yet resolved or cancelled — the tenant can still close it.
@@ -43,6 +48,7 @@ class MaintenanceRequest {
       scheduledDate: DateTime.tryParse(
         json['scheduled_date']?.toString() ?? '',
       ),
+      canMarkDone: json['can_mark_done'] as bool? ?? false,
     );
   }
 

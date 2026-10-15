@@ -85,7 +85,8 @@ class MaintenanceRequestController extends Controller
         $validated = $request->validate([
             // Only staff/admin accounts do maintenance work.
             'assigned_to' => ['nullable', Rule::exists('users', 'id')->whereIn('role', ['admin', 'staff'])],
-            'scheduled_date' => ['nullable', 'date'],
+            // The tenant's "Mark as done" opens on this day, so an assignment needs one.
+            'scheduled_date' => ['nullable', 'required_with:assigned_to', 'date'],
         ]);
 
         app(MaintenanceService::class)->assign(
@@ -105,7 +106,7 @@ class MaintenanceRequestController extends Controller
 
         app(MaintenanceService::class)->resolve($maintenanceRequest);
 
-        return back()->with('status', 'Thanks — the request is marked as resolved.');
+        return back()->with('status', 'Thanks — the request is marked as done.');
     }
 
     /** The tenant withdraws a request that hasn't been assigned yet. */

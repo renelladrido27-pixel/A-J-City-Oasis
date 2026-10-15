@@ -17,8 +17,8 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $users = User::when($request->filled('role'), fn ($q) => $q->where('role', $request->query('role')))
-            ->orderBy('role')
-            ->orderBy('name')
+            // Newest first (last in, first out) — a just-created account is at the top.
+            ->orderByDesc('id')
             ->paginate(25)
             ->withQueryString();
 

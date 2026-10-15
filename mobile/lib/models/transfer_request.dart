@@ -18,8 +18,8 @@ class TransferRequest {
   factory TransferRequest.fromJson(Map<String, dynamic> json) {
     return TransferRequest(
       id: json['id'] as int,
-      fromRoomLabel: 'Rm ${json['from_room']}',
-      toRoomLabel: 'Rm ${json['to_room']}',
+      fromRoomLabel: _label(json['from_room'], json['from_building']),
+      toRoomLabel: _label(json['to_room'], json['to_building']),
       status: _titleCase(json['status'] as String),
       reason: json['reason'] as String?,
       requestedAt:
@@ -30,4 +30,8 @@ class TransferRequest {
 
   static String _titleCase(String s) =>
       s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+
+  /// "Rm 103 · Main Building" — the same number exists in more than one building.
+  static String _label(Object? room, Object? building) =>
+      (building ?? '').toString().isEmpty ? 'Rm $room' : 'Rm $room · $building';
 }
