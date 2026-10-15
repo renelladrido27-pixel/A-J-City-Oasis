@@ -7,13 +7,14 @@ use Illuminate\Database\Seeder;
 
 class PropertySeeder extends Seeder
 {
-    /** Both buildings, from the owner's listing: Maglantay Subd. Bo. 2, Koronadal City. */
+    /** Both buildings (same address), from the owner's listing: Maglantay Subd., Bo. 2 (Barangay Santo Niño), Koronadal City. */
     public const ADDRESS = [
         'region' => 'Region XII (SOCCSKSARGEN)',
         'province' => 'South Cotabato',
         'city' => 'City of Koronadal',
+        'barangay' => 'Santo Niño',
         'street' => 'Maglantay Subd., Bo. 2',
-        'address' => 'Maglantay Subd., Bo. 2, City of Koronadal, South Cotabato',
+        'address' => 'Maglantay Subd., Bo. 2, Santo Niño, City of Koronadal, South Cotabato',
     ];
 
     public function run(): void

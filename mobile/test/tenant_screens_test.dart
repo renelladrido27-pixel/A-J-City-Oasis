@@ -34,7 +34,8 @@ Room _room(
   property: 'A&J CITY OASIS - $building',
   building: building,
   type: 'Studio Loft Type',
-  address: 'Maglantay Subd., Bo. 2, City of Koronadal, South Cotabato',
+  address:
+      'Maglantay Subd., Bo. 2, Santo Niño, City of Koronadal, South Cotabato',
   monthlyRent: 3500,
   upfrontTotal: 10500,
   floorLabel: floor,
@@ -363,7 +364,9 @@ void main() {
         findsNWidgets(2),
       );
       expect(
-        find.text('Maglantay Subd., Bo. 2, City of Koronadal, South Cotabato'),
+        find.text(
+          'Maglantay Subd., Bo. 2, Santo Niño, City of Koronadal, South Cotabato',
+        ),
         findsNWidgets(2),
       );
       if (_shots) {

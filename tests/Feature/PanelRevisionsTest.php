@@ -107,10 +107,11 @@ class PanelRevisionsTest extends TestCase
         $this->seed(PropertySeeder::class);
         $main = Property::where('name', 'A&J CITY OASIS - Main Building')->sole();
 
-        $this->assertSame('Maglantay Subd., Bo. 2, City of Koronadal, South Cotabato', $main->address);
+        $this->assertSame('Maglantay Subd., Bo. 2, Santo Niño, City of Koronadal, South Cotabato', $main->address);
         $this->actingAs($this->admin())->get(route('admin.properties.edit', $main))->assertOk()
             ->assertSee('data-value="Region XII (SOCCSKSARGEN)"', false)
             ->assertSee('data-value="City of Koronadal"', false)
+            ->assertSee('data-value="Santo Niño"', false)
             ->assertSee('value="Maglantay Subd., Bo. 2"', false);
     }
 
@@ -183,14 +184,14 @@ class PanelRevisionsTest extends TestCase
         Room::factory()->for($annex)->create(['room_number' => '103', 'type' => 'Studio Loft Type']);
 
         $this->actingAs($lease->tenant)->get(route('tenant.room-transfers.create', $lease))->assertOk()
-            ->assertSee('<optgroup label="Main Building — Maglantay Subd., Bo. 2, City of Koronadal, South Cotabato">', false)
+            ->assertSee('<optgroup label="Main Building — Maglantay Subd., Bo. 2, Santo Niño, City of Koronadal, South Cotabato">', false)
             ->assertSee('<optgroup label="Annex Building', false)
             ->assertSee('Room 103, Main Building · Studio Loft Type · First Floor')
             ->assertSee('Room 103, Annex Building · Studio Loft Type · First Floor');
 
         $rooms = $this->getJson('/api/rooms')->assertOk()->json('rooms');
         $main103 = collect($rooms)->firstWhere(fn ($r) => $r['number'] === '103' && $r['building'] === 'Main Building');
-        $this->assertSame('Maglantay Subd., Bo. 2, City of Koronadal, South Cotabato', $main103['address']);
+        $this->assertSame('Maglantay Subd., Bo. 2, Santo Niño, City of Koronadal, South Cotabato', $main103['address']);
         $this->assertSame('Studio Loft Type', $main103['type']);
         // Grouped by building: every Main room comes before every Annex room.
         $buildings = collect($rooms)->pluck('building')->filter(fn ($b) => in_array($b, ['Main Building', 'Annex Building']))->values();
