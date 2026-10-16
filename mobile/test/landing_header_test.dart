@@ -54,7 +54,7 @@ void main() {
 
       expect(tester.takeException(), isNull, reason: 'layout overflowed');
 
-      final name = tester.getRect(find.text('A&J CITY OASIS'));
+      final name = tester.getRect(find.bySemanticsLabel('A&J OASIS'));
       final logIn = tester.getRect(
         find.widgetWithText(OutlinedButton, 'Log in'),
       );
@@ -90,7 +90,7 @@ void main() {
       ),
     );
 
-    expect(find.text('A&J CITY OASIS'), findsOneWidget);
+    expect(find.bySemanticsLabel('A&J OASIS'), findsOneWidget);
     expect(find.text('Log in'), findsNothing);
     expect(find.text('Sign up'), findsNothing);
   });

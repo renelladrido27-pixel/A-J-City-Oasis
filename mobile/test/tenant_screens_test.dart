@@ -16,6 +16,7 @@ import 'package:ajoasis_mobile/screens/receipt_screen.dart';
 import 'package:ajoasis_mobile/screens/rental_hub_screen.dart';
 import 'package:ajoasis_mobile/services/receipt_export.dart';
 import 'package:ajoasis_mobile/state/app_state.dart';
+import 'package:ajoasis_mobile/widgets/location_map.dart';
 import 'package:ajoasis_mobile/theme.dart';
 import 'package:ajoasis_mobile/utils/format.dart';
 import 'package:ajoasis_mobile/widgets/oasis_ui.dart';
@@ -213,6 +214,17 @@ PaymentRecord _bill(
   paidOn: due,
 );
 
+/// How many "Mark as done" buttons can actually be pressed.
+int _enabledMarkAsDone(WidgetTester tester) => tester
+    .widgetList<ButtonStyleButton>(
+      find.ancestor(
+        of: find.text('Mark as done'),
+        matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+      ),
+    )
+    .where((b) => b.onPressed != null)
+    .length;
+
 void main() {
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
@@ -261,6 +273,48 @@ void main() {
       final bytes = await rootBundle.load('assets/images/hero-building.jpg');
       expect(bytes.lengthInBytes, greaterThan(10000));
       expect(find.text('Find your next room.\nBook it in minutes.'), findsOne);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Log in and Sign up stay on screen while scrolling', (
+      tester,
+    ) async {
+      final app = _FakeApp(rooms: [for (var i = 1; i <= 8; i++) _room('10$i')]);
+      await _pump(tester, app, const LandingScreen());
+
+      final before = tester.getTopLeft(find.text('Log in'));
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(0, -1500),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.text('Log in')), before);
+      expect(find.text('Sign up'), findsOneWidget);
+      // The page itself did scroll: the banner is gone, the contact card is in view.
+      expect(find.text('Find us in Koronadal City'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the contact card has the same map as the website', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _FakeApp(rooms: [_room('101')]),
+        const LandingScreen(),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Open in Google Maps'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.byType(LocationMap), findsOneWidget);
+      expect(
+        LocationMap.embedUri.toString(),
+        'https://www.google.com/maps?q=Koronadal+City%2C+South+Cotabato&output=embed',
+      );
+      expect(find.text('Open in Google Maps'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -391,7 +445,8 @@ void main() {
       );
       // Assigned and the day has come: the tenant confirms it's done; too late to delete it.
       expect(find.text('Mark as done'), findsOneWidget);
-      expect(find.text('Delete'), findsNothing);
+      // Not done yet, so it can still be removed.
+      expect(find.text('Remove'), findsOneWidget);
       if (_shots) {
         await expectLater(
           find.byType(MaterialApp),
@@ -435,20 +490,28 @@ void main() {
         200,
         scrollable: list,
       );
-      expect(find.text('Mark as done'), findsOneWidget);
-      expect(find.text('Delete'), findsNWidgets(2));
+      // Mark as done shows on both open requests but only the assigned,
+      // due one can be pressed. Everything not done can be removed.
+      expect(find.text('Mark as done'), findsNWidgets(2));
+      expect(_enabledMarkAsDone(tester), 1);
+      expect(find.text('Remove'), findsNWidgets(3));
 
-      // Delete asks first, and "Keep it" leaves the request alone.
-      await tester.ensureVisible(find.text('Delete').first);
-      await tester.tap(find.text('Delete').first);
+      // Remove asks first (and says who won't need to come), and "Keep it"
+      // leaves the request alone.
+      await tester.ensureVisible(find.text('Remove').first);
+      await tester.tap(find.text('Remove').first);
       await tester.pumpAndSettle();
-      expect(find.text('Delete this request?'), findsOneWidget);
+      expect(find.text('Remove this request?'), findsOneWidget);
+      expect(
+        find.textContaining('Juan Dela Cruz will be told not to come.'),
+        findsOneWidget,
+      );
       await tester.tap(find.text('Keep it'));
       await tester.pumpAndSettle();
       expect(app.maintenanceRequests.length, 4);
 
-      await tester.ensureVisible(find.text('Mark as done'));
-      await tester.tap(find.text('Mark as done'));
+      await tester.ensureVisible(find.text('Mark as done').first);
+      await tester.tap(find.text('Mark as done').first);
       await tester.pumpAndSettle();
       expect(find.text('Is it fixed?'), findsOneWidget);
 
@@ -493,7 +556,9 @@ void main() {
         scrollable: find.byType(Scrollable).last,
       );
 
-      expect(find.text('Mark as done'), findsNothing);
+      // Visible on both, but neither can be pressed yet.
+      expect(find.text('Mark as done'), findsNWidgets(2));
+      expect(_enabledMarkAsDone(tester), 0);
       expect(
         find.text(
           'You can mark it as done once it is assigned and the scheduled day comes.',

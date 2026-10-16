@@ -126,6 +126,6 @@ class MaintenanceRequestController extends Controller
 
         app(MaintenanceService::class)->delete($maintenanceRequest);
 
-        return back()->with('status', 'Maintenance request deleted.');
+        return back()->with('status', 'Maintenance request removed.');
     }
 }

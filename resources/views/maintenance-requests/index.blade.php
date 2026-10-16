@@ -87,16 +87,27 @@
                                             @csrf
                                             <button class="btn btn-sm btn-success" data-loading-text="Saving…"><i class="bi bi-check2-circle me-1"></i>Mark as done</button>
                                         </form>
-                                    @elseif ($request->status === 'in_progress' && $request->scheduled_date)
-                                        <span class="small text-muted"><i class="bi bi-calendar-event me-1"></i>Mark as done opens {{ $request->scheduled_date->format('M d, Y') }}</span>
-                                    @elseif ($request->status === 'pending')
-                                        <span class="small text-muted"><i class="bi bi-hourglass-split me-1"></i>Waiting to be assigned</span>
+                                    @elseif ($request->isOpen())
+                                        {{-- Visible but not clickable until someone is assigned and the day comes. --}}
+                                        <button type="button" class="btn btn-sm btn-success" disabled
+                                                title="{{ $request->assigned_to ? 'Opens on '.$request->scheduled_date?->format('M d, Y') : 'Opens once someone is assigned' }}">
+                                            <i class="bi bi-check2-circle me-1"></i>Mark as done
+                                        </button>
                                     @endif
                                     @if ($request->isDeletable())
-                                        <form method="POST" action="{{ route('tenant.maintenance-requests.destroy', $request) }}" onsubmit="return confirm('Delete this maintenance request? This cannot be undone.')">
+                                        <form method="POST" action="{{ route('tenant.maintenance-requests.destroy', $request) }}" onsubmit="return confirm('Remove this maintenance request? {{ $request->assigned_to ? 'The person assigned will be told not to come. ' : '' }}This cannot be undone.')">
                                             @csrf @method('DELETE')
-                                            <button class="btn btn-sm btn-outline-danger" data-loading-text="Deleting…"><i class="bi bi-trash me-1"></i>Delete</button>
+                                            <button class="btn btn-sm btn-outline-danger" data-loading-text="Removing…"><i class="bi bi-trash me-1"></i>Remove</button>
                                         </form>
+                                    @endif
+                                    @if ($request->isOpen() && ! $request->canBeMarkedDone())
+                                        <div class="w-100 small text-muted">
+                                            @if ($request->assigned_to)
+                                                <i class="bi bi-calendar-event me-1"></i>Mark as done opens {{ $request->scheduled_date?->format('M d, Y') ?? 'on the scheduled day' }}
+                                            @else
+                                                <i class="bi bi-hourglass-split me-1"></i>Waiting to be assigned
+                                            @endif
+                                        </div>
                                     @endif
                                     @unless ($request->isOpen() || $request->isDeletable())
                                         <span class="text-muted">—</span>

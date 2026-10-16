@@ -183,8 +183,8 @@ class MaintenanceRequestTest extends TestCase
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
             ->assertSee(route('tenant.maintenance-requests.resolve', $request))
             ->assertSee('Mark as done')
-            // Deleting is only for a request nobody has been assigned to.
-            ->assertDontSee('bi-trash');
+            // Not done yet, so the tenant can still remove it.
+            ->assertSee('bi-trash');
 
         $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))
             ->assertRedirect()->assertSessionHas('status');
@@ -201,7 +201,8 @@ class MaintenanceRequestTest extends TestCase
         }
 
         // Closed: nothing left to press, for the tenant or the admin.
-        $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertDontSee('Mark as done');
+        $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))
+            ->assertDontSee('Mark as done')->assertDontSee('bi-trash');
         $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))->assertSee('Confirmed by tenant')
             ->assertDontSee('name="assigned_to"', false);
         $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString()])->assertStatus(422);
@@ -266,10 +267,10 @@ class MaintenanceRequestTest extends TestCase
 
         $this->actingAs($tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
             ->assertSee(route('tenant.maintenance-requests.destroy', $request))
-            ->assertSee('Delete');
+            ->assertSee('Remove');
 
         $this->actingAs($tenant)->delete(route('tenant.maintenance-requests.destroy', $request))
-            ->assertRedirect()->assertSessionHas('status', 'Maintenance request deleted.');
+            ->assertRedirect()->assertSessionHas('status', 'Maintenance request removed.');
 
         $this->assertNull($request->fresh());
         Storage::disk('public')->assertMissing('maintenance/leak.jpg');
@@ -277,24 +278,45 @@ class MaintenanceRequestTest extends TestCase
         $this->assertDatabaseHas('notifications', [
             'user_id' => $admin->id,
             'title' => 'Maintenance request withdrawn',
-            'message' => "{$tenant->name} withdrew the Plumbing request for Room {$request->room->room_number}.",
+            'message' => "{$tenant->name} removed the Plumbing request for Room {$request->room->room_number}.",
         ]);
         $this->actingAs($tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()->assertDontSee('Leaking sink');
     }
 
-    public function test_a_request_being_worked_on_or_already_resolved_cannot_be_deleted(): void
+    public function test_a_request_being_worked_on_can_still_be_removed_but_a_resolved_one_cannot(): void
     {
         $admin = User::factory()->admin()->create();
+        $staff = User::factory()->staff()->create(['name' => 'Ramon Cruz']);
         $inProgress = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assigned_to' => $admin->id, 'scheduled_date' => today()->toDateString()]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assigned_to' => $staff->id, 'scheduled_date' => today()->addDays(3)->toDateString()]);
         $resolved = $this->requestFor(Lease::factory()->create());
         $resolved->update(['status' => 'resolved', 'resolved_at' => now()]);
 
-        foreach ([$inProgress, $resolved] as $request) {
-            $this->actingAs($request->tenant)->delete(route('tenant.maintenance-requests.destroy', $request))->assertStatus(422);
-            $this->assertNotNull($request->fresh());
-            $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertDontSee('bi-trash');
-        }
+        // Assigned but not done: Remove is offered, and whoever was assigned is told not to come.
+        $this->actingAs($inProgress->tenant)->get(route('tenant.maintenance-requests.index'))->assertSee('bi-trash');
+        $this->actingAs($inProgress->tenant)->delete(route('tenant.maintenance-requests.destroy', $inProgress))->assertRedirect();
+        $this->assertNull($inProgress->fresh());
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $staff->id,
+            'title' => 'Maintenance request withdrawn',
+            'message' => "{$inProgress->tenant->name} removed the Plumbing request for Room {$inProgress->room->room_number}. Ramon Cruz no longer needs to visit.",
+        ]);
+
+        // Done: it stays on record.
+        $this->actingAs($resolved->tenant)->delete(route('tenant.maintenance-requests.destroy', $resolved))->assertStatus(422);
+        $this->assertNotNull($resolved->fresh());
+        $this->actingAs($resolved->tenant)->get(route('tenant.maintenance-requests.index'))->assertDontSee('bi-trash');
+    }
+
+    public function test_mark_as_done_is_shown_but_not_clickable_until_assigned(): void
+    {
+        $request = $this->requestFor(Lease::factory()->create());
+
+        $page = $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk();
+        $page->assertSee('title="Opens once someone is assigned"', false)
+            ->assertSee('Waiting to be assigned')
+            ->assertDontSee(route('tenant.maintenance-requests.resolve', $request));
+        $this->assertMatchesRegularExpression('/<button type="button" class="btn btn-sm btn-success" disabled/', $page->getContent());
     }
 
     public function test_only_the_tenant_who_reported_it_can_delete_it_and_a_cancelled_one_can_be_tidied_away(): void
@@ -313,7 +335,7 @@ class MaintenanceRequestTest extends TestCase
         $this->assertDatabaseMissing('notifications', ['title' => 'Maintenance request withdrawn']);
     }
 
-    public function test_the_mobile_app_can_delete_a_pending_request(): void
+    public function test_the_mobile_app_can_remove_a_request_that_is_not_done(): void
     {
         $admin = User::factory()->admin()->create();
         $pending = $this->requestFor(Lease::factory()->create());
@@ -327,9 +349,14 @@ class MaintenanceRequestTest extends TestCase
         $this->getJson('/api/maintenance-requests')->assertOk()->assertJsonCount(0, 'requests');
 
         Sanctum::actingAs($assigned->tenant);
-        $this->deleteJson("/api/maintenance-requests/{$assigned->id}")->assertStatus(422)
-            ->assertJsonPath('message', 'This request is already being handled, so it can no longer be deleted. Mark it as done once the work is done.');
-        $this->assertNotNull($assigned->fresh());
+        $this->deleteJson("/api/maintenance-requests/{$assigned->id}")->assertNoContent();
+        $this->assertNull($assigned->fresh());
+
+        $done = $this->requestFor(Lease::factory()->create());
+        $done->update(['status' => 'resolved', 'resolved_at' => now()]);
+        Sanctum::actingAs($done->tenant);
+        $this->deleteJson("/api/maintenance-requests/{$done->id}")->assertStatus(422)
+            ->assertJsonPath('message', 'This request is already done, so it stays on record.');
     }
 
     public function test_a_tenant_cannot_use_the_admin_update_route(): void

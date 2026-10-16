@@ -92,18 +92,19 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   }
 
   /// Closing a request is the tenant's call: confirm the work is done, or
-  /// delete a request nobody has started. Asks first — it can't be undone.
+  /// remove it any time before it's done. Asks first — it can't be undone.
   Future<void> _close(MaintenanceRequest r, {required bool resolve}) async {
     final app = AppStateScope.of(context);
     final yes = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(resolve ? 'Is it fixed?' : 'Delete this request?'),
+        title: Text(resolve ? 'Is it fixed?' : 'Remove this request?'),
         content: Text(
           resolve
               ? 'Confirm that the ${r.issueType.toLowerCase()} issue has been '
                     'fixed. This closes the request.'
               : 'Your ${r.issueType.toLowerCase()} request will be removed. '
+                    '${r.assignedName != null ? '${r.assignedName} will be told not to come. ' : ''}'
                     'This cannot be undone.',
         ),
         actions: [
@@ -118,7 +119,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                   ? OasisColors.green
                   : const Color(0xFFA1281E),
             ),
-            child: Text(resolve ? 'Yes, it\'s fixed' : 'Delete'),
+            child: Text(resolve ? 'Yes, it\'s fixed' : 'Remove'),
           ),
         ],
       ),
@@ -138,7 +139,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           content: Text(
             resolve
                 ? 'Thanks — marked as done.'
-                : 'Maintenance request deleted.',
+                : 'Maintenance request removed.',
           ),
         ),
       );
@@ -363,15 +364,17 @@ class _RequestCard extends StatelessWidget {
               ],
             ),
           ],
-          if (r.canMarkDone || r.canDelete) ...[
+          if (r.isOpen || r.canDelete) ...[
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (r.canMarkDone)
+                // Shown for every open request, but only clickable once
+                // someone is assigned and the scheduled day has come.
+                if (r.isOpen)
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: enabled ? onResolve : null,
+                      onPressed: enabled && r.canMarkDone ? onResolve : null,
                       icon: busy
                           ? const SizedBox(
                               width: 16,
@@ -396,13 +399,13 @@ class _RequestCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                // Changed your mind? Only while nobody has been assigned.
+                // Changed your mind? Any time before it's done.
                 if (r.canDelete) ...[
-                  if (r.canMarkDone) const SizedBox(width: 8),
+                  if (r.isOpen) const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: enabled ? onDelete : null,
                     icon: const Icon(Icons.delete_outline, size: 18),
-                    label: const Text('Delete'),
+                    label: const Text('Remove'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFA1281E),
                       side: const BorderSide(color: Color(0xFFE5B5B0)),

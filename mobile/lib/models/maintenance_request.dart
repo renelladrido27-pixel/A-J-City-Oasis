@@ -29,9 +29,10 @@ class MaintenanceRequest {
   /// Not yet resolved or cancelled — the tenant can still close it.
   bool get isOpen => status == 'Pending' || status == 'In progress';
 
-  /// The tenant can delete it if they changed their mind — but only before
-  /// anyone has been assigned (or once it was cancelled).
-  bool get canDelete => status == 'Pending' || status == 'Cancelled';
+  /// The tenant can remove it if they changed their mind, any time before
+  /// it is done (a resolved request stays on record).
+  bool get canDelete =>
+      status == 'Pending' || status == 'In progress' || status == 'Cancelled';
 
   factory MaintenanceRequest.fromJson(Map<String, dynamic> json) {
     final assignee = json['assigned_to'] as Map<String, dynamic>?;

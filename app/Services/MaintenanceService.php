@@ -89,14 +89,11 @@ class MaintenanceService
     /** The tenant changed their mind: remove the request (and its photo) altogether. */
     public function delete(MaintenanceRequest $request): void
     {
-        abort_unless(
-            $request->isDeletable(),
-            422,
-            'This request is already being handled, so it can no longer be deleted. Mark it as done once the work is done.',
-        );
+        abort_unless($request->isDeletable(), 422, 'This request is already done, so it stays on record.');
 
-        $wasPending = $request->status === 'pending';
-        $summary = "{$request->tenant->name} withdrew the {$request->category} request for Room {$request->room->room_number}.";
+        $wasOpen = $request->isOpen();
+        $assignee = $request->assignee;
+        $summary = "{$request->tenant->name} removed the {$request->category} request for Room {$request->room->room_number}.";
 
         if ($request->photo) {
             Storage::disk('public')->delete($request->photo);
@@ -104,9 +101,14 @@ class MaintenanceService
 
         $request->delete();
 
-        // Admins were told about the request when it came in — tell them it's gone.
-        if ($wasPending) {
-            $this->notifications->notifyAdminsAndStaff('Maintenance request withdrawn', $summary, 'maintenance');
+        // Admins and staff were told about the request when it came in — tell them
+        // it's gone (and, if someone was assigned, that the visit is off).
+        if ($wasOpen) {
+            $this->notifications->notifyAdminsAndStaff(
+                'Maintenance request withdrawn',
+                $summary.($assignee ? " {$assignee->name} no longer needs to visit." : ''),
+                'maintenance',
+            );
         }
     }
 }

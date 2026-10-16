@@ -35,9 +35,10 @@ class MaintenanceRequest extends Model
             && ($this->scheduled_date === null || ! $this->scheduled_date->isAfter(today()));
     }
 
+    /** The tenant can remove a request any time before it is done (resolved stays on record). */
     public function isDeletable(): bool
     {
-        return in_array($this->status, ['pending', 'cancelled'], true);
+        return in_array($this->status, ['pending', 'in_progress', 'cancelled'], true);
     }
 
     protected $fillable = [

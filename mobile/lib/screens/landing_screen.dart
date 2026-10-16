@@ -7,6 +7,7 @@ import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
+import '../widgets/location_map.dart';
 import '../widgets/oasis_ui.dart';
 import '../widgets/room_photo.dart';
 import 'auth_screen.dart';
@@ -63,105 +64,138 @@ class _LandingScreenState extends State<LandingScreen> {
   Widget build(BuildContext context) {
     final app = AppStateScope.of(context);
     final rooms = app.availableRooms;
-    return RefreshIndicator(
-      onRefresh: _load,
-      color: OasisColors.green,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ListEntrance(
-              index: 0,
-              child: LandingHeader(
-                showAuthButtons: !app.isLoggedIn,
-                onLogIn: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AuthScreen(initialTabLogin: true),
-                  ),
+    // The header (name + Log in / Sign up) stays pinned; only the page below scrolls.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListEntrance(
+          index: 0,
+          child: _StickyHeader(
+            child: LandingHeader(
+              showAuthButtons: !app.isLoggedIn,
+              onLogIn: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AuthScreen(initialTabLogin: true),
                 ),
-                onSignUp: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AuthScreen(initialTabLogin: false),
-                  ),
+              ),
+              onSignUp: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AuthScreen(initialTabLogin: false),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            ListEntrance(
-              index: 1,
-              child: _Hero(availableRooms: _loading ? null : rooms.length),
-            ),
-            const SizedBox(height: 24),
-            ListEntrance(
-              index: 2,
-              child: SectionLabel(
-                'AVAILABLE ROOMS',
-                trailing: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  child: _loading || rooms.isEmpty
-                      ? const SizedBox.shrink()
-                      : StatusChip(
-                          '${rooms.length} open',
-                          key: ValueKey(rooms.length),
-                          tone: ChipTone.success,
-                        ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Cross-fades from the loading placeholders to the real cards.
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              child: _loading
-                  ? const _RoomGrid(
-                      key: ValueKey('loading'),
-                      count: 4,
-                      builder: _skeletonCard,
-                    )
-                  : _error != null
-                  ? OasisCard(
-                      key: const ValueKey('error'),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _error!,
-                            style: const TextStyle(color: Colors.redAccent),
-                          ),
-                          const SizedBox(height: 4),
-                          TextButton.icon(
-                            onPressed: _load,
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: const Text('Try again'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : rooms.isEmpty
-                  ? const EmptyState(
-                      key: ValueKey('empty'),
-                      icon: Icons.bed_outlined,
-                      message: 'All rooms are taken right now.',
-                      hint: 'Pull down to check again.',
-                    )
-                  : _RoomGrid(
-                      key: const ValueKey('rooms'),
-                      count: rooms.length,
-                      builder: (i) => ListEntrance(
-                        index: i,
-                        child: _RoomCard(
-                          room: rooms[i],
-                          onTap: () => _book(rooms[i]),
-                        ),
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _load,
+            color: OasisColors.green,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ListEntrance(
+                    index: 1,
+                    child: _Hero(
+                      availableRooms: _loading ? null : rooms.length,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ListEntrance(
+                    index: 2,
+                    child: SectionLabel(
+                      'AVAILABLE ROOMS',
+                      trailing: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: _loading || rooms.isEmpty
+                            ? const SizedBox.shrink()
+                            : StatusChip(
+                                '${rooms.length} open',
+                                key: ValueKey(rooms.length),
+                                tone: ChipTone.success,
+                              ),
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Cross-fades from the loading placeholders to the real cards.
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    child: _loading
+                        ? const _RoomGrid(
+                            key: ValueKey('loading'),
+                            count: 4,
+                            builder: _skeletonCard,
+                          )
+                        : _error != null
+                        ? OasisCard(
+                            key: const ValueKey('error'),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _error!,
+                                  style: const TextStyle(
+                                    color: Colors.redAccent,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                TextButton.icon(
+                                  onPressed: _load,
+                                  icon: const Icon(Icons.refresh, size: 18),
+                                  label: const Text('Try again'),
+                                ),
+                              ],
+                            ),
+                          )
+                        : rooms.isEmpty
+                        ? const EmptyState(
+                            key: ValueKey('empty'),
+                            icon: Icons.bed_outlined,
+                            message: 'All rooms are taken right now.',
+                            hint: 'Pull down to check again.',
+                          )
+                        : _RoomGrid(
+                            key: const ValueKey('rooms'),
+                            count: rooms.length,
+                            builder: (i) => ListEntrance(
+                              index: i,
+                              child: _RoomCard(
+                                room: rooms[i],
+                                onTap: () => _book(rooms[i]),
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                  const ListEntrance(index: 3, child: _ContactCard()),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            const ListEntrance(index: 3, child: _ContactCard()),
-          ],
+          ),
         ),
+      ],
+    );
+  }
+}
+
+/// White bar behind the pinned header, with a hairline under it.
+class _StickyHeader extends StatelessWidget {
+  final Widget child;
+  const _StickyHeader({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: OasisColors.hairline)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+        child: child,
       ),
     );
   }
@@ -305,6 +339,9 @@ class _ContactCard extends StatelessWidget {
               ),
             ],
           ),
+          // Same map as the website's "Find us in Koronadal City".
+          const SizedBox(height: 14),
+          const LocationMap(),
           const Divider(height: 24),
           InkWell(
             onTap: () => launchUrl(Uri.parse('mailto:$_email')),
