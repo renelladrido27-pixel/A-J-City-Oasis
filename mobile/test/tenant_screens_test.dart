@@ -707,6 +707,19 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('has a Check for updates button with the version', (
+      tester,
+    ) async {
+      await _pump(tester, signedIn(), const ProfileScreen());
+      await tester.scrollUntilVisible(
+        find.text('Check for updates'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Check for updates'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('asks before logging out', (tester) async {
       final app = signedIn();
       await _pump(tester, app, const ProfileScreen());

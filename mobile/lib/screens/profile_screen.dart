@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../services/api_exception.dart';
+import '../services/app_updater.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/account_validators.dart';
@@ -418,6 +419,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
 
+      const _AppVersionCard(),
+
       OasisCard(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         onTap: _confirmLogout,
@@ -467,6 +470,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: ListEntrance(index: i, child: section),
           ),
       ],
+    );
+  }
+}
+
+/// Which version is installed, and a button to look for a newer one now.
+class _AppVersionCard extends StatefulWidget {
+  const _AppVersionCard();
+
+  @override
+  State<_AppVersionCard> createState() => _AppVersionCardState();
+}
+
+class _AppVersionCardState extends State<_AppVersionCard> {
+  String _version = '';
+  bool _checking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AppUpdater.installedVersion().then((v) {
+      if (mounted) setState(() => _version = v);
+    });
+  }
+
+  Future<void> _check() async {
+    setState(() => _checking = true);
+    final offered = await AppUpdater.checkAndPrompt(context, force: true);
+    if (!mounted) return;
+    setState(() => _checking = false);
+    if (!offered) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'You have the latest version${_version.isEmpty ? '' : ' ($_version)'}.',
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: OasisCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        onTap: _checking ? null : _check,
+        child: Row(
+          children: [
+            const IconBadge(Icons.system_update_outlined),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Check for updates',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  Text(
+                    _version.isEmpty ? 'App version' : 'Version $_version',
+                    style: const TextStyle(
+                      color: OasisColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _checking
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.chevron_right, color: OasisColors.muted),
+          ],
+        ),
+      ),
     );
   }
 }

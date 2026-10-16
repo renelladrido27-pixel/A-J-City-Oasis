@@ -86,7 +86,11 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   /// instead of waiting for the next tick.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkForNewNotifications();
+    if (state == AppLifecycleState.resumed) {
+      _checkForNewNotifications();
+      // A new version may have been published while the app sat in the background.
+      AppUpdater.checkAndPrompt(context);
+    }
   }
 
   /// The website shows a pop-up the moment a notification arrives; the app

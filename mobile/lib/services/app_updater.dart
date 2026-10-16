@@ -60,16 +60,52 @@ class AppUpdater {
     }
   }
 
-  /// Checks once and, if there's a newer build, shows the update dialog.
-  static Future<void> checkAndPrompt(BuildContext context) async {
-    final update = await check();
-    if (update == null || !context.mounted) return;
+  /// The installed version, e.g. "1.0.13" — shown in Profile.
+  static Future<String> installedVersion() async {
+    try {
+      return (await PackageInfo.fromPlatform()).version;
+    } catch (_) {
+      return '';
+    }
+  }
 
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _UpdateDialog(update: update),
-    );
+  static bool _showing = false;
+  static DateTime? _lastCheck;
+
+  /// How long to wait before checking again when the app comes back to the
+  /// front (Android keeps the app running, so start-up alone isn't enough).
+  static const recheckAfter = Duration(minutes: 5);
+
+  /// Checks and, if there's a newer build, shows the update dialog. Runs at
+  /// start-up and whenever the app comes back to the front; [force] (the
+  /// Profile button) skips the wait. Returns true when an update was offered.
+  static Future<bool> checkAndPrompt(
+    BuildContext context, {
+    bool force = false,
+  }) async {
+    if (_showing) return true;
+    final last = _lastCheck;
+    if (!force &&
+        last != null &&
+        DateTime.now().difference(last) < recheckAfter) {
+      return false;
+    }
+    _lastCheck = DateTime.now();
+
+    final update = await check();
+    if (update == null || !context.mounted || _showing) return false;
+
+    _showing = true;
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _UpdateDialog(update: update),
+      );
+    } finally {
+      _showing = false;
+    }
+    return true;
   }
 }
 
