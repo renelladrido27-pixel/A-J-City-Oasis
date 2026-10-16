@@ -85,7 +85,7 @@ class MaintenanceRequestController extends Controller
         $validated = $request->validate([
             // Only staff/admin accounts do maintenance work.
             'assigned_to' => ['nullable', Rule::exists('users', 'id')->whereIn('role', ['admin', 'staff'])],
-            // The tenant's "Mark as done" opens on this day, so an assignment needs one.
+            // Every assignment says when the visit is, so the tenant knows.
             'scheduled_date' => ['nullable', 'required_with:assigned_to', 'date'],
         ]);
 

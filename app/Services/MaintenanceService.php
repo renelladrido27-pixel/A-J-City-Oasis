@@ -61,7 +61,6 @@ class MaintenanceService
     {
         abort_unless($request->isOpen(), 422, 'This request is already closed.');
         abort_unless($request->assigned_to !== null, 422, 'Nobody has been assigned to this request yet.');
-        abort_unless($request->canBeMarkedDone(), 422, 'You can mark this as done from '.$request->scheduled_date?->format('M d, Y').', the scheduled day.');
 
         $request->update(['status' => 'resolved', 'resolved_at' => now()]);
 

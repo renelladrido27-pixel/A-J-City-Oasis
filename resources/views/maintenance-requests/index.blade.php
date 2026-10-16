@@ -81,16 +81,16 @@
                             {{-- The tenant closes their own request — or deletes it if they changed their mind. --}}
                             <td>
                                 <div class="d-flex flex-wrap gap-1">
-                                    {{-- Mark as done only once someone is assigned and the scheduled day has come. --}}
+                                    {{-- Mark as done unlocks once someone is assigned. --}}
                                     @if ($request->canBeMarkedDone())
                                         <form method="POST" action="{{ route('tenant.maintenance-requests.resolve', $request) }}" onsubmit="return confirm('Confirm that this issue has been fixed? This closes the request.')">
                                             @csrf
                                             <button class="btn btn-sm btn-success" data-loading-text="Saving…"><i class="bi bi-check2-circle me-1"></i>Mark as done</button>
                                         </form>
                                     @elseif ($request->isOpen())
-                                        {{-- Visible but not clickable until someone is assigned and the day comes. --}}
+                                        {{-- Visible but not clickable until someone is assigned. --}}
                                         <button type="button" class="btn btn-sm btn-success" disabled
-                                                title="{{ $request->assigned_to ? 'Opens on '.$request->scheduled_date?->format('M d, Y') : 'Opens once someone is assigned' }}">
+                                                title="Opens once someone is assigned">
                                             <i class="bi bi-check2-circle me-1"></i>Mark as done
                                         </button>
                                     @endif
@@ -102,11 +102,7 @@
                                     @endif
                                     @if ($request->isOpen() && ! $request->canBeMarkedDone())
                                         <div class="w-100 small text-muted">
-                                            @if ($request->assigned_to)
-                                                <i class="bi bi-calendar-event me-1"></i>Mark as done opens {{ $request->scheduled_date?->format('M d, Y') ?? 'on the scheduled day' }}
-                                            @else
-                                                <i class="bi bi-hourglass-split me-1"></i>Waiting to be assigned
-                                            @endif
+                                            <i class="bi bi-hourglass-split me-1"></i>Waiting to be assigned
                                         </div>
                                     @endif
                                     @unless ($request->isOpen() || $request->isDeletable())

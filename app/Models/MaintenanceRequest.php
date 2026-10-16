@@ -25,14 +25,12 @@ class MaintenanceRequest extends Model
      * Work in progress and finished work stay on record.
      */
     /**
-     * The tenant can mark the work done only once someone is assigned and the
-     * scheduled day has come — not before anyone has looked at it.
+     * The tenant can mark the work done as soon as someone is assigned — not
+     * before anyone has looked at it. (No date check: the owner's call.)
      */
     public function canBeMarkedDone(): bool
     {
-        return $this->status === 'in_progress'
-            && $this->assigned_to !== null
-            && ($this->scheduled_date === null || ! $this->scheduled_date->isAfter(today()));
+        return $this->status === 'in_progress' && $this->assigned_to !== null;
     }
 
     /** The tenant can remove a request any time before it is done (resolved stays on record). */

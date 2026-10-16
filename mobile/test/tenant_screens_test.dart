@@ -523,7 +523,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Mark as done waits for an assignment and the scheduled day', (
+    testWidgets('Mark as done waits for someone to be assigned', (
       tester,
     ) async {
       final app = _tenant()
@@ -542,7 +542,8 @@ void main() {
             status: 'In progress',
             submittedAt: DateTime(2026, 10, 14),
             assignedName: 'Juan Dela Cruz',
-            scheduledDate: DateTime(2026, 10, 17),
+            scheduledDate: DateTime(2026, 10, 20),
+            canMarkDone: true,
           ),
         ];
       await _pump(
@@ -556,16 +557,13 @@ void main() {
         scrollable: find.byType(Scrollable).last,
       );
 
-      // Visible on both, but neither can be pressed yet.
+      // Both show the button; only the assigned one can be pressed, date or not.
       expect(find.text('Mark as done'), findsNWidgets(2));
-      expect(_enabledMarkAsDone(tester), 0);
+      expect(_enabledMarkAsDone(tester), 1);
       expect(
-        find.text(
-          'You can mark it as done once it is assigned and the scheduled day comes.',
-        ),
+        find.text('You can mark it as done once someone is assigned.'),
         findsOneWidget,
       );
-      expect(find.text('Mark as done opens on Oct 17.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

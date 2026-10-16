@@ -335,30 +335,17 @@ class _RequestCard extends StatelessWidget {
               ),
             ],
           ),
-          // Mark as done only once someone is assigned and the day has come.
+          // Mark as done unlocks once someone is assigned.
           if (r.isOpen && !r.canMarkDone) ...[
             const SizedBox(height: 10),
-            Row(
+            const Row(
               children: [
-                Icon(
-                  r.scheduledDate != null
-                      ? Icons.event_outlined
-                      : Icons.hourglass_empty,
-                  size: 16,
-                  color: OasisColors.muted,
-                ),
-                const SizedBox(width: 6),
+                Icon(Icons.hourglass_empty, size: 16, color: OasisColors.muted),
+                SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    r.assignedName == null
-                        ? 'You can mark it as done once it is assigned and the scheduled day comes.'
-                        : r.scheduledDate != null
-                        ? 'Mark as done opens on ${formatShortDate(r.scheduledDate!)}.'
-                        : 'Mark as done opens on the scheduled day.',
-                    style: const TextStyle(
-                      color: OasisColors.muted,
-                      fontSize: 12,
-                    ),
+                    'You can mark it as done once someone is assigned.',
+                    style: TextStyle(color: OasisColors.muted, fontSize: 12),
                   ),
                 ),
               ],
@@ -370,7 +357,7 @@ class _RequestCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 // Shown for every open request, but only clickable once
-                // someone is assigned and the scheduled day has come.
+                // someone is assigned.
                 if (r.isOpen)
                   Expanded(
                     child: FilledButton.icon(

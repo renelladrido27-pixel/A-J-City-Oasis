@@ -10,7 +10,7 @@ class MaintenanceRequest {
   final String? assignedPhone;
   final DateTime? scheduledDate;
 
-  /// Someone is assigned and the scheduled day has come — only then can the
+  /// Someone is assigned — only then can the
   /// tenant mark the work done (decided by the server, on Manila time).
   final bool canMarkDone;
 
