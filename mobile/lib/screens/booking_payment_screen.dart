@@ -5,7 +5,9 @@ import '../services/api_exception.dart';
 import '../state/app_state.dart';
 import '../theme.dart';
 import '../utils/format.dart';
+import '../widgets/oasis_bottom_nav.dart';
 import '../widgets/oasis_button.dart';
+import 'rental_hub_screen.dart';
 import 'root_shell.dart';
 
 /// C4 - Cost breakdown, then straight to the checkout page (where the tenant
@@ -46,6 +48,17 @@ class _BookingPaymentScreenState extends State<BookingPaymentScreen>
     }
   }
 
+  /// Paid: back to the top of Home's stack and over to Rental → My rental.
+  void _showMyRental() {
+    final stack = Navigator.of(context);
+    RootShell.showTab(
+      context,
+      OasisTab.rental,
+      section: RentalSection.myRental,
+    );
+    stack.popUntil((r) => r.isFirst);
+  }
+
   Future<void> _pay() async {
     setState(() {
       _submitting = true;
@@ -56,10 +69,7 @@ class _BookingPaymentScreenState extends State<BookingPaymentScreen>
       final result = await app.completeBookingPayment();
       if (!mounted) return;
       if (result['status'] == 'paid') {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const RootShell()),
-          (route) => false,
-        );
+        _showMyRental();
       } else if (result['status'] == 'redirect') {
         final url = result['invoice_url'] as String?;
         if (url != null) {
@@ -84,10 +94,7 @@ class _BookingPaymentScreenState extends State<BookingPaymentScreen>
       final result = await app.checkBookingPaymentStatus();
       if (!mounted) return;
       if (result['status'] == 'paid') {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const RootShell()),
-          (route) => false,
-        );
+        _showMyRental();
       } else {
         setState(
           () => _error = 'Not paid yet. Complete checkout, then check again.',

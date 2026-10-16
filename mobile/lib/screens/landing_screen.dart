@@ -73,12 +73,12 @@ class _LandingScreenState extends State<LandingScreen> {
           child: _StickyHeader(
             child: LandingHeader(
               showAuthButtons: !app.isLoggedIn,
-              onLogIn: () => Navigator.of(context).push(
+              onLogIn: () => Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(
                   builder: (_) => const AuthScreen(initialTabLogin: true),
                 ),
               ),
-              onSignUp: () => Navigator.of(context).push(
+              onSignUp: () => Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(
                   builder: (_) => const AuthScreen(initialTabLogin: false),
                 ),

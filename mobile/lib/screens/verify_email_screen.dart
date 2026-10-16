@@ -20,6 +20,7 @@ class VerifyEmailScreen extends StatefulWidget {
 
     final verified = await Navigator.of(
       context,
+      rootNavigator: true,
     ).push<bool>(MaterialPageRoute(builder: (_) => const VerifyEmailScreen()));
     return verified ?? false;
   }

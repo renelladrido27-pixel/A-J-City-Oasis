@@ -61,18 +61,17 @@ class _RentalHubScreenState extends State<RentalHubScreen> {
           ],
         ),
         const SizedBox(height: 8),
+        // Instant switch, like the original app.
         Expanded(
-          child: FadeThrough(
-            child: KeyedSubtree(
-              key: ValueKey(_section),
-              child: switch (_section) {
-                RentalSection.myRental => MyRentalScreen(
-                  onPayNow: widget.onPayNow,
-                ),
-                RentalSection.transfer => const RequestTransferScreen(),
-                RentalSection.maintenance => const MaintenanceScreen(),
-              },
-            ),
+          child: KeyedSubtree(
+            key: ValueKey(_section),
+            child: switch (_section) {
+              RentalSection.myRental => MyRentalScreen(
+                onPayNow: widget.onPayNow,
+              ),
+              RentalSection.transfer => const RequestTransferScreen(),
+              RentalSection.maintenance => const MaintenanceScreen(),
+            },
           ),
         ),
       ],
