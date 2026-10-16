@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/api_client.dart';
@@ -84,10 +85,10 @@ class _AuthScreenState extends State<AuthScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 48),
-              const Text(
-                'A&J City Oasis',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              SvgPicture.asset(
+                'assets/brand/aj-oasis-stacked-color.svg',
+                height: 96,
+                semanticsLabel: 'A&J OASIS',
               ),
               const SizedBox(height: 40),
               Container(

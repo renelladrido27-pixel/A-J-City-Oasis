@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'state/app_state.dart';
 import 'screens/root_shell.dart';
@@ -58,15 +59,12 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: Text(
-          'A&J CITY OASIS',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: OasisColors.green,
-          ),
+        child: SvgPicture.asset(
+          'assets/brand/aj-oasis-stacked-color.svg',
+          width: 180,
+          semanticsLabel: 'A&J OASIS',
         ),
       ),
     );

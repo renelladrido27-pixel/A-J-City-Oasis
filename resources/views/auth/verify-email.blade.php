@@ -8,8 +8,7 @@
 <div class="auth-a">
     <div class="card">
         <div class="brandmark">
-            <div class="mark"><img src="{{ asset('images/logo-mark.svg') }}" alt=""></div>
-            <span>A&amp;J CITY OASIS</span>
+            <img class="lockup" src="{{ asset('images/aj-oasis-horizontal-color.svg') }}" alt="A&amp;J OASIS" width="160" height="34">
         </div>
 
         <p class="subtitle">We sent a 6-digit code to <strong>{{ $email }}</strong>. Enter it below to verify your account.</p>

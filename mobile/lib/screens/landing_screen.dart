@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/room.dart';
@@ -511,18 +512,13 @@ class LandingHeader extends StatelessWidget {
       children: [
         Expanded(
           flex: showAuthButtons ? 5 : 1,
-          child: const FittedBox(
+          child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(
-              'A&J CITY OASIS',
-              maxLines: 1,
-              softWrap: false,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: OasisColors.green,
-              ),
+            child: SvgPicture.asset(
+              'assets/brand/aj-oasis-horizontal-color.svg',
+              height: 30,
+              semanticsLabel: 'A&J OASIS',
             ),
           ),
         ),

@@ -3,9 +3,7 @@
     .auth-a { display: flex; justify-content: center; padding: 1.5rem 0; }
     .auth-a .card { max-width: 400px; width: 100%; background: #fff; border: 1px solid #e2e5eb; border-radius: 14px; padding: 2rem; box-shadow: 0 1px 2px rgba(18,20,26,.04); }
     .auth-a .brandmark { display: flex; align-items: center; gap: 9px; margin-bottom: 1.5rem; }
-    .auth-a .brandmark .mark { width: 32px; height: 32px; flex-shrink: 0; }
-    .auth-a .brandmark .mark img { width: 100%; height: 100%; display: block; }
-    .auth-a .brandmark span { font-weight: 700; color: #12141a; }
+    .auth-a .brandmark .lockup { height: 34px; width: auto; display: block; }
 
     .auth-a .subtitle { color: #565c69; font-size: .88rem; margin: -1rem 0 1.25rem; }
 

@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>A&amp;J CITY OASIS — Rental Apartments in Koronadal City</title>
     <meta name="description" content="Book a room online at A&amp;J CITY OASIS. {{ $stats['rooms'] }} rooms across {{ $stats['properties'] }} properties in Koronadal City, transparent pricing, and secure online payments.">
-    <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
-    <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
+    @include('partials.favicons')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     @include('partials.brand-theme')
@@ -51,7 +50,7 @@
 <body>
     <nav class="navbar navbar-expand-md navbar-oasis sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold text-oasis d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A&amp;J CITY OASIS</a>
+            <a class="navbar-brand fw-bold text-oasis d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/aj-oasis-horizontal-color.svg') }}" alt="A&amp;J OASIS" width="151" height="32"></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landingNav" aria-controls="landingNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -373,7 +372,7 @@
         <div class="container">
             <div class="row g-4">
                 <div class="col-md-4">
-                    <h3 class="h5 fw-bold mb-3 d-flex align-items-center gap-2"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="24" height="24">A&amp;J CITY OASIS</h3>
+                    <h3 class="h5 mb-3"><img src="{{ asset('images/aj-oasis-horizontal-reversed.svg') }}" alt="A&amp;J OASIS" width="151" height="32"></h3>
                     <p class="small" style="color: rgba(255,255,255,.7);">Comfortable, secure rentals in Koronadal City &mdash; fully bookable online.</p>
                 </div>
                 <div class="col-md-4">

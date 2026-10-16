@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>@yield('title', 'Dashboard') — A&amp;J CITY OASIS</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
-    <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
+    @include('partials.favicons')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     @include('partials.brand-theme')
@@ -64,8 +63,7 @@
         <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
         <aside class="sidebar p-3" id="sidebar">
             <a href="{{ url('/') }}" class="d-flex align-items-center gap-2 text-decoration-none brand mb-4 px-1">
-                <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">
-                <span>A&amp;J CITY OASIS</span>
+                <img src="{{ asset('images/aj-oasis-horizontal-reversed.svg') }}" alt="A&amp;J OASIS" width="151" height="32">
             </a>
 
             <nav class="nav flex-column">

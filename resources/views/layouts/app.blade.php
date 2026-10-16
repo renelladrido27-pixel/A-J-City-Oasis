@@ -6,8 +6,7 @@
     <title>@yield('title', 'Dashboard') — A&amp;J CITY OASIS</title>
     <meta name="description" content="@yield('meta_description', 'Manage your booking, lease, payments, and maintenance requests at A&amp;J CITY OASIS, Koronadal City.')">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="any">
-    <link href="{{ asset('images/logo-mark.svg') }}" rel="icon" type="image/svg+xml">
+    @include('partials.favicons')
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     @include('partials.brand-theme')
@@ -40,7 +39,7 @@
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-oasis sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">A&amp;J CITY OASIS</a>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}"><img src="{{ asset('images/aj-oasis-horizontal-reversed.svg') }}" alt="A&amp;J OASIS" width="151" height="32"></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
