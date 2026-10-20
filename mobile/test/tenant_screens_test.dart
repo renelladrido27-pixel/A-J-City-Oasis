@@ -314,6 +314,12 @@ void main() {
         LocationMap.embedUri.toString(),
         'https://www.google.com/maps?q=Koronadal+City%2C+South+Cotabato&output=embed',
       );
+      // Google refuses the embed outside an iframe, so the web view loads it
+      // in one instead of opening the embed URL directly.
+      expect(
+        LocationMap.iframeHtml,
+        contains('<iframe src="${LocationMap.embedUri}"'),
+      );
       expect(find.text('Open in Google Maps'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

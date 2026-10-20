@@ -22,6 +22,22 @@ class LocationMap extends StatefulWidget {
     'query': query,
   });
 
+  /// Google only serves the embed inside an iframe (loaded on its own it
+  /// redirects to /maps/embed and shows "must be used in an iframe"), so the
+  /// web view loads this small page, just like the website's map.
+  static String get iframeHtml =>
+      '<!DOCTYPE html><html><head>'
+      '<meta name="viewport" content="width=device-width, initial-scale=1">'
+      '<style>html,body{margin:0;height:100%;overflow:hidden}'
+      'iframe{border:0;width:100%;height:100%}</style>'
+      '</head><body>'
+      '<iframe src="$embedUri" allowfullscreen loading="eager" '
+      'referrerpolicy="no-referrer-when-downgrade"></iframe>'
+      '</body></html>';
+
+  /// Origin the iframe page is loaded under.
+  static const pageBaseUrl = 'https://ajcityoasis.online/';
+
   @override
   State<LocationMap> createState() => _LocationMapState();
 }
@@ -44,9 +60,14 @@ class _LocationMapState extends State<LocationMap> {
             onPageFinished: (_) {
               if (mounted) setState(() => _loading = false);
             },
-            // Taps on "View larger map" etc. go to the Maps app, not inside the card.
+            // The map's own loading and redirects happen inside the iframe;
+            // only a tap that would replace the whole card ("View larger
+            // map" etc.) goes to the Maps app.
             onNavigationRequest: (request) {
-              if (request.url.startsWith(LocationMap.embedUri.toString())) {
+              if (!request.isMainFrame ||
+                  request.url.startsWith(LocationMap.pageBaseUrl) ||
+                  request.url.startsWith('about:') ||
+                  request.url.startsWith('data:')) {
                 return NavigationDecision.navigate;
               }
               launchUrl(
@@ -57,7 +78,10 @@ class _LocationMapState extends State<LocationMap> {
             },
           ),
         )
-        ..loadRequest(LocationMap.embedUri);
+        ..loadHtmlString(
+          LocationMap.iframeHtml,
+          baseUrl: LocationMap.pageBaseUrl,
+        );
     }
   }
 
