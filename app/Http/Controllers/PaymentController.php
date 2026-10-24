@@ -65,13 +65,13 @@ class PaymentController extends Controller
         abort_unless($lease->status === 'active', 422, 'Lease is not active.');
 
         $billing = app(RentBillingService::class);
-        $dueDate = $billing->nextDueDate();
+        $dueDate = $billing->nextDueDate($lease);
 
         if (! $billing->billNextMonth($lease)) {
-            return back()->withErrors(['rent' => 'Rent for '.$dueDate->format('F Y').' was already generated for this lease.']);
+            return back()->withErrors(['rent' => 'The rent due '.$dueDate->format('M j, Y').' was already generated for this lease.']);
         }
 
-        return back()->with('status', 'Rent payment generated for '.$dueDate->format('F Y').'.');
+        return back()->with('status', 'Rent payment generated, due '.$dueDate->format('M j, Y').'.');
     }
 
     /**

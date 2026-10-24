@@ -22,7 +22,7 @@ class GenerateRentBills extends Command
             }
         });
 
-        $this->info("Created {$created} rent bill(s) due ".$billing->nextDueDate()->format('F j, Y').'.');
+        $this->info("Created {$created} rent bill(s).");
 
         return self::SUCCESS;
     }

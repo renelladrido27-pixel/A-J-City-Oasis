@@ -85,11 +85,12 @@ class RentBillingAndReminderTest extends TestCase
 
         $bills = $this->rentBills($lease);
         $this->assertCount(1, $bills);
-        $this->assertSame('2026-11-01', $bills->first()->due_date->toDateString());
+        // Moved in Oct 10: the advance covers the first month, rent is due Nov 10.
+        $this->assertSame('2026-11-10', $bills->first()->due_date->toDateString());
 
         Sanctum::actingAs($lease->tenant);
         $this->getJson('/api/payments')->assertOk()
-            ->assertJsonPath('next_due_date', '2026-11-01')
+            ->assertJsonPath('next_due_date', '2026-11-10')
             ->assertJsonPath('next_due_payment_id', $bills->first()->id);
     }
 
