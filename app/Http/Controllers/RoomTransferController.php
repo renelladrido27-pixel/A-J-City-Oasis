@@ -53,6 +53,11 @@ class RoomTransferController extends Controller
 
         $toRoom = Room::findOrFail($validated['to_room_id']);
         abort_unless($toRoom->isVacant(), 422, 'The selected room is not available.');
+        abort_if(
+            $lease->roomTransfers()->where('status', 'pending')->exists(),
+            422,
+            'You already have a transfer request waiting for the admin. Wait for it to be approved or rejected first.',
+        );
 
         $adjustment = (float) $toRoom->monthly_rate - (float) $lease->room->monthly_rate;
 
@@ -95,6 +100,10 @@ class RoomTransferController extends Controller
     {
         abort_unless($roomTransfer->status === 'pending', 422, 'Transfer already processed.');
 
+        if ($roomTransfer->lease->room_id !== $roomTransfer->from_room_id) {
+            return back()->withErrors(['transfer' => 'This request is out of date: the tenant is no longer in Room '.$roomTransfer->fromRoom->room_number.'. Reject it instead.']);
+        }
+
         if ($roomTransfer->isUpgrade()) {
             $paid = $roomTransfer->lease->payments()
                 ->where('type', 'transfer_adjustment')
@@ -105,16 +114,32 @@ class RoomTransferController extends Controller
         }
 
         DB::transaction(function () use ($roomTransfer) {
+            $lease = Lease::whereKey($roomTransfer->lease_id)->lockForUpdate()->first();
+
+            // An old request can outlive a move: if the tenant has already left
+            // the room it was made from, approving it would empty the wrong room.
+            abort_unless(
+                $lease->status === 'active' && $lease->room_id === $roomTransfer->from_room_id,
+                422,
+                'This request is out of date: the tenant is no longer in Room '.$roomTransfer->fromRoom->room_number.'. Reject it instead.',
+            );
+
+            $fromRoom = Room::whereKey($lease->room_id)->lockForUpdate()->first();
             $toRoom = Room::where('id', $roomTransfer->to_room_id)->lockForUpdate()->first();
 
             abort_unless($toRoom->isVacant(), 422, 'The destination room is no longer available.');
 
             $roomTransfer->update(['status' => 'completed']);
 
-            $roomTransfer->fromRoom->update(['status' => 'vacant']);
+            $fromRoom->update(['status' => 'vacant']);
             $toRoom->update(['status' => 'occupied']);
 
-            $roomTransfer->lease->update(['room_id' => $roomTransfer->to_room_id]);
+            $lease->update(['room_id' => $toRoom->id]);
+
+            // Any other request this tenant still had waiting is now moot.
+            RoomTransfer::where('lease_id', $lease->id)->where('status', 'pending')
+                ->whereKeyNot($roomTransfer->id)
+                ->update(['status' => 'rejected']);
         });
 
         $this->notifications->notify(

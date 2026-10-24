@@ -22,10 +22,15 @@
                         <td><x-status-badge :status="$transfer->status" /></td>
                         <td class="text-end">
                             @if ($transfer->status === 'pending')
-                                <form method="POST" action="{{ route('admin.room-transfers.approve', $transfer) }}" class="d-inline" onsubmit="return confirm('Approve this transfer?')">
-                                    @csrf
-                                    <button class="btn btn-sm btn-success"><i class="bi bi-check-lg me-1"></i>Approve</button>
-                                </form>
+                                @if ($transfer->lease->room_id !== $transfer->from_room_id)
+                                    {{-- The tenant has moved since asking: approving would empty the wrong room. --}}
+                                    <span class="badge text-bg-warning me-1" title="The tenant is no longer in Room {{ $transfer->fromRoom->room_number }}">Out of date</span>
+                                @else
+                                    <form method="POST" action="{{ route('admin.room-transfers.approve', $transfer) }}" class="d-inline" onsubmit="return confirm('Approve this transfer?')">
+                                        @csrf
+                                        <button class="btn btn-sm btn-success"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                                    </form>
+                                @endif
                                 <form method="POST" action="{{ route('admin.room-transfers.reject', $transfer) }}" class="d-inline" onsubmit="return confirm('Reject this transfer?')">
                                     @csrf
                                     <button class="btn btn-sm btn-danger"><i class="bi bi-x-lg me-1"></i>Reject</button>

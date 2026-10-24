@@ -27,6 +27,11 @@ Schedule::call(fn () => Artisan::call('app:generate-rent-bills'))
     ->daily()
     ->name('generate-rent-bills');
 
+// Safety net: no room shows as vacant while someone lives in it (or the reverse).
+Schedule::call(fn () => Artisan::call('app:sync-room-status'))
+    ->daily()
+    ->name('sync-room-status');
+
 // "Your payment is due in a week" — in the morning, not at midnight.
 Schedule::call(fn () => Artisan::call('app:send-payment-reminders'))
     ->dailyAt('08:00')

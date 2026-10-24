@@ -53,6 +53,11 @@ class RoomTransferController extends Controller
 
         $toRoom = Room::findOrFail($validated['to_room_id']);
         abort_unless($toRoom->isVacant(), 422, 'The selected room is not available.');
+        abort_if(
+            $lease->roomTransfers()->where('status', 'pending')->exists(),
+            422,
+            'You already have a transfer request waiting for the admin. Wait for it to be approved or rejected first.',
+        );
 
         $adjustment = (float) $toRoom->monthly_rate - (float) $lease->room->monthly_rate;
 
