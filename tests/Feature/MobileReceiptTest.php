@@ -23,7 +23,7 @@ class MobileReceiptTest extends TestCase
     {
         $this->travelTo('2026-10-02 15:15:00');
         $payment = Payment::factory()->create([
-            'status' => 'paid', 'amount' => 3500, 'paid_at' => now(), 'xendit_payment_id' => 'pay-abc-123',
+            'status' => 'paid', 'amount' => 3500, 'paid_at' => now(), 'xendit_payment_id' => 'pay-abc-123', 'due_date' => '2026-10-27',
         ]);
         $tenant = $payment->lease->tenant;
         Sanctum::actingAs($tenant);
@@ -38,6 +38,8 @@ class MobileReceiptTest extends TestCase
             'lines' => [['label' => 'Rent', 'note' => null, 'amount' => 3500]],
             'amount' => 3500,
             'paid_at' => now()->toIso8601String(),
+            'due_date' => ['label' => 'Due date', 'date' => '2026-10-27'],
+            'refund_note' => null,
             'reference' => 'pay-abc-123',
             'bill_photo_url' => null,
         ]]);
@@ -46,7 +48,30 @@ class MobileReceiptTest extends TestCase
         $this->actingAs($tenant)->get(route('payments.receipt', $payment))->assertOk()
             ->assertSee('#'.str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT))
             ->assertSee('pay-abc-123')
-            ->assertSee('₱3,500.00');
+            ->assertSee('₱3,500.00')
+            ->assertSee('Due date')
+            ->assertSee('Oct 27, 2026');
+    }
+
+    public function test_the_upfront_receipt_shows_when_the_first_rent_is_due_and_that_it_is_refundable(): void
+    {
+        $booking = Booking::factory()->confirmed()->create(['move_in_date' => '2026-10-27']);
+        $upfront = Payment::create([
+            'booking_id' => $booking->id, 'type' => 'booking_upfront', 'amount' => 10500,
+            'due_date' => '2026-10-24', 'status' => 'paid', 'paid_at' => '2026-10-24 10:00:00',
+        ]);
+        Sanctum::actingAs($booking->tenant);
+
+        $this->getJson("/api/payments/{$upfront->id}/receipt")->assertOk()
+            ->assertJsonPath('receipt.due_date', ['label' => 'First rent due', 'date' => '2026-11-27'])
+            ->assertJsonPath('receipt.refund_note', 'The full upfront payment is refunded if the booking is cancelled before the move-in date.');
+
+        $this->actingAs($booking->tenant)->get(route('payments.receipt', $upfront))->assertOk()
+            ->assertSee('First rent due')->assertSee('Nov 27, 2026')
+            ->assertSee('The full upfront payment is refunded if the booking is cancelled before the move-in date.');
+        $html = view('payments.receipt-pdf', ['payment' => $upfront->load('booking.room.property', 'booking.tenant')])->render();
+        $this->assertStringContainsString('First rent due', $html);
+        $this->assertStringContainsString('Nov 27, 2026', $html);
     }
 
     public function test_a_walk_in_payment_recorded_by_the_admin_says_so(): void
@@ -108,7 +133,7 @@ class MobileReceiptTest extends TestCase
         ]);
         $parts = [
             ['label' => '1 month advance', 'note' => "Your first month's rent", 'amount' => 3500],
-            ['label' => '1 month deposit', 'note' => 'Applied as rent · not refundable', 'amount' => 3500],
+            ['label' => '1 month deposit', 'note' => 'Applied as rent once you move in', 'amount' => 3500],
             ['label' => 'Security deposit', 'note' => 'Refundable at move-out, less any damages', 'amount' => 3500],
         ];
 

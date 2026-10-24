@@ -83,7 +83,17 @@
                     <span class="h5 mb-0 text-success fw-bold">₱{{ number_format($payment->amount, 2) }}</span>
                 </div>
 
+                @if ($payment->refundNote())
+                    <p class="small text-muted mt-n2 mb-3"><i class="bi bi-arrow-counterclockwise me-1"></i>{{ $payment->refundNote() }}</p>
+                @endif
+
                 <div class="row small">
+                    @if ($due = $payment->receiptDueDate())
+                        <div class="col-12">
+                            <p class="text-muted mb-1">{{ $due['label'] }}</p>
+                            <p class="fw-semibold">{{ $due['date']->format('M d, Y') }}</p>
+                        </div>
+                    @endif
                     <div class="col-6">
                         <p class="text-muted mb-1">Date Paid</p>
                         <p class="fw-semibold">{{ $payment->paid_at?->format('M d, Y g:i A') ?? '—' }}</p>

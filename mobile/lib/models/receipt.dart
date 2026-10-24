@@ -38,6 +38,13 @@ class Receipt {
   final double amount;
   final DateTime? paidAt;
 
+  /// "Due date" for a bill, or "First rent due" for the upfront payment.
+  final String? dueLabel;
+  final DateTime? dueDate;
+
+  /// For the upfront payment: refunded in full if cancelled before move-in.
+  final String? refundNote;
+
   /// The payment gateway's reference, or "Recorded manually" for a walk-in.
   final String reference;
 
@@ -57,6 +64,9 @@ class Receipt {
     this.roomNumber,
     this.property,
     this.paidAt,
+    this.dueLabel,
+    this.dueDate,
+    this.refundNote,
     this.billPhotoUrl,
   });
 
@@ -75,6 +85,11 @@ class Receipt {
       lines: PaymentLine.listFrom(json['lines']),
       amount: (json['amount'] as num).toDouble(),
       paidAt: DateTime.tryParse(json['paid_at']?.toString() ?? '')?.toLocal(),
+      dueLabel: (json['due_date'] as Map?)?['label']?.toString(),
+      dueDate: DateTime.tryParse(
+        (json['due_date'] as Map?)?['date']?.toString() ?? '',
+      ),
+      refundNote: json['refund_note'] as String?,
       reference: (json['reference'] ?? '').toString(),
       billPhotoUrl: json['bill_photo_url'] as String?,
     );

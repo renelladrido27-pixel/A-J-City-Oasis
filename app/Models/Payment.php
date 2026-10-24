@@ -86,12 +86,38 @@ class Payment extends Model
         if ($this->type === 'booking_upfront' && $this->booking) {
             return [
                 ['label' => '1 month advance', 'note' => "Your first month's rent", 'amount' => (float) $this->booking->advance_amount],
-                ['label' => '1 month deposit', 'note' => 'Applied as rent · not refundable', 'amount' => (float) $this->booking->deposit_amount],
+                ['label' => '1 month deposit', 'note' => 'Applied as rent once you move in', 'amount' => (float) $this->booking->deposit_amount],
                 ['label' => 'Security deposit', 'note' => 'Refundable at move-out, less any damages', 'amount' => (float) $this->booking->security_amount],
             ];
         }
 
         return [['label' => ucfirst(str_replace('_', ' ', $this->type)), 'note' => null, 'amount' => (float) $this->amount]];
+    }
+
+    /**
+     * The date printed on the receipt: when this bill was due — or, for the
+     * upfront payment, when the first monthly rent falls due (one month
+     * after move-in; rent then recurs on that day).
+     *
+     * @return array{label: string, date: \Carbon\CarbonInterface}|null
+     */
+    public function receiptDueDate(): ?array
+    {
+        if ($this->type === 'booking_upfront') {
+            $moveIn = $this->booking?->move_in_date;
+
+            return $moveIn ? ['label' => 'First rent due', 'date' => $moveIn->copy()->addMonthsNoOverflow(1)] : null;
+        }
+
+        return $this->due_date ? ['label' => 'Due date', 'date' => $this->due_date] : null;
+    }
+
+    /** Printed under the upfront payment's breakdown. */
+    public function refundNote(): ?string
+    {
+        return $this->type === 'booking_upfront'
+            ? 'The full upfront payment is refunded if the booking is cancelled before the move-in date.'
+            : null;
     }
 
     /** Whether lines() splits this payment into several amounts. */

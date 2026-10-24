@@ -92,6 +92,21 @@
         </tr>
     </table>
 
+    @if ($payment->refundNote())
+        <p class="note" style="margin-top: 8px;">{{ $payment->refundNote() }}</p>
+    @endif
+
+    @if ($due = $payment->receiptDueDate())
+        <table class="meta">
+            <tr>
+                <td>
+                    <div class="caption">{{ $due['label'] }}</div>
+                    <div class="strong">{{ $due['date']->format('M d, Y') }}</div>
+                </td>
+            </tr>
+        </table>
+    @endif
+
     <table class="meta">
         <tr>
             <td style="width: 45%;">

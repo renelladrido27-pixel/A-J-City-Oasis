@@ -13,6 +13,7 @@
         <div class="small text-uppercase fw-semibold" style="letter-spacing: .04em;">Pay today to book</div>
         <div class="upfront-amount">₱{{ number_format($upfront, 2) }}</div>
         <div class="small">3 months upfront &mdash; paid once, when you book</div>
+        <div class="small mt-1"><i class="bi bi-arrow-counterclockwise me-1"></i>Fully refunded if you cancel before your move-in date</div>
     </div>
     <ul class="list-unstyled mb-0 upfront-lines">
         <li>
@@ -20,7 +21,7 @@
             <span class="fw-semibold">₱{{ number_format($monthly, 2) }}</span>
         </li>
         <li>
-            <span><strong>1 month deposit</strong><br><span class="text-muted small">Applied as rent &middot; not refundable</span></span>
+            <span><strong>1 month deposit</strong><br><span class="text-muted small">Applied as rent once you move in</span></span>
             <span class="fw-semibold">₱{{ number_format($monthly, 2) }}</span>
         </li>
         <li>

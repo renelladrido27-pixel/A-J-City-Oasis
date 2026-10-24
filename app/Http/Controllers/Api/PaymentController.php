@@ -84,6 +84,9 @@ class PaymentController extends Controller
             'lines' => $payment->lines(),
             'amount' => (float) $payment->amount,
             'paid_at' => $payment->paid_at?->toIso8601String(),
+            // The bill's due date, or the first rent due for the upfront payment.
+            'due_date' => ($due = $payment->receiptDueDate()) ? ['label' => $due['label'], 'date' => $due['date']->toDateString()] : null,
+            'refund_note' => $payment->refundNote(),
             'reference' => $payment->xendit_payment_id ?? $payment->xendit_invoice_id ?? 'Recorded manually',
             'bill_photo_url' => $payment->utilityBill?->receiptUrl(),
         ]]);

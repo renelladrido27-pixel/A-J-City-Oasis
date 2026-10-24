@@ -382,6 +382,23 @@ class _ReceiptBody extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (r.refundNote != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          r.refundNote!,
+                          style: const TextStyle(
+                            color: OasisColors.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                      if (r.dueDate != null) ...[
+                        const SizedBox(height: 18),
+                        _Field(
+                          label: (r.dueLabel ?? 'Due date').toUpperCase(),
+                          value: formatLongDate(r.dueDate!),
+                        ),
+                      ],
                       const SizedBox(height: 18),
                       _Field(
                         label: 'DATE PAID',

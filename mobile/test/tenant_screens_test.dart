@@ -783,7 +783,7 @@ void main() {
       ),
       PaymentLine(
         label: '1 month deposit',
-        note: 'Applied as rent · not refundable',
+        note: 'Applied as rent once you move in',
         amount: 3500,
       ),
       PaymentLine(
@@ -840,6 +840,10 @@ void main() {
           amount: 10500,
           paidAt: r.paidAt,
           reference: r.reference,
+          dueLabel: 'First rent due',
+          dueDate: DateTime(2026, 11, 27),
+          refundNote:
+              'The full upfront payment is refunded if the booking is cancelled before the move-in date.',
         ),
       );
       final payment = _bill(
@@ -866,6 +870,18 @@ void main() {
       );
       expect(find.text('₱3,500.00'), findsNWidgets(3));
       expect(find.text('₱10,500.00'), findsOneWidget);
+      // When the first monthly rent is due, and that the upfront is refundable.
+      await tester.scrollUntilVisible(
+        find.text('FIRST RENT DUE'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('FIRST RENT DUE'), findsOneWidget);
+      expect(find.text('Nov 27, 2026'), findsOneWidget);
+      expect(
+        find.textContaining('refunded if the booking is cancelled'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
