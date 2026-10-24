@@ -24,6 +24,14 @@ class LeaseController extends Controller
             ->first()
             ?? $request->user()->leases()->with(['room.property', 'room.images'])->latest('start_date')->first();
 
-        return response()->json(['lease' => $lease ? LeaseResource::make($lease) : null]);
+        // Someone renting more than one room gets every active lease, so the
+        // app can switch between them.
+        $active = $request->user()->leases()->with(['room.property', 'room.images'])
+            ->where('status', 'active')->orderBy('start_date')->get();
+
+        return response()->json([
+            'lease' => $lease ? LeaseResource::make($lease) : null,
+            'leases' => LeaseResource::collection($active),
+        ]);
     }
 }

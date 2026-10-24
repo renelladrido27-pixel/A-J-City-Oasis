@@ -268,7 +268,10 @@ class _BillCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Due ${formatLongDate(p.dueDate)}',
+                      [
+                        'Due ${formatLongDate(p.dueDate)}',
+                        if (p.room != null) p.room!,
+                      ].join(' · '),
                       style: const TextStyle(
                         color: OasisColors.muted,
                         fontSize: 12,
@@ -397,7 +400,10 @@ class _HistoryRow extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     Text(
-                      'Paid ${formatLongDate(p.paidOn.toLocal())}',
+                      [
+                        'Paid ${formatLongDate(p.paidOn.toLocal())}',
+                        if (p.room != null) p.room!,
+                      ].join(' · '),
                       style: const TextStyle(
                         color: OasisColors.muted,
                         fontSize: 12,

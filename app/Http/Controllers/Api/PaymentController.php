@@ -26,7 +26,7 @@ class PaymentController extends Controller
             // The upfront booking payment is paid through the booking screens, but once
             // paid it belongs in the history here so its receipt can be opened.
             ->orWhere(fn ($q) => $q->where('status', 'paid')->whereHas('booking', fn ($b) => $b->where('user_id', $tenant->id)))
-            ->with(['lease', 'booking', 'utilityBill'])
+            ->with(['lease.room.property', 'booking.room.property', 'utilityBill'])
             ->latest('due_date')
             ->get();
 

@@ -366,6 +366,52 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('each rented room shows its own next due', (tester) async {
+      Lease lease(int id, String room, String building, DateTime due) => Lease(
+        id: id,
+        roomLabel: room,
+        building: building,
+        property: 'A&J CITY OASIS - $building',
+        monthlyRent: 3500,
+        moveInDate: DateTime(due.year, due.month - 1, due.day),
+        leaseStatus: 'Active',
+        balance: 3500,
+        nextDueDate: due,
+        nextDueAmount: 3500,
+        nextDuePaymentId: id,
+      );
+      final main202 = lease(
+        6,
+        'Room 202',
+        'Main Building',
+        DateTime(2026, 11, 27),
+      );
+      final annex102 = lease(
+        3,
+        'Room 102',
+        'Annex Building',
+        DateTime(2026, 11, 8),
+      );
+      // The app-wide next due is Room 102's Nov 8 bill — My rental for Room
+      // 202 must still say Nov 27.
+      final app = _tenant()
+        ..nextDueDate = DateTime(2026, 11, 8)
+        ..leases = [annex102, main202]
+        ..lease = main202;
+      await _pump(tester, app, const RentalHubScreen());
+
+      expect(find.text('Room 202'), findsOneWidget);
+      expect(find.text('Nov 27, 2026'), findsOneWidget);
+      expect(find.text('Nov 8, 2026'), findsNothing);
+
+      // Switch rooms.
+      await tester.tap(find.text('Room 102 · Annex Building'));
+      await tester.pumpAndSettle();
+      expect(find.text('Room 102'), findsOneWidget);
+      expect(find.text('Nov 8, 2026'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('says nothing is due once everything is paid', (tester) async {
       await _pump(
         tester,

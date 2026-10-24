@@ -37,11 +37,18 @@ class MyRentalScreen extends StatelessWidget {
             )
           : _LeaseDetail(
               lease: lease,
-              outstandingBalance: app.outstandingBalance,
-              nextDueDate: app.nextDueDate,
+              // The room's own next bill — not the earliest bill of any room.
+              outstandingBalance: lease.balance ?? app.outstandingBalance,
+              nextDueDate: lease.balance != null
+                  ? lease.nextDueDate
+                  : app.nextDueDate,
               nextDueAmount:
-                  app.nextDuePayment?.amount ?? app.outstandingBalance,
+                  lease.nextDueAmount ??
+                  app.nextDuePayment?.amount ??
+                  app.outstandingBalance,
               onPayNow: onPayNow,
+              others: app.leases,
+              onSelect: app.selectLease,
             ),
     );
   }
@@ -55,7 +62,13 @@ class _LeaseDetail extends StatelessWidget {
   /// The amount of the bill due on [nextDueDate].
   final double nextDueAmount;
   final VoidCallback? onPayNow;
+
+  /// All the tenant's active leases; a switcher shows when there are two+.
+  final List<Lease> others;
+  final ValueChanged<Lease>? onSelect;
   const _LeaseDetail({
+    this.others = const [],
+    this.onSelect,
     required this.lease,
     required this.outstandingBalance,
     required this.nextDueDate,
@@ -82,6 +95,27 @@ class _LeaseDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDue = nextDueDate != null && outstandingBalance > 0;
     final sections = <Widget>[
+      // Renting more than one room: pick which one to look at.
+      if (others.length > 1 && onSelect != null)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final (i, l) in others.indexed) ...[
+                if (i > 0) const SizedBox(width: 8),
+                OasisPill(
+                  label: l.building.isEmpty
+                      ? l.roomLabel
+                      : '${l.roomLabel} · ${l.building}',
+                  icon: Icons.meeting_room_outlined,
+                  selected: l.id == lease.id,
+                  onTap: () => onSelect!(l),
+                ),
+              ],
+            ],
+          ),
+        ),
+
       // The room: photos, name, and where things stand.
       OasisCard(
         padding: EdgeInsets.zero,

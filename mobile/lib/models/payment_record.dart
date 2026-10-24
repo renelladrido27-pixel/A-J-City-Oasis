@@ -14,6 +14,9 @@ class PaymentRecord {
   /// Photo of the utility bill itself, when the admin attached one.
   final String? billPhotoUrl;
 
+  /// "Room 202 · Main Building".
+  final String? room;
+
   /// The parts of the upfront booking payment (advance, deposit, security
   /// deposit); empty for ordinary bills.
   final List<PaymentLine> breakdown;
@@ -27,6 +30,7 @@ class PaymentRecord {
     required this.dueDate,
     required this.paidOn,
     this.billPhotoUrl,
+    this.room,
     this.breakdown = const [],
   });
 
@@ -44,6 +48,7 @@ class PaymentRecord {
       status: _titleCase(json['status'] as String),
       dueDate: dueDate,
       billPhotoUrl: json['bill_photo_url'] as String?,
+      room: json['room'] as String?,
       breakdown: PaymentLine.listFrom(json['breakdown']),
       paidOn: DateTime.tryParse(json['paid_at']?.toString() ?? '') ?? dueDate,
     );

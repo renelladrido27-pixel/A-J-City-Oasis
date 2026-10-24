@@ -16,6 +16,10 @@ class PaymentResource extends JsonResource
             'due_date' => $this->due_date?->toDateString(),
             'paid_at' => $this->paid_at?->toIso8601String(),
             'status' => $this->status,
+            // Which room it's for ("Room 202 · Main Building").
+            'room' => ($room = $this->lease?->room ?? $this->booking?->room)
+                ? 'Room '.$room->room_number.($room->property ? ' · '.$room->property->shortName() : '')
+                : null,
             'xendit_invoice_id' => $this->xendit_invoice_id,
             // The parts of the upfront booking payment (advance, deposit, security
             // deposit); empty for ordinary single-amount bills.

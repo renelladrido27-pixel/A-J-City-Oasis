@@ -31,7 +31,18 @@ class AppState extends ChangeNotifier {
   bool isBootstrapping = true;
 
   TenantProfile? profile;
+
+  /// The lease on the My rental screen.
   Lease? lease;
+
+  /// Every active lease — more than one when the tenant rents several rooms.
+  List<Lease> leases = [];
+
+  void selectLease(Lease l) {
+    lease = l;
+    notifyListeners();
+  }
+
   BookingDraft? draft;
   BookingSummary? currentBooking;
 
@@ -197,6 +208,7 @@ class AppState extends ChangeNotifier {
     isLoggedIn = false;
     profile = null;
     lease = null;
+    leases = [];
     paymentHistory = [];
     unpaidPayments = [];
     outstandingBalance = 0;
@@ -227,9 +239,17 @@ class AppState extends ChangeNotifier {
 
   Future<void> _loadLease() async {
     final res = await _api.get('/lease');
-    lease = res['lease'] == null
+    leases = ((res['leases'] as List?) ?? const [])
+        .map((e) => Lease.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final current = res['lease'] == null
         ? null
         : Lease.fromJson(res['lease'] as Map<String, dynamic>);
+    // Keep showing the room the tenant picked, refreshed.
+    final picked = lease?.id;
+    lease =
+        leases.where((l) => l.id != null && l.id == picked).firstOrNull ??
+        current;
   }
 
   Future<void> _loadPayments() async {
