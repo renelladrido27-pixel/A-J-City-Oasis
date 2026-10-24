@@ -6,7 +6,8 @@
 @php
     $sortLink = function ($column, $label) use ($sort, $dir, $search) {
         $nextDir = ($sort === $column && $dir === 'asc') ? 'desc' : 'asc';
-        $icon = $sort === $column ? ($dir === 'asc' ? 'bi-sort-alpha-down' : 'bi-sort-alpha-up') : 'bi-arrow-down-up text-muted';
+        $kind = $column === 'created_at' ? 'numeric' : 'alpha';
+        $icon = $sort === $column ? ($dir === 'asc' ? "bi-sort-{$kind}-down" : "bi-sort-{$kind}-up") : 'bi-arrow-down-up text-muted';
         $url = route('admin.tenants.index', array_filter(['search' => $search, 'sort' => $column, 'dir' => $nextDir]));
 
         return "<a href=\"{$url}\" class=\"text-dark text-decoration-none d-flex align-items-center gap-1\">{$label} <i class=\"bi {$icon} small\"></i></a>";
@@ -35,6 +36,7 @@
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
+                    <th>{!! $sortLink('created_at', 'Joined') !!}</th>
                     <th>{!! $sortLink('name', 'Name') !!}</th>
                     <th>{!! $sortLink('email', 'Email') !!}</th>
                     <th>Phone</th><th>Current Room</th><th>Account Status</th><th class="text-end">Actions</th>
@@ -44,6 +46,8 @@
                 @forelse ($tenants as $tenant)
                     @php($lease = $tenant->leases->first())
                     <tr>
+                        {{-- First in, first out: when the tenant joined. --}}
+                        <td class="text-muted small text-nowrap" title="Joined {{ $tenant->created_at?->format('M d, Y g:i A') }}">{{ $tenant->created_at?->format('M d, Y') }}</td>
                         <td class="fw-medium">
                             <a href="{{ route('admin.tenants.show', $tenant) }}" class="text-decoration-none">{{ $tenant->name }}</a>
                         </td>
@@ -69,7 +73,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6"><x-empty-state icon="bi-people" message="No tenants found." /></td></tr>
+                    <tr><td colspan="7"><x-empty-state icon="bi-people" message="No tenants found." /></td></tr>
                 @endforelse
             </tbody>
         </table>

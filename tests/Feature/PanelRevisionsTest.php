@@ -173,6 +173,25 @@ class PanelRevisionsTest extends TestCase
         $this->actingAs($admin)->get(route('admin.users.index'))->assertSeeInOrder(['Zed Newer', 'Aaron Older']);
     }
 
+    public function test_the_tenants_list_is_first_in_first_out(): void
+    {
+        $admin = $this->admin();
+        $this->travelTo('2026-10-01 09:00:00');
+        User::factory()->create(['name' => 'Zara First']);
+        $this->travelTo('2026-10-05 09:00:00');
+        User::factory()->create(['name' => 'Aaron Second']);
+        $this->travelTo('2026-10-09 09:00:00');
+        User::factory()->create(['name' => 'Mika Third']);
+
+        // The earliest tenant is at the top, whatever their name.
+        $this->actingAs($admin)->get(route('admin.tenants.index'))->assertOk()
+            ->assertSeeInOrder(['Zara First', 'Aaron Second', 'Mika Third'])
+            ->assertSee('Oct 01, 2026');
+        // Sorting by name still works when asked for.
+        $this->actingAs($admin)->get(route('admin.tenants.index', ['sort' => 'name']))
+            ->assertSeeInOrder(['Aaron Second', 'Mika Third', 'Zara First']);
+    }
+
     // ── Transfer list: which building, where, what type ─────────────────────
 
     public function test_the_transfer_list_names_the_building_its_address_and_the_room_type(): void

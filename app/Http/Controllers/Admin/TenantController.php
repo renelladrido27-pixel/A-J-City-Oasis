@@ -12,7 +12,8 @@ class TenantController extends Controller
     public function index(Request $request): View
     {
         $search = $request->query('search');
-        $sort = in_array($request->query('sort'), ['name', 'email']) ? $request->query('sort') : 'name';
+        // First in, first out: by default the earliest tenant is at the top.
+        $sort = in_array($request->query('sort'), ['name', 'email', 'created_at']) ? $request->query('sort') : 'created_at';
         $dir = $request->query('dir') === 'desc' ? 'desc' : 'asc';
 
         $tenants = User::where('role', 'tenant')
@@ -21,6 +22,7 @@ class TenantController extends Controller
             ))
             ->with(['leases' => fn ($q) => $q->where('status', 'active')->with('room')])
             ->orderBy($sort, $dir)
+            ->orderBy('id', $dir)
             ->paginate(25)
             ->withQueryString();
 
