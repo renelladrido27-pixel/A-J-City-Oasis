@@ -480,6 +480,8 @@ void main() {
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'Moving back home');
+      await tester.ensureVisible(find.text('Submit request'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit request'));
       await tester.pumpAndSettle();
       expect(find.text('Request move-out?'), findsOneWidget);
