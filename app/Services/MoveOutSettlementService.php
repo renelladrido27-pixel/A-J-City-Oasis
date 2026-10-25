@@ -38,6 +38,37 @@ class MoveOutSettlementService
     }
 
     /**
+     * The tenant asks to move out (website or app). The refund saved here is an
+     * estimate: damages are only known after the admin inspects the room.
+     */
+    public function request(Lease $lease, Carbon $moveOutDate, ?string $reason): MoveOut
+    {
+        return DB::transaction(function () use ($lease, $moveOutDate, $reason) {
+            Lease::whereKey($lease->id)->lockForUpdate()->first();
+            abort_unless($lease->status === 'active', 422, 'This lease is not active.');
+            abort_if($lease->moveOut()->exists(), 422, 'A move-out has already been requested for this lease.');
+
+            $estimate = $this->estimate($lease, $moveOutDate);
+
+            $moveOut = MoveOut::create([
+                'lease_id' => $lease->id,
+                'requested_move_out_date' => $moveOutDate->toDateString(),
+                'refund_amount' => max(0, $estimate['net']),
+                'refund_status' => 'calculated',
+                'reason' => $reason,
+            ]);
+
+            $this->notifications->notifyAdmins(
+                'New move-out request',
+                "{$lease->tenant->name} requested to move out of Room {$lease->room->room_number} on ".$moveOutDate->format('M d, Y').'.',
+                'move_out',
+            );
+
+            return $moveOut;
+        });
+    }
+
+    /**
      * Admin finalizes after inspecting the room.
      *
      * @param  array<int, array{description: string, amount: float|string}>  $deductions

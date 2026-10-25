@@ -20,6 +20,26 @@ class LeaseResource extends JsonResource
             // This room's own bills — a tenant renting two rooms sees each
             // room's next due, not the earliest bill of either.
             ...$this->dues(),
+            'move_out' => $this->moveOutSummary(),
+        ];
+    }
+
+    /** Where the tenant's move-out stands, for My rental. */
+    private function moveOutSummary(): ?array
+    {
+        $moveOut = $this->moveOut;
+        if (! $moveOut) {
+            return null;
+        }
+
+        return [
+            'requested_date' => $moveOut->requested_move_out_date?->toDateString(),
+            'reason' => $moveOut->reason,
+            // awaiting_inspection until the admin finalizes; then disbursed_manually / balance_due / no_refund.
+            'status' => $moveOut->isFinalized() ? $moveOut->refund_status : 'awaiting_inspection',
+            'refund_amount' => (float) $moveOut->refund_amount,
+            'balance_due' => (float) $moveOut->balance_due,
+            'balance_payment_id' => $moveOut->balance_payment_id,
         ];
     }
 

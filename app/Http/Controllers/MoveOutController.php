@@ -32,31 +32,16 @@ class MoveOutController extends Controller
     public function store(Request $request, Lease $lease): RedirectResponse
     {
         $this->authorize('view', $lease);
-        abort_if($lease->moveOut()->exists(), 422, 'A move-out has already been requested for this lease.');
 
         $validated = $request->validate([
             'requested_move_out_date' => ['required', 'date', 'after_or_equal:today'],
             'reason' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $estimate = $this->settlement->estimate($lease, Carbon::parse($validated['requested_move_out_date']));
-
-        MoveOut::create([
-            'lease_id' => $lease->id,
-            'requested_move_out_date' => $validated['requested_move_out_date'],
-            'refund_amount' => max(0, $estimate['net']),
-            'refund_status' => 'calculated',
-            'reason' => $validated['reason'] ?? null,
-        ]);
-
-        $this->notifications->notifyAdmins(
-            'New move-out request',
-            "{$lease->tenant->name} requested to move out of Room {$lease->room->room_number} on ".Carbon::parse($validated['requested_move_out_date'])->format('M d, Y').'.',
-            'move_out',
-        );
+        $moveOut = $this->settlement->request($lease, Carbon::parse($validated['requested_move_out_date']), $validated['reason'] ?? null);
 
         return redirect()->route('tenant.leases.show', $lease)
-            ->with('status', 'Move-out request submitted. Estimated refund: ₱'.number_format(max(0, $estimate['net']), 2).' — final amount after the room inspection.');
+            ->with('status', 'Move-out request submitted. Estimated refund: ₱'.number_format((float) $moveOut->refund_amount, 2).' — final amount after the room inspection.');
     }
 
     public function index(): View

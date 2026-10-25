@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/bookings/{booking}/check-status', [BookingController::class, 'checkStatus']);
 
         Route::get('/lease', [LeaseController::class, 'show']);
+        Route::post('/leases/{lease}/move-out', [LeaseController::class, 'requestMoveOut']);
 
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments/{payment}/pay', [PaymentController::class, 'pay']);

@@ -35,7 +35,9 @@
         @else
             <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
                 <a href="{{ route('tenant.room-transfers.create', $lease) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left-right me-1"></i>Request Room Transfer</a>
-                <a href="{{ route('tenant.move-outs.create', $lease) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-arrow-left me-1"></i>Request Move-Out</a>
+                @if ($lease->status === 'active' && ! $lease->moveOut)
+                    <a href="{{ route('tenant.move-outs.create', $lease) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-arrow-left me-1"></i>Request Move-Out</a>
+                @endif
             </div>
         @endif
     </div>
