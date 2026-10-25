@@ -19,8 +19,9 @@ use Illuminate\Support\Facades\DB;
  *   rest of the move-out month) is applied to unpaid bills and to damage
  *   deductions recorded at the move-out inspection.
  * - Credit left over is refunded — disbursed manually, outside the system.
- * - If the tenant owes more than the credit, one "move_out_balance" bill is
- *   created for the difference, payable through Xendit.
+ * - If the tenant owes more than the credit, the difference is recorded as
+ *   the balance due and settled with the owner outside the system (no bill
+ *   in the app or the website).
  */
 class MoveOutSettlementService
 {
@@ -91,19 +92,8 @@ class MoveOutSettlementService
             }
 
             // Every open bill is closed here: covered by the deposit credit, or
-            // rolled into the single balance bill below — never charged twice.
+            // part of the balance settled outside the system — never charged twice.
             $this->unpaidBills($lease)->each->update(['status' => 'settled']);
-
-            $balancePayment = null;
-            if ($settlement['net'] < 0) {
-                $balancePayment = Payment::create([
-                    'lease_id' => $lease->id,
-                    'type' => 'move_out_balance',
-                    'amount' => -$settlement['net'],
-                    'due_date' => now()->addDays(7),
-                    'status' => 'pending',
-                ]);
-            }
 
             $moveOut->update([
                 'actual_move_out_date' => now(),
@@ -113,7 +103,6 @@ class MoveOutSettlementService
                 'damage_total' => $settlement['damage_total'],
                 'refund_amount' => max(0, $settlement['net']),
                 'balance_due' => max(0, -$settlement['net']),
-                'balance_payment_id' => $balancePayment?->id,
                 'refund_status' => match (true) {
                     $settlement['net'] > 0 => 'disbursed_manually',
                     $settlement['net'] < 0 => 'balance_due',
@@ -137,7 +126,7 @@ class MoveOutSettlementService
     {
         return match ($moveOut->refund_status) {
             'disbursed_manually' => 'Your move-out is finalized. Refund of ₱'.number_format($moveOut->refund_amount, 2).' will be released by the admin.',
-            'balance_due' => 'Your move-out is finalized. Deductions exceeded your security deposit — please pay the remaining ₱'.number_format($moveOut->balance_due, 2).' via Xendit.',
+            'balance_due' => 'Your move-out is finalized. Deductions exceeded your security deposit by ₱'.number_format($moveOut->balance_due, 2).' — please settle this directly with the admin; it is not paid in the app.',
             default => 'Your move-out is finalized. Your security deposit fully covered the deductions; no refund or balance is due.',
         };
     }

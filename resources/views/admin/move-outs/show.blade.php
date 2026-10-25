@@ -75,7 +75,7 @@
                 @csrf
                 <div class="card-body p-4">
                     <h2 class="h5 mb-1">Room Inspection</h2>
-                    <p class="text-muted small">List any damages found. They are deducted from the security deposit; if they exceed it, the tenant gets a balance bill payable via Xendit.</p>
+                    <p class="text-muted small">List any damages found. They are deducted from the security deposit; if they exceed it, the tenant settles the difference with you outside the system.</p>
 
                     <div id="deductionRows">
                         @foreach (old('deductions', [['description' => '', 'amount' => '']]) as $i => $row)

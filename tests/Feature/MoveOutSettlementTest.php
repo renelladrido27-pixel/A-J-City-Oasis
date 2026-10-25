@@ -109,7 +109,7 @@ class MoveOutSettlementTest extends TestCase
         $this->assertNull($moveOut->balance_payment_id);
     }
 
-    public function test_damages_beyond_the_deposit_create_a_balance_bill_payable_via_xendit(): void
+    public function test_damages_beyond_the_deposit_are_settled_outside_the_system(): void
     {
         $moveOut = $this->requestMoveOut();
 
@@ -121,19 +121,20 @@ class MoveOutSettlementTest extends TestCase
         $this->assertEquals(0, $moveOut->refund_amount);
         $this->assertEquals($owed, $moveOut->balance_due);
 
-        $bill = $moveOut->balancePayment;
-        $this->assertSame('move_out_balance', $bill->type);
-        $this->assertSame('pending', $bill->status);
-        $this->assertEquals($owed, $bill->amount);
-        $this->assertSame($this->lease->id, $bill->lease_id);
+        // No bill to pay in the app or on the website: the owner settles it in person.
+        $this->assertNull($moveOut->balance_payment_id);
+        $this->assertSame(0, $this->lease->payments()->where('type', 'move_out_balance')->count());
+        $this->assertSame(0, $this->lease->payments()->whereIn('status', ['pending', 'overdue'])->count());
 
-        // The tenant pays it through the normal Xendit flow (fake mode in tests).
         $tenant = $this->lease->tenant;
-        $redirect = $this->actingAs($tenant)->post(route('payments.pay', $bill))->headers->get('Location');
-        $this->actingAs($tenant)->get($redirect)->assertRedirect(route('payments.success'));
-
-        $this->assertSame('paid', $bill->fresh()->status);
-        $this->assertSame('balance_paid', $moveOut->fresh()->refund_status);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $tenant->id,
+            'title' => 'Move-out finalized',
+            'message' => 'Your move-out is finalized. Deductions exceeded your security deposit by ₱'.number_format($owed, 2).' — please settle this directly with the admin; it is not paid in the app.',
+        ]);
+        $this->actingAs($tenant)->get(route('tenant.leases.show', $this->lease))->assertOk()
+            ->assertSee('Settle this directly with the admin, outside the system.')
+            ->assertDontSee(route('payments.pay', 1));
     }
 
     public function test_unpaid_bills_are_settled_against_the_deposit_not_charged_twice(): void

@@ -224,7 +224,9 @@
                     @if ($moveOut->balance_due > 0)
                         <dt class="col-sm-4 text-muted fw-normal">Balance Due</dt>
                         <dd class="col-sm-8 fw-semibold">₱{{ number_format($moveOut->balance_due, 2) }}
-                            @if (auth()->user()->isTenant() && $moveOut->balancePayment?->isPayable())
+                            @if (! $moveOut->balancePayment)
+                                <div class="small text-muted fw-normal">Settle this directly with the admin, outside the system.</div>
+                            @elseif (auth()->user()->isTenant() && $moveOut->balancePayment->isPayable())
                                 <form method="POST" action="{{ route('payments.pay', $moveOut->balancePayment) }}" class="d-inline ms-2">
                                     @csrf
                                     <button class="btn btn-sm btn-success" data-loading-text="Opening payment…"><i class="bi bi-credit-card me-1"></i>Pay</button>

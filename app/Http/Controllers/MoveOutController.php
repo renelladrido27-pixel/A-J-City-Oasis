@@ -91,7 +91,7 @@ class MoveOutController extends Controller
 
         return redirect()->route('admin.move-outs.show', $moveOut)
             ->with('status', match ($moveOut->refund_status) {
-                'balance_due' => 'Move-out finalized. A ₱'.number_format($moveOut->balance_due, 2).' balance bill was sent to the tenant.',
+                'balance_due' => 'Move-out finalized. The tenant owes ₱'.number_format($moveOut->balance_due, 2).', to be settled outside the system.',
                 'disbursed_manually' => 'Move-out finalized. Release the ₱'.number_format($moveOut->refund_amount, 2).' refund to the tenant.',
                 default => 'Move-out finalized. No refund or balance due.',
             });

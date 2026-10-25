@@ -116,7 +116,8 @@ class _MoveOutScreenState extends State<MoveOutScreen> {
                     'and the cost of any damage found when the admin inspects '
                     'the room. The final amount is set after the inspection and '
                     'released by the admin. If deductions exceed the deposit, '
-                    "you'll get a bill to pay in the app.",
+                    'you settle the difference directly with the admin, '
+                    'outside the app.',
                     style: TextStyle(fontSize: 13, height: 1.4),
                   ),
                 ),
