@@ -38,6 +38,22 @@ class AppState extends ChangeNotifier {
   /// Every active lease — more than one when the tenant rents several rooms.
   List<Lease> leases = [];
 
+  /// Asks to move out of [l] (website: Request Move-Out). Returns the
+  /// server's confirmation, with the estimated refund.
+  Future<String> requestMoveOut(
+    Lease l, {
+    required DateTime date,
+    String reason = '',
+  }) async {
+    final res = await _api.post('/leases/${l.id}/move-out', {
+      'requested_move_out_date': _isoDate(date),
+      if (reason.isNotEmpty) 'reason': reason,
+    });
+    await _loadLease();
+    notifyListeners();
+    return (res['message'] ?? 'Move-out request submitted.').toString();
+  }
+
   void selectLease(Lease l) {
     lease = l;
     notifyListeners();

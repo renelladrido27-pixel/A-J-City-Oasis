@@ -7,6 +7,7 @@ import '../theme.dart';
 import '../utils/format.dart';
 import '../widgets/oasis_ui.dart';
 import '../widgets/room_photo.dart';
+import 'move_out_screen.dart';
 
 /// C5 - My Rental (tenant portal home for the Rental tab).
 class MyRentalScreen extends StatelessWidget {
@@ -259,6 +260,26 @@ class _LeaseDetail extends StatelessWidget {
                 chevron: true,
               ),
             ),
+            const Divider(height: 1, indent: 68),
+            // Moving out: ask once; then this row shows where it stands.
+            if (lease.moveOut == null)
+              InkWell(
+                onTap: lease.id == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => MoveOutScreen(lease: lease),
+                        ),
+                      ),
+                child: const _DetailRow(
+                  icon: Icons.logout,
+                  label: 'Move out',
+                  value: 'Request',
+                  chevron: true,
+                ),
+              )
+            else
+              _MoveOutStatus(moveOut: lease.moveOut!),
           ],
         ),
       ),
@@ -313,6 +334,45 @@ class _DetailRow extends StatelessWidget {
           ),
           if (chevron)
             const Icon(Icons.chevron_right, color: OasisColors.green, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+/// The move-out the tenant asked for: the date and what happens next.
+class _MoveOutStatus extends StatelessWidget {
+  final MoveOutInfo moveOut;
+  const _MoveOutStatus({required this.moveOut});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const IconBadge(Icons.logout),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Moving out ${formatLongDate(moveOut.requestedDate)}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  moveOut.summary,
+                  style: const TextStyle(
+                    color: OasisColors.muted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

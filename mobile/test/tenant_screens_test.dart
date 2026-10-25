@@ -91,6 +91,35 @@ class _BookingApp extends AppState {
   }
 }
 
+/// A tenant who can ask to move out without a server.
+class _MoveOutApp extends AppState {
+  final asked = <(int?, DateTime, String)>[];
+
+  @override
+  Future<String> requestMoveOut(
+    Lease l, {
+    required DateTime date,
+    String reason = '',
+  }) async {
+    asked.add((l.id, date, reason));
+    lease = Lease(
+      id: l.id,
+      roomLabel: l.roomLabel,
+      property: l.property,
+      monthlyRent: l.monthlyRent,
+      moveInDate: l.moveInDate,
+      leaseStatus: l.leaseStatus,
+      moveOut: MoveOutInfo(
+        requestedDate: date,
+        status: 'awaiting_inspection',
+        refundAmount: 3500,
+      ),
+    );
+    notifyListeners();
+    return 'Move-out request submitted. Estimated refund: ₱3,500.00 — final amount after the room inspection.';
+  }
+}
+
 /// App state that hands back a ready-made receipt instead of asking the server.
 class _ReceiptApp extends AppState {
   _ReceiptApp(this.receipt);
@@ -409,6 +438,67 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Room 102'), findsOneWidget);
       expect(find.text('Nov 8, 2026'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the tenant can ask to move out from My rental', (
+      tester,
+    ) async {
+      final app = _MoveOutApp()
+        ..isLoggedIn = true
+        ..lease = Lease(
+          id: 6,
+          roomLabel: 'Room 202',
+          building: 'Main Building',
+          property: 'A&J CITY OASIS - Main Building',
+          monthlyRent: 3500,
+          moveInDate: DateTime(2026, 10, 27),
+          leaseStatus: 'Active',
+        );
+      await _pump(tester, app, const RentalHubScreen());
+
+      await tester.scrollUntilVisible(
+        find.text('Move out'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text('Move out'));
+      await tester.pumpAndSettle();
+
+      // The website's form: date, optional reason, inspection note.
+      expect(find.text('Submit request'), findsOneWidget);
+      expect(
+        find.textContaining('Your security deposit is refundable'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Submit request'));
+      await tester.pumpAndSettle();
+      expect(find.text('Please choose your move-out date.'), findsOneWidget);
+
+      await tester.tap(find.text('Move-out date'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Moving back home');
+      await tester.tap(find.text('Submit request'));
+      await tester.pumpAndSettle();
+      expect(find.text('Request move-out?'), findsOneWidget);
+      await tester.tap(find.text('Request'));
+      await tester.pumpAndSettle();
+
+      expect(app.asked.single.$1, 6);
+      expect(app.asked.single.$3, 'Moving back home');
+      // Back on My rental, the row now says where it stands.
+      await tester.scrollUntilVisible(
+        find.textContaining('Moving out'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(
+        find.textContaining('Waiting for the room inspection'),
+        findsOneWidget,
+      );
+      expect(find.text('Move out'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

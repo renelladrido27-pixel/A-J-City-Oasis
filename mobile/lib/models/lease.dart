@@ -1,4 +1,49 @@
+import '../utils/format.dart';
 import 'room.dart';
+
+/// A move-out the tenant has asked for, and where it stands.
+class MoveOutInfo {
+  final DateTime requestedDate;
+
+  /// awaiting_inspection, then disbursed_manually / balance_due / no_refund.
+  final String status;
+  final double refundAmount;
+  final double balanceDue;
+  final int? balancePaymentId;
+
+  const MoveOutInfo({
+    required this.requestedDate,
+    required this.status,
+    this.refundAmount = 0,
+    this.balanceDue = 0,
+    this.balancePaymentId,
+  });
+
+  bool get awaitingInspection => status == 'awaiting_inspection';
+
+  /// One line for My rental.
+  String get summary => switch (status) {
+    'awaiting_inspection' =>
+      'Waiting for the room inspection · estimated refund ${formatPesoExact(refundAmount)}',
+    'disbursed_manually' =>
+      'Settled · refund of ${formatPesoExact(refundAmount)} to be released by the admin',
+    'balance_due' =>
+      'Settled · ${formatPesoExact(balanceDue)} left to pay (see Pay)',
+    _ => 'Settled · your deposit covered everything',
+  };
+
+  static MoveOutInfo? fromJson(Map<String, dynamic>? json) {
+    final date = DateTime.tryParse(json?['requested_date']?.toString() ?? '');
+    if (json == null || date == null) return null;
+    return MoveOutInfo(
+      requestedDate: date,
+      status: (json['status'] ?? 'awaiting_inspection').toString(),
+      refundAmount: (json['refund_amount'] as num?)?.toDouble() ?? 0,
+      balanceDue: (json['balance_due'] as num?)?.toDouble() ?? 0,
+      balancePaymentId: json['balance_payment_id'] as int?,
+    );
+  }
+}
 
 class Lease {
   final int? id;
@@ -21,7 +66,11 @@ class Lease {
   final double? nextDueAmount;
   final int? nextDuePaymentId;
 
+  /// Null until the tenant asks to move out.
+  final MoveOutInfo? moveOut;
+
   const Lease({
+    this.moveOut,
     this.id,
     this.building = '',
     this.balance,
@@ -47,6 +96,7 @@ class Lease {
       nextDueDate: DateTime.tryParse(next?['date']?.toString() ?? ''),
       nextDueAmount: (next?['amount'] as num?)?.toDouble(),
       nextDuePaymentId: next?['payment_id'] as int?,
+      moveOut: MoveOutInfo.fromJson(json['move_out'] as Map<String, dynamic>?),
       roomLabel: 'Room ${room.number}',
       property: room.property,
       monthlyRent: room.monthlyRent,
