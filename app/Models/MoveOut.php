@@ -16,6 +16,7 @@ class MoveOut extends Model
         'requested_move_out_date',
         'actual_move_out_date',
         'refund_amount',
+        'rent_deposit',
         'unused_rent_credit',
         'security_deposit',
         'unpaid_dues',

@@ -11,15 +11,17 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Move-out money rules (confirmed with the owner):
+ * Move-out money rules (confirmed with the owner, Oct 26):
  *
- * - Of the 3-month upfront payment, the advance and the deposit are consumed
- *   as rent; only the SECURITY DEPOSIT is refundable.
- * - The deposit credit (security deposit + rent already paid for the unused
- *   rest of the move-out month) is applied to unpaid bills and to damage
- *   deductions recorded at the move-out inspection.
- * - Credit left over is refunded — disbursed manually, outside the system.
- * - If the tenant owes more than the credit, the difference is recorded as
+ * - Rent is used up when paid: nothing is refunded for days not stayed,
+ *   even when the tenant leaves early.
+ * - Of the 3-month upfront payment, the advance pays the first month. The
+ *   1-month DEPOSIT pays any rent (or other bill) still unpaid at move-out and
+ *   is refunded otherwise. The SECURITY DEPOSIT covers damages found at the
+ *   move-out inspection; whatever is left is refunded.
+ * - So: refund = deposit + security deposit − unpaid bills − damages,
+ *   disbursed manually by the owner, outside the system.
+ * - If the tenant owes more than both deposits, the difference is recorded as
  *   the balance due and settled with the owner outside the system (no bill
  *   in the app or the website).
  */
@@ -105,6 +107,7 @@ class MoveOutSettlementService
 
             $moveOut->update([
                 'actual_move_out_date' => now(),
+                'rent_deposit' => $settlement['rent_deposit'],
                 'unused_rent_credit' => $settlement['unused_rent_credit'],
                 'security_deposit' => $settlement['security_deposit'],
                 'unpaid_dues' => $settlement['unpaid_dues'],
@@ -134,75 +137,33 @@ class MoveOutSettlementService
     {
         return match ($moveOut->refund_status) {
             'disbursed_manually' => 'Your move-out is finalized. Refund of ₱'.number_format($moveOut->refund_amount, 2).' will be released by the admin.',
-            'balance_due' => 'Your move-out is finalized. Deductions exceeded your security deposit by ₱'.number_format($moveOut->balance_due, 2).' — please settle this directly with the admin; it is not paid in the app.',
-            default => 'Your move-out is finalized. Your security deposit fully covered the deductions; no refund or balance is due.',
+            'balance_due' => 'Your move-out is finalized. Unpaid bills and damages exceeded your deposits by ₱'.number_format($moveOut->balance_due, 2).' — please settle this directly with the admin; it is not paid in the app.',
+            default => 'Your move-out is finalized. Your deposits exactly covered the deductions; no refund or balance is due.',
         };
     }
 
     /**
-     * @return array{unused_rent_credit: float, security_deposit: float, unpaid_dues: float, damage_total: float, net: float}
+     * @return array{rent_deposit: float, unused_rent_credit: float, security_deposit: float, unpaid_dues: float, damage_total: float, net: float}
      */
     protected function compute(Lease $lease, Carbon $moveOutDate, float $damageTotal): array
     {
-        $monthlyRate = (float) $lease->room->monthly_rate;
-
-        // The current room's rate: a room transfer adjusts the deposit to the
+        // The current room's rate: a room transfer adjusts both deposits to the
         // new room's rate (difference paid / credited at transfer time).
+        $monthlyRate = (float) $lease->room->monthly_rate;
+        $rentDeposit = $monthlyRate;
         $securityDeposit = $monthlyRate;
-
-        $unusedRentCredit = $this->unusedRentCredit($lease, $moveOutDate, $monthlyRate);
 
         $unpaidDues = round((float) $this->unpaidBills($lease)->sum('amount'), 2);
 
         return [
-            'unused_rent_credit' => $unusedRentCredit,
+            'rent_deposit' => $rentDeposit,
+            // Rent is never refunded for days not stayed (kept at 0 for old records).
+            'unused_rent_credit' => 0.0,
             'security_deposit' => $securityDeposit,
             'unpaid_dues' => $unpaidDues,
             'damage_total' => $damageTotal,
-            'net' => round($unusedRentCredit + $securityDeposit - $unpaidDues - $damageTotal, 2),
+            'net' => round($rentDeposit + $securityDeposit - $unpaidDues - $damageTotal, 2),
         ];
-    }
-
-    /**
-     * Rent runs from one due day to the next (moved in Oct 8 → Oct 8–Nov 7,
-     * Nov 8–Dec 7…), so the credit is the days after the move-out date up to
-     * the end of that rent period, as a share of the period. Only credited when
-     * that period's rent exists (paid, or still owed — an owed bill is in the
-     * unpaid dues); the first period is covered by the upfront advance.
-     */
-    protected function unusedRentCredit(Lease $lease, Carbon $moveOutDate, float $monthlyRate): float
-    {
-        $billing = app(RentBillingService::class);
-        $date = $moveOutDate->copy()->startOfDay();
-        $start = $lease->start_date?->copy()->startOfDay();
-        if (! $start || $date->lt($start)) {
-            return 0.0;
-        }
-
-        // The rent period the move-out date falls in: [periodStart, nextStart).
-        $n = max(0, ($date->year - $start->year) * 12 + $date->month - $start->month);
-        while ($n > 0 && $billing->dueDateFor($lease, $n)->gt($date)) {
-            $n--;
-        }
-        while ($billing->dueDateFor($lease, $n + 1)->lte($date)) {
-            $n++;
-        }
-        $periodStart = $n === 0 ? $start : $billing->dueDateFor($lease, $n);
-        $nextStart = $billing->dueDateFor($lease, $n + 1);
-
-        $covered = $n === 0 || $lease->payments()
-            ->where('type', 'rent')
-            ->whereIn('status', ['paid', 'pending', 'overdue'])
-            ->whereDate('due_date', $periodStart)
-            ->exists();
-        if (! $covered) {
-            return 0.0;
-        }
-
-        $periodDays = (int) $periodStart->diffInDays($nextStart);
-        $unusedDays = max(0, (int) $date->diffInDays($nextStart) - 1);
-
-        return round($unusedDays / $periodDays * $monthlyRate, 2);
     }
 
     /**

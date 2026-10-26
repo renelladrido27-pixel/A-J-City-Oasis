@@ -208,13 +208,17 @@
                 @if (! $moveOut->isFinalized())
                     <dt class="col-sm-4 text-muted fw-normal">Estimated Refund</dt>
                     <dd class="col-sm-8 fw-semibold">₱{{ number_format(max(0, app(\App\Services\MoveOutSettlementService::class)->currentEstimate($moveOut)['net']), 2) }}
-                        <div class="small text-muted fw-normal">Security deposit plus unused rent after your move-out date, less unpaid bills. The final amount is set after the room inspection, minus any damages.</div>
+                        <div class="small text-muted fw-normal">Your 1-month deposit and security deposit, less any unpaid bills. The final amount is set after the room inspection, minus any damages. Rent already paid is not refunded.</div>
                     </dd>
                 @else
+                    <dt class="col-sm-4 text-muted fw-normal">1-Month Deposit</dt>
+                    <dd class="col-sm-8">₱{{ number_format($moveOut->rent_deposit, 2) }}</dd>
                     <dt class="col-sm-4 text-muted fw-normal">Security Deposit</dt>
                     <dd class="col-sm-8">₱{{ number_format($moveOut->security_deposit, 2) }}</dd>
-                    <dt class="col-sm-4 text-muted fw-normal">Unused Rent</dt>
-                    <dd class="col-sm-8">₱{{ number_format($moveOut->unused_rent_credit, 2) }}</dd>
+                    @if ($moveOut->unused_rent_credit > 0)
+                        <dt class="col-sm-4 text-muted fw-normal">Unused Rent</dt>
+                        <dd class="col-sm-8">₱{{ number_format($moveOut->unused_rent_credit, 2) }}</dd>
+                    @endif
                     <dt class="col-sm-4 text-muted fw-normal">Unpaid Bills</dt>
                     <dd class="col-sm-8 text-danger">−₱{{ number_format($moveOut->unpaid_dues, 2) }}</dd>
                     @foreach ($moveOut->deductions as $deduction)

@@ -133,7 +133,7 @@ class MobileReceiptTest extends TestCase
         ]);
         $parts = [
             ['label' => '1 month advance', 'note' => "Your first month's rent", 'amount' => 3500],
-            ['label' => '1 month deposit', 'note' => 'Applied as rent once you move in', 'amount' => 3500],
+            ['label' => '1 month deposit', 'note' => 'Refunded at move-out if all rent is paid', 'amount' => 3500],
             ['label' => 'Security deposit', 'note' => 'Refundable at move-out, less any damages', 'amount' => 3500],
         ];
 

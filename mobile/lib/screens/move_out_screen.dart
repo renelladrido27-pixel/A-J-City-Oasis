@@ -112,9 +112,12 @@ class _MoveOutScreenState extends State<MoveOutScreen> {
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Your security deposit is refundable, less any unpaid bills '
-                    'and the cost of any damage found when the admin inspects '
-                    'the room. The final amount is set after the inspection and '
+                    'Rent already paid is not refunded, even if you leave '
+                    'before the month ends. Your 1-month deposit is refunded if '
+                    'all your rent is paid (otherwise it pays the unpaid rent), '
+                    'and your security deposit is refunded less the cost of any '
+                    'damage found when the admin inspects the room. The final '
+                    'amount is set after the inspection and '
                     'released by the admin. If deductions exceed the deposit, '
                     'you settle the difference directly with the admin, '
                     'outside the app.',

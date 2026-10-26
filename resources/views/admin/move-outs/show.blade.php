@@ -45,8 +45,11 @@
                     <h2 class="h5 mb-3">Settlement</h2>
                     <table class="table mb-0">
                         <tbody>
+                            <tr><td>1-month deposit</td><td class="text-end">₱{{ number_format($moveOut->rent_deposit, 2) }}</td></tr>
                             <tr><td>Security deposit</td><td class="text-end">₱{{ number_format($moveOut->security_deposit, 2) }}</td></tr>
-                            <tr><td>Unused rent</td><td class="text-end">₱{{ number_format($moveOut->unused_rent_credit, 2) }}</td></tr>
+                            @if ($moveOut->unused_rent_credit > 0)
+                                <tr><td>Unused rent</td><td class="text-end">₱{{ number_format($moveOut->unused_rent_credit, 2) }}</td></tr>
+                            @endif
                             <tr><td>Less: unpaid bills</td><td class="text-end text-danger">−₱{{ number_format($moveOut->unpaid_dues, 2) }}</td></tr>
                             @foreach ($moveOut->deductions as $deduction)
                                 <tr><td>Less: {{ $deduction->description }}</td><td class="text-end text-danger">−₱{{ number_format($deduction->amount, 2) }}</td></tr>
@@ -75,7 +78,7 @@
                 @csrf
                 <div class="card-body p-4">
                     <h2 class="h5 mb-1">Room Inspection</h2>
-                    <p class="text-muted small">List any damages found. They are deducted from the security deposit; if they exceed it, the tenant settles the difference with you outside the system.</p>
+                    <p class="text-muted small">List any damages found. They are deducted from the deposits after any unpaid bills; if they exceed both, the tenant settles the difference with you outside the system.</p>
 
                     <div id="deductionRows">
                         @foreach (old('deductions', [['description' => '', 'amount' => '']]) as $i => $row)
@@ -90,8 +93,8 @@
 
                     <table class="table mt-4 mb-0">
                         <tbody>
-                            <tr><td>Security deposit</td><td class="text-end">₱{{ number_format($estimate['security_deposit'], 2) }}</td></tr>
-                            <tr><td>Unused rent <span class="text-muted small">(after {{ $moveOut->requested_move_out_date->format('M d, Y') }})</span></td><td class="text-end">₱{{ number_format($estimate['unused_rent_credit'], 2) }}</td></tr>
+                            <tr><td>1-month deposit <span class="text-muted small">(refunded if all rent is paid)</span></td><td class="text-end">₱{{ number_format($estimate['rent_deposit'], 2) }}</td></tr>
+                            <tr><td>Security deposit <span class="text-muted small">(for damages)</span></td><td class="text-end">₱{{ number_format($estimate['security_deposit'], 2) }}</td></tr>
                             <tr><td>Less: unpaid bills</td><td class="text-end text-danger">−₱{{ number_format($estimate['unpaid_dues'], 2) }}</td></tr>
                             <tr><td>Less: damages</td><td class="text-end text-danger">−₱<span id="damageTotal">0.00</span></td></tr>
                             <tr class="fw-semibold"><td id="resultLabel">Refund to tenant</td><td class="text-end">₱<span id="resultAmount">0.00</span></td></tr>
@@ -109,7 +112,7 @@
 @unless ($moveOut->isFinalized())
 <script>
     (function () {
-        const credit = {{ $estimate['security_deposit'] + $estimate['unused_rent_credit'] - $estimate['unpaid_dues'] }};
+        const credit = {{ $estimate['rent_deposit'] + $estimate['security_deposit'] - $estimate['unpaid_dues'] }};
         const rows = document.getElementById('deductionRows');
         const peso = n => n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         let next = rows.children.length;
@@ -119,7 +122,7 @@
             rows.querySelectorAll('.deduction-amount').forEach(i => damages += parseFloat(i.value) || 0);
             const net = credit - damages;
             document.getElementById('damageTotal').textContent = peso(damages);
-            document.getElementById('resultLabel').textContent = net < 0 ? 'Balance tenant must pay (Xendit bill)' : 'Refund to tenant';
+            document.getElementById('resultLabel').textContent = net < 0 ? 'Balance to settle outside the system' : 'Refund to tenant';
             document.getElementById('resultAmount').textContent = peso(Math.abs(net));
         }
 

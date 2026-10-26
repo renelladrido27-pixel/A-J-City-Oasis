@@ -21,7 +21,7 @@
             <span class="fw-semibold">₱{{ number_format($monthly, 2) }}</span>
         </li>
         <li>
-            <span><strong>1 month deposit</strong><br><span class="text-muted small">Applied as rent once you move in</span></span>
+            <span><strong>1 month deposit</strong><br><span class="text-muted small">Refunded at move-out if all rent is paid</span></span>
             <span class="fw-semibold">₱{{ number_format($monthly, 2) }}</span>
         </li>
         <li>

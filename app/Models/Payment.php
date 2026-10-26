@@ -86,7 +86,7 @@ class Payment extends Model
         if ($this->type === 'booking_upfront' && $this->booking) {
             return [
                 ['label' => '1 month advance', 'note' => "Your first month's rent", 'amount' => (float) $this->booking->advance_amount],
-                ['label' => '1 month deposit', 'note' => 'Applied as rent once you move in', 'amount' => (float) $this->booking->deposit_amount],
+                ['label' => '1 month deposit', 'note' => 'Refunded at move-out if all rent is paid', 'amount' => (float) $this->booking->deposit_amount],
                 ['label' => 'Security deposit', 'note' => 'Refundable at move-out, less any damages', 'amount' => (float) $this->booking->security_amount],
             ];
         }

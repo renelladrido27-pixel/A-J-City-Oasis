@@ -465,12 +465,19 @@ void main() {
       await tester.tap(find.text('Move out'));
       await tester.pumpAndSettle();
 
-      // The website's form: date, optional reason, inspection note.
-      expect(find.text('Submit request'), findsOneWidget);
+      // The website's form: date, optional reason, the deposit rules.
       expect(
-        find.textContaining('Your security deposit is refundable'),
+        find.textContaining('Rent already paid is not refunded'),
         findsOneWidget,
       );
+      // The form's own list (the text box has a scrollable of its own).
+      await tester.dragUntilVisible(
+        find.text('Submit request'),
+        find.byType(ListView).last,
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Submit request'), findsOneWidget);
       await tester.tap(find.text('Submit request'));
       await tester.pumpAndSettle();
       expect(find.text('Please choose your move-out date.'), findsOneWidget);
@@ -921,7 +928,7 @@ void main() {
       ),
       PaymentLine(
         label: '1 month deposit',
-        note: 'Applied as rent once you move in',
+        note: 'Refunded at move-out if all rent is paid',
         amount: 3500,
       ),
       PaymentLine(

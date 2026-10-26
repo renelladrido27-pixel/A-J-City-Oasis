@@ -13,10 +13,9 @@ use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 /**
- * Owner-confirmed rules: only the security deposit is refundable (the advance
- * and deposit months are consumed as rent). Unpaid bills and inspection
- * damages are deducted from it; anything beyond it becomes a bill payable
- * via Xendit.
+ * Owner-confirmed rules (Oct 26): rent is never refunded; the 1-month deposit
+ * and the security deposit are refunded less unpaid bills and inspection
+ * damages; anything beyond both is settled outside the system.
  */
 class MoveOutSettlementTest extends TestCase
 {
@@ -26,8 +25,8 @@ class MoveOutSettlementTest extends TestCase
 
     private Lease $lease;
 
-    /** 21 of October's 31 days unused on Oct 10, at ₱3,500/month. */
-    private const UNUSED = 2370.97;
+    /** The 1-month deposit, refunded when all rent is paid. */
+    private const DEPOSIT = 3500.00;
 
     private const SECURITY = 3500.00;
 
@@ -38,7 +37,7 @@ class MoveOutSettlementTest extends TestCase
         Carbon::setTestNow('2026-10-10 09:00:00');
         $this->admin = User::factory()->admin()->create();
         $this->lease = Lease::factory()->create(['start_date' => '2026-09-01']);
-        // October's rent was paid, so the unused rest of the month is credited back.
+        // October's rent was paid (and is not refunded for the days not stayed).
         Payment::factory()->for($this->lease)->create(['due_date' => '2026-10-01', 'status' => 'paid', 'paid_at' => '2026-10-01']);
     }
 
@@ -56,12 +55,12 @@ class MoveOutSettlementTest extends TestCase
         return $this->actingAs($this->admin)->post(route('admin.move-outs.finalize', $moveOut), ['deductions' => $deductions]);
     }
 
-    public function test_the_request_shows_an_estimate_of_the_security_deposit_plus_unused_rent(): void
+    public function test_the_request_shows_an_estimate_of_both_deposits(): void
     {
         $moveOut = $this->requestMoveOut();
 
         $this->assertSame('calculated', $moveOut->refund_status);
-        $this->assertEquals(round(self::SECURITY + self::UNUSED, 2), $moveOut->refund_amount);
+        $this->assertEquals(round(self::SECURITY + self::DEPOSIT, 2), $moveOut->refund_amount);
         $this->assertDatabaseHas('notifications', ['user_id' => $this->admin->id, 'type' => 'move_out']);
     }
 
@@ -75,7 +74,7 @@ class MoveOutSettlementTest extends TestCase
         $this->assertDatabaseCount('move_outs', 1);
     }
 
-    public function test_no_damages_refunds_the_security_deposit_and_unused_rent_only(): void
+    public function test_no_damages_and_all_rent_paid_refunds_both_deposits(): void
     {
         Mail::fake();
         $moveOut = $this->requestMoveOut();
@@ -84,8 +83,8 @@ class MoveOutSettlementTest extends TestCase
 
         $moveOut->refresh();
         $this->assertSame('disbursed_manually', $moveOut->refund_status);
-        // Only the security deposit — the advance and deposit months (₱7,000) are not refunded.
-        $this->assertEquals(round(self::SECURITY + self::UNUSED, 2), $moveOut->refund_amount);
+        // Deposit + security deposit; rent for October is used up, not refunded.
+        $this->assertEquals(round(self::SECURITY + self::DEPOSIT, 2), $moveOut->refund_amount);
         $this->assertEquals(0, $moveOut->balance_due);
         $this->assertSame('ended', $this->lease->fresh()->status);
         $this->assertSame('vacant', $this->lease->room->fresh()->status);
@@ -104,7 +103,7 @@ class MoveOutSettlementTest extends TestCase
 
         $moveOut->refresh();
         $this->assertEquals(2000, $moveOut->damage_total);
-        $this->assertEquals(round(self::SECURITY + self::UNUSED - 2000, 2), $moveOut->refund_amount);
+        $this->assertEquals(round(self::SECURITY + self::DEPOSIT - 2000, 2), $moveOut->refund_amount);
         $this->assertEqualsCanonicalizing(['Broken window', 'Repaint wall'], $moveOut->deductions->pluck('description')->all());
         $this->assertNull($moveOut->balance_payment_id);
     }
@@ -116,7 +115,7 @@ class MoveOutSettlementTest extends TestCase
         $this->finalize($moveOut, [['description' => 'Destroyed aircon', 'amount' => '9000']]);
 
         $moveOut->refresh();
-        $owed = round(9000 - self::SECURITY - self::UNUSED, 2);
+        $owed = round(9000 - self::SECURITY - self::DEPOSIT, 2);
         $this->assertSame('balance_due', $moveOut->refund_status);
         $this->assertEquals(0, $moveOut->refund_amount);
         $this->assertEquals($owed, $moveOut->balance_due);
@@ -130,7 +129,7 @@ class MoveOutSettlementTest extends TestCase
         $this->assertDatabaseHas('notifications', [
             'user_id' => $tenant->id,
             'title' => 'Move-out finalized',
-            'message' => 'Your move-out is finalized. Deductions exceeded your security deposit by ₱'.number_format($owed, 2).' — please settle this directly with the admin; it is not paid in the app.',
+            'message' => 'Your move-out is finalized. Unpaid bills and damages exceeded your deposits by ₱'.number_format($owed, 2).' — please settle this directly with the admin; it is not paid in the app.',
         ]);
         $this->actingAs($tenant)->get(route('tenant.leases.show', $this->lease))->assertOk()
             ->assertSee('Settle this directly with the admin, outside the system.')
@@ -141,24 +140,24 @@ class MoveOutSettlementTest extends TestCase
     {
         $utility = Payment::factory()->for($this->lease)->create(['type' => 'utility', 'amount' => 1500, 'due_date' => '2026-10-05']);
         $moveOut = $this->requestMoveOut();
-        $this->assertEquals(round(self::SECURITY + self::UNUSED - 1500, 2), $moveOut->refund_amount);
+        $this->assertEquals(round(self::SECURITY + self::DEPOSIT - 1500, 2), $moveOut->refund_amount);
 
         $this->finalize($moveOut);
 
         $this->assertSame('settled', $utility->fresh()->status);
-        $this->assertEquals(round(self::SECURITY + self::UNUSED - 1500, 2), $moveOut->fresh()->refund_amount);
+        $this->assertEquals(round(self::SECURITY + self::DEPOSIT - 1500, 2), $moveOut->fresh()->refund_amount);
         $this->assertSame(0, $this->lease->payments()->whereIn('status', ['pending', 'overdue'])->count());
     }
 
-    public function test_no_unused_rent_credit_when_the_move_out_month_was_never_billed(): void
+    public function test_rent_is_never_refunded_for_days_not_stayed(): void
     {
-        Payment::where('lease_id', $this->lease->id)->delete();
         $moveOut = $this->requestMoveOut();
 
         $this->finalize($moveOut);
 
+        // Moved out Oct 10 with October paid in full: no credit for Oct 11–31.
         $this->assertEquals(0, $moveOut->fresh()->unused_rent_credit);
-        $this->assertEquals(self::SECURITY, $moveOut->fresh()->refund_amount);
+        $this->assertEquals(round(self::SECURITY + self::DEPOSIT, 2), $moveOut->fresh()->refund_amount);
     }
 
     public function test_a_move_out_cannot_be_finalized_twice(): void

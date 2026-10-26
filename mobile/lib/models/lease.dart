@@ -29,7 +29,7 @@ class MoveOutInfo {
       'Settled · refund of ${formatPesoExact(refundAmount)} to be released by the admin',
     'balance_due' =>
       'Settled · ${formatPesoExact(balanceDue)} to settle with the admin (outside the app)',
-    _ => 'Settled · your deposit covered everything',
+    _ => 'Settled · your deposits covered everything',
   };
 
   static MoveOutInfo? fromJson(Map<String, dynamic>? json) {
