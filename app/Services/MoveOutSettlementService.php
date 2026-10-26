@@ -38,6 +38,12 @@ class MoveOutSettlementService
         return $this->compute($lease, $moveOutDate, 0);
     }
 
+    /** The estimate for a requested move-out, as it stands now (bills may have changed since). */
+    public function currentEstimate(MoveOut $moveOut): array
+    {
+        return $this->estimate($moveOut->lease, $moveOut->requested_move_out_date->copy());
+    }
+
     /**
      * The tenant asks to move out (website or app). The refund saved here is an
      * estimate: damages are only known after the admin inspects the room.
@@ -82,7 +88,9 @@ class MoveOutSettlementService
 
             $lease = $moveOut->lease;
             $damageTotal = round(collect($deductions)->sum(fn ($d) => (float) $d['amount']), 2);
-            $settlement = $this->compute($lease, now(), $damageTotal);
+            // The tenant's move-out date — the same date their estimate used —
+            // not the day the admin happens to press Finalize.
+            $settlement = $this->compute($lease, $moveOut->requested_move_out_date->copy(), $damageTotal);
 
             foreach ($deductions as $deduction) {
                 $moveOut->deductions()->create([
@@ -142,9 +150,7 @@ class MoveOutSettlementService
         // new room's rate (difference paid / credited at transfer time).
         $securityDeposit = $monthlyRate;
 
-        $unusedRentCredit = $this->monthIsCovered($lease, $moveOutDate)
-            ? round((max(0, $moveOutDate->daysInMonth - $moveOutDate->day) / $moveOutDate->daysInMonth) * $monthlyRate, 2)
-            : 0.0;
+        $unusedRentCredit = $this->unusedRentCredit($lease, $moveOutDate, $monthlyRate);
 
         $unpaidDues = round((float) $this->unpaidBills($lease)->sum('amount'), 2);
 
@@ -158,22 +164,45 @@ class MoveOutSettlementService
     }
 
     /**
-     * Only credit unused days if rent for the move-out month exists (paid or
-     * still owed — an owed bill is in unpaid dues). The lease's first month is
-     * covered by the upfront advance.
+     * Rent runs from one due day to the next (moved in Oct 8 → Oct 8–Nov 7,
+     * Nov 8–Dec 7…), so the credit is the days after the move-out date up to
+     * the end of that rent period, as a share of the period. Only credited when
+     * that period's rent exists (paid, or still owed — an owed bill is in the
+     * unpaid dues); the first period is covered by the upfront advance.
      */
-    protected function monthIsCovered(Lease $lease, Carbon $date): bool
+    protected function unusedRentCredit(Lease $lease, Carbon $moveOutDate, float $monthlyRate): float
     {
-        if ($lease->start_date && $lease->start_date->isSameMonth($date)) {
-            return true;
+        $billing = app(RentBillingService::class);
+        $date = $moveOutDate->copy()->startOfDay();
+        $start = $lease->start_date?->copy()->startOfDay();
+        if (! $start || $date->lt($start)) {
+            return 0.0;
         }
 
-        return $lease->payments()
+        // The rent period the move-out date falls in: [periodStart, nextStart).
+        $n = max(0, ($date->year - $start->year) * 12 + $date->month - $start->month);
+        while ($n > 0 && $billing->dueDateFor($lease, $n)->gt($date)) {
+            $n--;
+        }
+        while ($billing->dueDateFor($lease, $n + 1)->lte($date)) {
+            $n++;
+        }
+        $periodStart = $n === 0 ? $start : $billing->dueDateFor($lease, $n);
+        $nextStart = $billing->dueDateFor($lease, $n + 1);
+
+        $covered = $n === 0 || $lease->payments()
             ->where('type', 'rent')
             ->whereIn('status', ['paid', 'pending', 'overdue'])
-            ->whereYear('due_date', $date->year)
-            ->whereMonth('due_date', $date->month)
+            ->whereDate('due_date', $periodStart)
             ->exists();
+        if (! $covered) {
+            return 0.0;
+        }
+
+        $periodDays = (int) $periodStart->diffInDays($nextStart);
+        $unusedDays = max(0, (int) $date->diffInDays($nextStart) - 1);
+
+        return round($unusedDays / $periodDays * $monthlyRate, 2);
     }
 
     /**

@@ -37,7 +37,10 @@ class LeaseResource extends JsonResource
             'reason' => $moveOut->reason,
             // awaiting_inspection until the admin finalizes; then disbursed_manually / balance_due / no_refund.
             'status' => $moveOut->isFinalized() ? $moveOut->refund_status : 'awaiting_inspection',
-            'refund_amount' => (float) $moveOut->refund_amount,
+            // Before inspection: the same live estimate the admin's inspection page shows.
+            'refund_amount' => $moveOut->isFinalized()
+                ? (float) $moveOut->refund_amount
+                : max(0, app(\App\Services\MoveOutSettlementService::class)->currentEstimate($moveOut)['net']),
             'balance_due' => (float) $moveOut->balance_due,
             'balance_payment_id' => $moveOut->balance_payment_id,
         ];

@@ -65,7 +65,7 @@ class MoveOutController extends Controller
 
         $estimate = $moveOut->isFinalized()
             ? null
-            : $this->settlement->estimate($moveOut->lease, now());
+            : $this->settlement->currentEstimate($moveOut);
 
         return view('admin.move-outs.show', compact('moveOut', 'estimate'));
     }

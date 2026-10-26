@@ -46,7 +46,7 @@
                     <table class="table mb-0">
                         <tbody>
                             <tr><td>Security deposit</td><td class="text-end">₱{{ number_format($moveOut->security_deposit, 2) }}</td></tr>
-                            <tr><td>Unused rent this month</td><td class="text-end">₱{{ number_format($moveOut->unused_rent_credit, 2) }}</td></tr>
+                            <tr><td>Unused rent</td><td class="text-end">₱{{ number_format($moveOut->unused_rent_credit, 2) }}</td></tr>
                             <tr><td>Less: unpaid bills</td><td class="text-end text-danger">−₱{{ number_format($moveOut->unpaid_dues, 2) }}</td></tr>
                             @foreach ($moveOut->deductions as $deduction)
                                 <tr><td>Less: {{ $deduction->description }}</td><td class="text-end text-danger">−₱{{ number_format($deduction->amount, 2) }}</td></tr>
@@ -91,7 +91,7 @@
                     <table class="table mt-4 mb-0">
                         <tbody>
                             <tr><td>Security deposit</td><td class="text-end">₱{{ number_format($estimate['security_deposit'], 2) }}</td></tr>
-                            <tr><td>Unused rent this month <span class="text-muted small">(as of today)</span></td><td class="text-end">₱{{ number_format($estimate['unused_rent_credit'], 2) }}</td></tr>
+                            <tr><td>Unused rent <span class="text-muted small">(after {{ $moveOut->requested_move_out_date->format('M d, Y') }})</span></td><td class="text-end">₱{{ number_format($estimate['unused_rent_credit'], 2) }}</td></tr>
                             <tr><td>Less: unpaid bills</td><td class="text-end text-danger">−₱{{ number_format($estimate['unpaid_dues'], 2) }}</td></tr>
                             <tr><td>Less: damages</td><td class="text-end text-danger">−₱<span id="damageTotal">0.00</span></td></tr>
                             <tr class="fw-semibold"><td id="resultLabel">Refund to tenant</td><td class="text-end">₱<span id="resultAmount">0.00</span></td></tr>

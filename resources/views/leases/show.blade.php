@@ -207,8 +207,8 @@
                 <dd class="col-sm-8"><x-status-badge :status="$moveOut->isFinalized() ? $moveOut->refund_status : 'awaiting_inspection'" /></dd>
                 @if (! $moveOut->isFinalized())
                     <dt class="col-sm-4 text-muted fw-normal">Estimated Refund</dt>
-                    <dd class="col-sm-8 fw-semibold">₱{{ number_format($moveOut->refund_amount, 2) }}
-                        <div class="small text-muted fw-normal">Security deposit less unpaid bills. The final amount is set after the room inspection, minus any damages.</div>
+                    <dd class="col-sm-8 fw-semibold">₱{{ number_format(max(0, app(\App\Services\MoveOutSettlementService::class)->currentEstimate($moveOut)['net']), 2) }}
+                        <div class="small text-muted fw-normal">Security deposit plus unused rent after your move-out date, less unpaid bills. The final amount is set after the room inspection, minus any damages.</div>
                     </dd>
                 @else
                     <dt class="col-sm-4 text-muted fw-normal">Security Deposit</dt>
