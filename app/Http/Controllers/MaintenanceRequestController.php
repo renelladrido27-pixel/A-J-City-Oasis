@@ -89,6 +89,10 @@ class MaintenanceRequestController extends Controller
     {
         $this->authorize('update', $maintenanceRequest);
 
+        // "Unassign" in the dropdown: back to pending.
+        if ($request->boolean('unassign')) {
+            $request->merge(['assignee_name' => null, 'assignee_phone' => null, 'scheduled_date' => null]);
+        }
         $request->merge(['assignee_phone' => AccountRules::normalizePhone($request->input('assignee_phone'))]);
         $validated = $request->validate([
             // Typed in: whoever does the work, with or without an account.

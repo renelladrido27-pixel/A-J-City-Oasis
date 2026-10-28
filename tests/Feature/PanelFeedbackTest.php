@@ -367,6 +367,32 @@ class PanelFeedbackTest extends TestCase
         $this->assertDatabaseHas('notifications', ['user_id' => $staff->id, 'title' => 'Maintenance job assigned to you']);
     }
 
+    public function test_the_assign_form_drops_down_from_a_button_and_can_unassign(): void
+    {
+        $request = $this->maintenanceRequest();
+        $admin = User::factory()->admin()->create();
+
+        // Unassigned: an "Assign" button that opens the form, not the form spread across the row.
+        $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))->assertOk()
+            ->assertSee('data-bs-toggle="dropdown"', false)
+            ->assertSee('class="dropdown-menu dropdown-menu-end p-3 shadow assign-form"', false)
+            ->assertSee('Who will do the work');
+
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), [
+            'request_id' => $request->id, 'assignee_name' => 'Mang Ben', 'scheduled_date' => today()->toDateString(),
+        ]);
+        // Assigned: the button reads "Change" and the form offers "Unassign".
+        $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))
+            ->assertSee('Change')->assertSee('Unassign');
+
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), [
+            'request_id' => $request->id, 'assignee_name' => 'Mang Ben', 'scheduled_date' => today()->toDateString(), 'unassign' => '1',
+        ])->assertSessionHasNoErrors();
+        $request->refresh();
+        $this->assertNull($request->assignee_name);
+        $this->assertSame('pending', $request->status);
+    }
+
     public function test_anyone_can_be_assigned_by_name_with_an_optional_phone(): void
     {
         $request = $this->maintenanceRequest();

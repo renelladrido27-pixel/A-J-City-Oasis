@@ -57,16 +57,43 @@
                             {{-- Admin/staff only assign. The status follows the assignment, and the tenant closes the request. --}}
                             <td>
                                 @if ($request->isOpen())
-                                    {{-- Type who will do the work: they don't need an account. Clear the name to unassign. --}}
-                                    <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.maintenance-requests.update', $request) : route('staff.maintenance.update', $request) }}" class="d-flex flex-wrap gap-1 assign-form" style="min-width: 300px;">
-                                        @csrf @method('PUT')
-                                        <input type="text" name="assignee_name" list="assignee-names" class="form-control form-control-sm assignee-name" style="width: 11rem;" maxlength="100"
-                                               value="{{ $request->assignee_name }}" placeholder="Staff name" aria-label="Staff name" autocomplete="off">
-                                        <input type="tel" name="assignee_phone" class="form-control form-control-sm assignee-phone" style="width: 9rem;" maxlength="20"
-                                               value="{{ $request->assignee_phone }}" placeholder="Phone (optional)" aria-label="Staff phone (optional)">
-                                        <input type="date" name="scheduled_date" class="form-control form-control-sm" style="width: auto;" value="{{ $request->scheduled_date?->toDateString() }}" aria-label="Visit date">
-                                        <button class="btn btn-sm btn-primary" data-loading-text="Saving…">Assign</button>
-                                    </form>
+                                    {{-- A button that drops down the assign form, so the list stays readable.
+                                         Workers are typed in by name: they don't need an account. --}}
+                                    @php($reopen = (int) old('request_id') === $request->id)
+                                    <div class="dropdown">
+                                        <button type="button" class="btn btn-sm {{ $request->isAssigned() ? 'btn-outline-secondary' : 'btn-primary' }} dropdown-toggle assign-toggle"
+                                                data-bs-toggle="dropdown" data-bs-auto-close="outside" data-bs-popper-config='{"strategy":"fixed"}'
+                                                aria-expanded="false" @if ($reopen) data-reopen="1" @endif>
+                                            <i class="bi {{ $request->isAssigned() ? 'bi-pencil' : 'bi-person-plus' }} me-1"></i>{{ $request->isAssigned() ? 'Change' : 'Assign' }}
+                                        </button>
+                                        <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.maintenance-requests.update', $request) : route('staff.maintenance.update', $request) }}"
+                                              class="dropdown-menu dropdown-menu-end p-3 shadow assign-form" style="width: 19rem;">
+                                            @csrf @method('PUT')
+                                            <input type="hidden" name="request_id" value="{{ $request->id }}">
+                                            <div class="small fw-semibold mb-2">Room {{ $request->room->room_number }} · {{ $request->category }}</div>
+                                            <div class="mb-2">
+                                                <label class="form-label small mb-1" for="assignee-name-{{ $request->id }}">Who will do the work</label>
+                                                <input type="text" name="assignee_name" id="assignee-name-{{ $request->id }}" list="assignee-names" class="form-control form-control-sm assignee-name" maxlength="100"
+                                                       value="{{ $reopen ? old('assignee_name') : $request->assignee_name }}" placeholder="e.g. Mang Ben (plumber)" autocomplete="off" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label small mb-1" for="assignee-phone-{{ $request->id }}">Phone <span class="text-muted">(optional)</span></label>
+                                                <input type="tel" name="assignee_phone" id="assignee-phone-{{ $request->id }}" class="form-control form-control-sm assignee-phone" maxlength="20"
+                                                       value="{{ $reopen ? old('assignee_phone') : $request->assignee_phone }}" placeholder="09171234567">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small mb-1" for="visit-date-{{ $request->id }}">Visit date</label>
+                                                <input type="date" name="scheduled_date" id="visit-date-{{ $request->id }}" class="form-control form-control-sm"
+                                                       value="{{ $reopen ? old('scheduled_date') : $request->scheduled_date?->toDateString() }}" required>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-sm btn-primary flex-fill" data-loading-text="Saving…"><i class="bi bi-check-lg me-1"></i>{{ $request->isAssigned() ? 'Save' : 'Assign' }}</button>
+                                                @if ($request->isAssigned())
+                                                    <button type="submit" name="unassign" value="1" class="btn btn-sm btn-outline-danger" formnovalidate>Unassign</button>
+                                                @endif
+                                            </div>
+                                        </form>
+                                    </div>
                                     @if ($request->status === 'in_progress')
                                         <div class="small text-muted mt-1"><i class="bi bi-hourglass-split me-1"></i>Waiting for the tenant to confirm it's fixed</div>
                                     @endif
@@ -129,6 +156,10 @@
     <script>
         // Picking a name used before fills in that person's phone, if it's empty.
         (function () {
+            // After a form error, open the dropdown that was being filled in again.
+            const reopen = document.querySelector('.assign-toggle[data-reopen]');
+            if (reopen && window.bootstrap) bootstrap.Dropdown.getOrCreateInstance(reopen).show();
+
             const phones = @json($assignees->mapWithKeys(fn ($a) => [mb_strtolower($a['name']) => $a['phone']]));
             document.querySelectorAll('.assign-form .assignee-name').forEach(function (input) {
                 input.addEventListener('change', function () {
