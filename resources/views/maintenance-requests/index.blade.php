@@ -43,10 +43,10 @@
                         </td>
                         <td><x-status-badge :status="$request->status" /></td>
                         <td>
-                            @if ($request->assignee)
-                                <span class="fw-medium"><i class="bi bi-person-gear me-1"></i>{{ $request->assignee->name }}</span>
-                                @if ($request->assignee->phone)
-                                    <div class="small"><a href="tel:{{ $request->assignee->phone }}" class="text-decoration-none text-muted"><i class="bi bi-telephone me-1"></i>{{ $request->assignee->phone }}</a></div>
+                            @if ($request->isAssigned())
+                                <span class="fw-medium"><i class="bi bi-person-gear me-1"></i>{{ $request->assignee_name }}</span>
+                                @if ($request->assignee_phone)
+                                    <div class="small"><a href="tel:{{ $request->assignee_phone }}" class="text-decoration-none text-muted"><i class="bi bi-telephone me-1"></i>{{ $request->assignee_phone }}</a></div>
                                 @endif
                             @else
                                 <span class="text-muted">{{ auth()->user()->isTenant() ? 'Not yet assigned' : '—' }}</span>
@@ -57,15 +57,14 @@
                             {{-- Admin/staff only assign. The status follows the assignment, and the tenant closes the request. --}}
                             <td>
                                 @if ($request->isOpen())
-                                    <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.maintenance-requests.update', $request) : route('staff.maintenance.update', $request) }}" class="d-flex flex-wrap gap-1" style="min-width: 300px;">
+                                    {{-- Type who will do the work: they don't need an account. Clear the name to unassign. --}}
+                                    <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.maintenance-requests.update', $request) : route('staff.maintenance.update', $request) }}" class="d-flex flex-wrap gap-1 assign-form" style="min-width: 300px;">
                                         @csrf @method('PUT')
-                                        <select name="assigned_to" class="form-select form-select-sm" style="width: auto;" aria-label="Assign to">
-                                            <option value="">Unassigned</option>
-                                            @foreach ($assignees as $assignee)
-                                                <option value="{{ $assignee->id }}" @selected($request->assigned_to === $assignee->id)>{{ $assignee->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        <input type="date" name="scheduled_date" class="form-control form-control-sm" style="width: auto;" value="{{ $request->scheduled_date?->toDateString() }}" aria-label="Scheduled date">
+                                        <input type="text" name="assignee_name" list="assignee-names" class="form-control form-control-sm assignee-name" style="width: 11rem;" maxlength="100"
+                                               value="{{ $request->assignee_name }}" placeholder="Staff name" aria-label="Staff name" autocomplete="off">
+                                        <input type="tel" name="assignee_phone" class="form-control form-control-sm assignee-phone" style="width: 9rem;" maxlength="20"
+                                               value="{{ $request->assignee_phone }}" placeholder="Phone (optional)" aria-label="Staff phone (optional)">
+                                        <input type="date" name="scheduled_date" class="form-control form-control-sm" style="width: auto;" value="{{ $request->scheduled_date?->toDateString() }}" aria-label="Visit date">
                                         <button class="btn btn-sm btn-primary" data-loading-text="Saving…">Assign</button>
                                     </form>
                                     @if ($request->status === 'in_progress')
@@ -121,4 +120,24 @@
 </div>
 
 <div class="mt-3">{{ $requests->links() }}</div>
+@if (! auth()->user()->isTenant())
+    <datalist id="assignee-names">
+        @foreach ($assignees as $assignee)
+            <option value="{{ $assignee['name'] }}">{{ $assignee['phone'] }}</option>
+        @endforeach
+    </datalist>
+    <script>
+        // Picking a name used before fills in that person's phone, if it's empty.
+        (function () {
+            const phones = @json($assignees->mapWithKeys(fn ($a) => [mb_strtolower($a['name']) => $a['phone']]));
+            document.querySelectorAll('.assign-form .assignee-name').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    const phone = input.form.querySelector('.assignee-phone');
+                    const known = phones[input.value.trim().toLowerCase()];
+                    if (known && !phone.value) phone.value = known;
+                });
+            });
+        })();
+    </script>
+@endif
 @endsection

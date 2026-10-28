@@ -115,7 +115,7 @@ class MaintenanceRequestTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('admin.maintenance-requests.update', $request), [
-                'assigned_to' => $staff->id,
+                'assignee_name' => $staff->name,
                 'scheduled_date' => now()->addDays(2)->toDateString(),
             ])
             ->assertRedirect()
@@ -123,7 +123,7 @@ class MaintenanceRequestTest extends TestCase
 
         $request->refresh();
         $this->assertSame('in_progress', $request->status);
-        $this->assertSame($staff->id, $request->assigned_to);
+        $this->assertSame($staff->name, $request->assignee_name);
         $this->assertSame(now()->addDays(2)->toDateString(), $request->scheduled_date->toDateString());
         $this->assertNull($request->resolved_at);
         $this->assertDatabaseHas('notifications', [
@@ -144,14 +144,14 @@ class MaintenanceRequestTest extends TestCase
         $this->assertSame('pending', $request->fresh()->status);
 
         $this->actingAs($staff)
-            ->put(route('staff.maintenance.update', $request), ['status' => 'resolved', 'assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString()])
+            ->put(route('staff.maintenance.update', $request), ['status' => 'resolved', 'assignee_name' => $staff->name, 'scheduled_date' => today()->toDateString()])
             ->assertRedirect();
         $this->assertSame('in_progress', $request->fresh()->status);
         $this->assertNull($request->fresh()->resolved_at);
 
         // The page offers assigning only.
         $this->actingAs($staff)->get(route('staff.maintenance.index'))->assertOk()
-            ->assertSee('name="assigned_to"', false)
+            ->assertSee('name="assignee_name"', false)
             ->assertDontSee('name="status"', false)
             ->assertSee('Waiting for the tenant to confirm');
     }
@@ -161,15 +161,15 @@ class MaintenanceRequestTest extends TestCase
         $admin = User::factory()->admin()->create();
         $request = $this->requestFor(Lease::factory()->create());
         $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), [
-            'assigned_to' => $admin->id, 'scheduled_date' => now()->addDay()->toDateString(),
+            'assignee_name' => $admin->name, 'scheduled_date' => now()->addDay()->toDateString(),
         ]);
 
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => ''])
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => ''])
             ->assertSessionHas('status', 'Maintenance request unassigned.');
 
         $request->refresh();
         $this->assertSame('pending', $request->status);
-        $this->assertNull($request->assigned_to);
+        $this->assertNull($request->assignee_name);
         $this->assertNull($request->scheduled_date);
     }
 
@@ -178,7 +178,7 @@ class MaintenanceRequestTest extends TestCase
         $admin = User::factory()->admin()->create();
         $staff = User::factory()->staff()->create();
         $request = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString()]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => $staff->name, 'scheduled_date' => today()->toDateString()]);
 
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
             ->assertSee(route('tenant.maintenance-requests.resolve', $request))
@@ -204,8 +204,8 @@ class MaintenanceRequestTest extends TestCase
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))
             ->assertDontSee('Mark as done')->assertDontSee('bi-trash');
         $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))->assertSee('Confirmed by tenant')
-            ->assertDontSee('name="assigned_to"', false);
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString()])->assertStatus(422);
+            ->assertDontSee('name="assignee_name"', false);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => $staff->name, 'scheduled_date' => today()->toDateString()])->assertStatus(422);
         $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertStatus(422);
     }
 
@@ -214,7 +214,7 @@ class MaintenanceRequestTest extends TestCase
         $admin = User::factory()->admin()->create();
         $pending = $this->requestFor(Lease::factory()->create());
         $assigned = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id, 'scheduled_date' => today()->toDateString()]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assignee_name' => $admin->name, 'scheduled_date' => today()->toDateString()]);
 
         $this->actingAs($pending->tenant)->post(route('tenant.maintenance-requests.cancel', $pending))->assertRedirect();
         $this->assertSame('cancelled', $pending->fresh()->status);
@@ -241,7 +241,7 @@ class MaintenanceRequestTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $assigned = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id, 'scheduled_date' => today()->toDateString()]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assignee_name' => $admin->name, 'scheduled_date' => today()->toDateString()]);
         $pending = $this->requestFor(Lease::factory()->create());
 
         Sanctum::actingAs($assigned->tenant);
@@ -288,7 +288,7 @@ class MaintenanceRequestTest extends TestCase
         $admin = User::factory()->admin()->create();
         $staff = User::factory()->staff()->create(['name' => 'Ramon Cruz']);
         $inProgress = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assigned_to' => $staff->id, 'scheduled_date' => today()->addDays(3)->toDateString()]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assignee_name' => $staff->name, 'scheduled_date' => today()->addDays(3)->toDateString()]);
         $resolved = $this->requestFor(Lease::factory()->create());
         $resolved->update(['status' => 'resolved', 'resolved_at' => now()]);
 
@@ -340,7 +340,7 @@ class MaintenanceRequestTest extends TestCase
         $admin = User::factory()->admin()->create();
         $pending = $this->requestFor(Lease::factory()->create());
         $assigned = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assigned_to' => $admin->id, 'scheduled_date' => today()->toDateString()]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $assigned), ['assignee_name' => $admin->name, 'scheduled_date' => today()->toDateString()]);
 
         Sanctum::actingAs($pending->tenant);
         $this->deleteJson("/api/maintenance-requests/{$assigned->id}")->assertForbidden();
@@ -364,10 +364,10 @@ class MaintenanceRequestTest extends TestCase
         $request = $this->requestFor(Lease::factory()->create());
 
         $this->actingAs($request->tenant)
-            ->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $request->tenant_id])
+            ->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => $request->tenant->name])
             ->assertForbidden();
 
         $this->assertSame('pending', $request->fresh()->status);
-        $this->assertNull($request->fresh()->assigned_to);
+        $this->assertNull($request->fresh()->assignee_name);
     }
 }

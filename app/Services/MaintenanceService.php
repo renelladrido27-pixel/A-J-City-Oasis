@@ -17,37 +17,46 @@ class MaintenanceService
 {
     public function __construct(protected NotificationService $notifications) {}
 
-    public function assign(MaintenanceRequest $request, ?int $assigneeId, ?string $scheduledDate, User $by): void
+    /**
+     * Who will do the work, by name (and phone, if given) — maintenance workers
+     * don't need an account. An empty name puts the request back to pending.
+     */
+    public function assign(MaintenanceRequest $request, ?string $name, ?string $phone, ?string $scheduledDate, User $by): void
     {
         abort_unless($request->isOpen(), 422, 'This request is already closed.');
 
-        $previousAssignee = $request->assigned_to;
+        $name = filled($name) ? trim($name) : null;
+        // A staff account with that name: use its phone when none was typed.
+        $staff = $name ? User::where('role', 'staff')->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first() : null;
+        $phone = filled($phone) ? $phone : $staff?->phone;
+        $previousName = $request->assignee_name;
         $previousDate = $request->scheduled_date?->toDateString();
 
         $request->update([
-            'assigned_to' => $assigneeId,
-            'scheduled_date' => $assigneeId ? $scheduledDate : null,
-            'status' => $assigneeId ? 'in_progress' : 'pending',
+            'assigned_to' => null,
+            'assignee_name' => $name,
+            'assignee_phone' => $name ? $phone : null,
+            'scheduled_date' => $name ? $scheduledDate : null,
+            'status' => $name ? 'in_progress' : 'pending',
         ]);
-        $request->load('assignee');
 
-        if ($request->assigned_to === $previousAssignee && $request->scheduled_date?->toDateString() === $previousDate) {
+        if ($request->assignee_name === $previousName && $request->scheduled_date?->toDateString() === $previousDate) {
             return;
         }
 
         // Tell the tenant who is handling it and when — and that closing it is theirs to do.
-        $message = $request->assignee
-            ? "Your {$request->category} request is now in progress. Assigned to {$request->assignee->name}"
+        $message = $name
+            ? "Your {$request->category} request is now in progress. Assigned to {$name}"
                 .($request->scheduled_date ? ', scheduled for '.$request->scheduled_date->format('M d, Y') : '')
                 .'. Once the work is done, please mark it as done.'
             : "Your {$request->category} request is waiting to be assigned again.";
 
         $this->notifications->notify($request->tenant, 'Maintenance request updated', $message, 'maintenance');
 
-        // Tell the staff member a job was just handed to them.
-        if ($request->assignee && $request->assigned_to !== $previousAssignee && $request->assigned_to !== $by->id) {
+        // If the name belongs to a staff account, let them know in the system too.
+        if ($staff && $name !== $previousName && $staff->id !== $by->id) {
             $this->notifications->notify(
-                $request->assignee,
+                $staff,
                 'Maintenance job assigned to you',
                 "{$request->category} in Room {$request->room->room_number}"
                     .($request->scheduled_date ? ', scheduled for '.$request->scheduled_date->format('M d, Y') : '').'.',
@@ -60,7 +69,7 @@ class MaintenanceService
     public function resolve(MaintenanceRequest $request): void
     {
         abort_unless($request->isOpen(), 422, 'This request is already closed.');
-        abort_unless($request->assigned_to !== null, 422, 'Nobody has been assigned to this request yet.');
+        abort_unless($request->isAssigned(), 422, 'Nobody has been assigned to this request yet.');
 
         $request->update(['status' => 'resolved', 'resolved_at' => now()]);
 
@@ -91,7 +100,7 @@ class MaintenanceService
         abort_unless($request->isDeletable(), 422, 'This request is already done, so it stays on record.');
 
         $wasOpen = $request->isOpen();
-        $assignee = $request->assignee;
+        $assignee = $request->assignee_name;
         $summary = "{$request->tenant->name} removed the {$request->category} request for Room {$request->room->room_number}.";
 
         if ($request->photo) {
@@ -105,7 +114,7 @@ class MaintenanceService
         if ($wasOpen) {
             $this->notifications->notifyAdminsAndStaff(
                 'Maintenance request withdrawn',
-                $summary.($assignee ? " {$assignee->name} no longer needs to visit." : ''),
+                $summary.($assignee ? " {$assignee} no longer needs to visit." : ''),
                 'maintenance',
             );
         }

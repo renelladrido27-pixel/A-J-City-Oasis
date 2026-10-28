@@ -232,7 +232,7 @@ class PanelRevisionsTest extends TestCase
         $request = $this->requestFor(Lease::factory()->create());
         $admin = $this->admin();
 
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $admin->id])
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => $admin->name])
             ->assertSessionHasErrors('scheduled_date');
         $this->assertSame('pending', $request->fresh()->status);
     }
@@ -252,7 +252,7 @@ class PanelRevisionsTest extends TestCase
         $this->getJson('/api/maintenance-requests')->assertJsonPath('requests.0.can_mark_done', false);
 
         // Assigned for a later day: it unlocks right away — no date check.
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assigned_to' => $admin->id, 'scheduled_date' => '2026-10-20']);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => $admin->name, 'scheduled_date' => '2026-10-20']);
         Sanctum::actingAs($tenant);
         $this->getJson('/api/maintenance-requests')->assertJsonPath('requests.0.can_mark_done', true);
         $page()->assertSee('Mark as done</button>', false)->assertDontSee('Waiting to be assigned');

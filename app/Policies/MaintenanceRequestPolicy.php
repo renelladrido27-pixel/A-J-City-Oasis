@@ -14,9 +14,7 @@ class MaintenanceRequestPolicy
 
     public function view(User $user, MaintenanceRequest $request): bool
     {
-        return $request->tenant_id === $user->id
-            || $request->assigned_to === $user->id
-            || $user->isStaff();
+        return $request->tenant_id === $user->id || $user->isStaff();
     }
 
     public function update(User $user, MaintenanceRequest $request): bool

@@ -339,7 +339,7 @@ class PanelFeedbackTest extends TestCase
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()->assertSee('Not yet assigned');
 
         $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'assigned_to' => $staff->id, 'scheduled_date' => '2026-10-12',
+            'assignee_name' => $staff->name, 'scheduled_date' => '2026-10-12',
         ])->assertRedirect();
 
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
@@ -361,19 +361,32 @@ class PanelFeedbackTest extends TestCase
         $staff = User::factory()->staff()->create();
 
         $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'assigned_to' => $staff->id, 'scheduled_date' => today()->toDateString(),
+            'assignee_name' => $staff->name, 'scheduled_date' => today()->toDateString(),
         ]);
 
         $this->assertDatabaseHas('notifications', ['user_id' => $staff->id, 'title' => 'Maintenance job assigned to you']);
     }
 
-    public function test_a_request_can_only_be_assigned_to_staff_or_admin(): void
+    public function test_anyone_can_be_assigned_by_name_with_an_optional_phone(): void
     {
         $request = $this->maintenanceRequest();
+        $admin = User::factory()->admin()->create();
 
-        $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'assigned_to' => User::factory()->create()->id,
-        ])->assertSessionHasErrors('assigned_to');
+        // A worker without an account: just a name and a number.
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), [
+            'assignee_name' => 'Mang Ben (plumber)', 'assignee_phone' => '0917 123 4567', 'scheduled_date' => today()->toDateString(),
+        ])->assertSessionHasNoErrors();
+
+        $request->refresh();
+        $this->assertSame('Mang Ben (plumber)', $request->assignee_name);
+        $this->assertSame('09171234567', $request->assignee_phone);
+        $this->assertNull($request->assigned_to);
+        $this->assertSame('in_progress', $request->status);
+        $this->assertTrue($request->canBeMarkedDone());
+
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), [
+            'assignee_name' => 'Mang Ben (plumber)', 'assignee_phone' => '12345', 'scheduled_date' => today()->toDateString(),
+        ])->assertSessionHasErrors('assignee_phone');
     }
 
     // ── 8. Completed → Resolved ─────────────────────────────────────────────
@@ -387,7 +400,7 @@ class PanelFeedbackTest extends TestCase
         $this->assertNotContains('completed', MaintenanceRequest::STATUSES);
 
         // The tenant is the one who confirms the work is done.
-        $request->update(['assigned_to' => $admin->id, 'scheduled_date' => today(), 'status' => 'in_progress']);
+        $request->update(['assignee_name' => $admin->name, 'scheduled_date' => today(), 'status' => 'in_progress']);
         $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertRedirect();
         $this->assertSame('resolved', $request->fresh()->status);
         $this->assertNotNull($request->fresh()->resolved_at);

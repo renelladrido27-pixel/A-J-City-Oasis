@@ -16,9 +16,9 @@ class MaintenanceRequestResource extends JsonResource
             'photo_url' => $this->photoUrl(),
             'status' => $this->status,
             // Who will do the work — shown to the tenant once assigned.
-            'assigned_to' => $this->assignee ? [
-                'name' => $this->assignee->name,
-                'phone' => $this->assignee->phone,
+            'assigned_to' => $this->isAssigned() ? [
+                'name' => $this->assignee_name,
+                'phone' => $this->assignee_phone,
             ] : null,
             'scheduled_date' => $this->scheduled_date?->toDateString(),
             // Someone is assigned, so the tenant can confirm the work is done.

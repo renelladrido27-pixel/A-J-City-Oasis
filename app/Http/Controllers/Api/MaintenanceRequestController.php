@@ -17,7 +17,7 @@ class MaintenanceRequestController extends Controller
     public function index(Request $request): JsonResponse
     {
         $requests = MaintenanceRequest::where('tenant_id', $request->user()->id)
-            ->with(['room', 'assignee'])
+            ->with(['room'])
             ->latest()
             ->get();
 
@@ -69,7 +69,7 @@ class MaintenanceRequestController extends Controller
 
         app(MaintenanceService::class)->resolve($maintenanceRequest);
 
-        return response()->json(['request' => MaintenanceRequestResource::make($maintenanceRequest->load('assignee'))]);
+        return response()->json(['request' => MaintenanceRequestResource::make($maintenanceRequest)]);
     }
 
     /** The tenant withdraws a request that hasn't been assigned yet. */
@@ -79,7 +79,7 @@ class MaintenanceRequestController extends Controller
 
         app(MaintenanceService::class)->cancel($maintenanceRequest);
 
-        return response()->json(['request' => MaintenanceRequestResource::make($maintenanceRequest->load('assignee'))]);
+        return response()->json(['request' => MaintenanceRequestResource::make($maintenanceRequest)]);
     }
 
     /** The tenant deletes a request they changed their mind about. */

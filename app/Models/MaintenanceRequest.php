@@ -30,7 +30,7 @@ class MaintenanceRequest extends Model
      */
     public function canBeMarkedDone(): bool
     {
-        return $this->status === 'in_progress' && $this->assigned_to !== null;
+        return $this->status === 'in_progress' && $this->isAssigned();
     }
 
     /** The tenant can remove a request any time before it is done (resolved stays on record). */
@@ -48,6 +48,8 @@ class MaintenanceRequest extends Model
         'photo',
         'status',
         'assigned_to',
+        'assignee_name',
+        'assignee_phone',
         'scheduled_date',
         'resolved_at',
     ];
@@ -75,6 +77,13 @@ class MaintenanceRequest extends Model
         return $this->belongsTo(Room::class);
     }
 
+    /** Someone (typed in by the admin — not necessarily a system account) is on it. */
+    public function isAssigned(): bool
+    {
+        return filled($this->assignee_name);
+    }
+
+    /** Old assignments pointed at an account; new ones only store the name. */
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');

@@ -6,10 +6,10 @@ use App\Models\Lease;
 use App\Models\MaintenanceRequest;
 use App\Models\User;
 use App\Services\MaintenanceService;
+use App\Support\AccountRules;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MaintenanceRequestController extends Controller
@@ -19,8 +19,8 @@ class MaintenanceRequestController extends Controller
     public function index(Request $request): View
     {
         $requests = match (true) {
-            $request->user()->isAdmin(), $request->user()->isStaff() => MaintenanceRequest::with(['tenant', 'room', 'assignee'])->latest()->paginate(25),
-            default => MaintenanceRequest::where('tenant_id', $request->user()->id)->with(['room', 'assignee'])->latest()->paginate(25),
+            $request->user()->isAdmin(), $request->user()->isStaff() => MaintenanceRequest::with(['tenant', 'room'])->latest()->paginate(25),
+            default => MaintenanceRequest::where('tenant_id', $request->user()->id)->with(['room'])->latest()->paginate(25),
         };
 
         $activeLease = $request->user()->isTenant()
@@ -31,8 +31,15 @@ class MaintenanceRequestController extends Controller
             $this->notifications->markTypesRead($request->user(), ['maintenance']);
         }
 
+        // Names to pick from as you type: anyone assigned before, plus staff
+        // accounts — with their last-used phone, so picking a name fills it in.
         $assignees = $request->user()->isAdmin() || $request->user()->isStaff()
-            ? User::whereIn('role', ['admin', 'staff'])->orderBy('name')->get()
+            ? MaintenanceRequest::whereNotNull('assignee_name')->latest('updated_at')->get(['assignee_name', 'assignee_phone'])
+                ->map(fn ($r) => ['name' => $r->assignee_name, 'phone' => $r->assignee_phone])
+                ->concat(User::where('role', 'staff')->get(['name', 'phone'])->map(fn ($u) => ['name' => $u->name, 'phone' => $u->phone]))
+                ->unique(fn ($a) => mb_strtolower($a['name']))
+                ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values()
             : collect();
 
         return view('maintenance-requests.index', compact('requests', 'activeLease', 'assignees'));
@@ -82,21 +89,27 @@ class MaintenanceRequestController extends Controller
     {
         $this->authorize('update', $maintenanceRequest);
 
+        $request->merge(['assignee_phone' => AccountRules::normalizePhone($request->input('assignee_phone'))]);
         $validated = $request->validate([
-            // Only staff/admin accounts do maintenance work.
-            'assigned_to' => ['nullable', Rule::exists('users', 'id')->whereIn('role', ['admin', 'staff'])],
+            // Typed in: whoever does the work, with or without an account.
+            'assignee_name' => ['nullable', 'string', 'max:100'],
+            'assignee_phone' => [...AccountRules::phone(required: false), 'max:20'],
             // Every assignment says when the visit is, so the tenant knows.
-            'scheduled_date' => ['nullable', 'required_with:assigned_to', 'date'],
+            'scheduled_date' => ['nullable', 'required_with:assignee_name', 'date'],
+        ], [
+            'assignee_phone.regex' => 'Enter a valid Philippine mobile number, e.g. 09171234567.',
+            'scheduled_date.required_with' => 'Pick the visit date for the person assigned.',
         ]);
 
         app(MaintenanceService::class)->assign(
             $maintenanceRequest,
-            isset($validated['assigned_to']) ? (int) $validated['assigned_to'] : null,
+            $validated['assignee_name'] ?? null,
+            $validated['assignee_phone'] ?? null,
             $validated['scheduled_date'] ?? null,
             $request->user(),
         );
 
-        return back()->with('status', $maintenanceRequest->assigned_to ? 'Maintenance request assigned.' : 'Maintenance request unassigned.');
+        return back()->with('status', $maintenanceRequest->isAssigned() ? 'Maintenance request assigned.' : 'Maintenance request unassigned.');
     }
 
     /** The tenant confirms the work is done. */
