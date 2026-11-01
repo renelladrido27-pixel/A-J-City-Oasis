@@ -335,33 +335,46 @@ class _RequestCard extends StatelessWidget {
               ),
             ],
           ),
-          // Mark as done unlocks once someone is assigned.
+          // Mark as done only shows once someone is assigned and the visit
+          // day has come.
           if (r.isOpen && !r.canMarkDone) ...[
             const SizedBox(height: 10),
-            const Row(
+            Row(
               children: [
-                Icon(Icons.hourglass_empty, size: 16, color: OasisColors.muted),
-                SizedBox(width: 6),
+                Icon(
+                  r.assignedName == null
+                      ? Icons.hourglass_empty
+                      : Icons.event_outlined,
+                  size: 16,
+                  color: OasisColors.muted,
+                ),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'You can mark it as done once someone is assigned.',
-                    style: TextStyle(color: OasisColors.muted, fontSize: 12),
+                    r.assignedName == null
+                        ? 'You can mark it as done once someone is assigned.'
+                        : r.scheduledDate == null
+                        ? 'You can mark it as done on the visit day.'
+                        : 'You can mark it as done on the visit day, '
+                              '${formatShortDate(r.scheduledDate!)}.',
+                    style: const TextStyle(
+                      color: OasisColors.muted,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
             ),
           ],
-          if (r.isOpen || r.canDelete) ...[
+          if (r.canMarkDone || r.canDelete) ...[
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // Shown for every open request, but only clickable once
-                // someone is assigned.
-                if (r.isOpen)
+                if (r.canMarkDone)
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: enabled && r.canMarkDone ? onResolve : null,
+                      onPressed: enabled ? onResolve : null,
                       icon: busy
                           ? const SizedBox(
                               width: 16,
@@ -388,7 +401,7 @@ class _RequestCard extends StatelessWidget {
                   ),
                 // Changed your mind? Any time before it's done.
                 if (r.canDelete) ...[
-                  if (r.isOpen) const SizedBox(width: 8),
+                  if (r.canMarkDone) const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: enabled ? onDelete : null,
                     icon: const Icon(Icons.delete_outline, size: 18),

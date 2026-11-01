@@ -94,7 +94,9 @@
                                             </div>
                                         </form>
                                     </div>
-                                    @if ($request->status === 'in_progress')
+                                    @if ($request->status === 'in_progress' && $request->isBeforeVisitDay())
+                                        <div class="small text-muted mt-1"><i class="bi bi-calendar-event me-1"></i>Visit on {{ $request->scheduled_date->format('M d') }} · the tenant confirms from that day</div>
+                                    @elseif ($request->status === 'in_progress')
                                         <div class="small text-muted mt-1"><i class="bi bi-hourglass-split me-1"></i>Waiting for the tenant to confirm it's fixed</div>
                                     @endif
                                 @else
@@ -107,18 +109,12 @@
                             {{-- The tenant closes their own request — or deletes it if they changed their mind. --}}
                             <td>
                                 <div class="d-flex flex-wrap gap-1">
-                                    {{-- Mark as done unlocks once someone is assigned. --}}
+                                    {{-- Mark as done only shows from the visit day, once someone is assigned. --}}
                                     @if ($request->canBeMarkedDone())
                                         <form method="POST" action="{{ route('tenant.maintenance-requests.resolve', $request) }}" onsubmit="return confirm('Confirm that this issue has been fixed? This closes the request.')">
                                             @csrf
                                             <button class="btn btn-sm btn-success" data-loading-text="Saving…"><i class="bi bi-check2-circle me-1"></i>Mark as done</button>
                                         </form>
-                                    @elseif ($request->isOpen())
-                                        {{-- Visible but not clickable until someone is assigned. --}}
-                                        <button type="button" class="btn btn-sm btn-success" disabled
-                                                title="Opens once someone is assigned">
-                                            <i class="bi bi-check2-circle me-1"></i>Mark as done
-                                        </button>
                                     @endif
                                     @if ($request->isDeletable())
                                         <form method="POST" action="{{ route('tenant.maintenance-requests.destroy', $request) }}" onsubmit="return confirm('Remove this maintenance request? {{ $request->assigned_to ? 'The person assigned will be told not to come. ' : '' }}This cannot be undone.')">
@@ -126,9 +122,13 @@
                                             <button class="btn btn-sm btn-outline-danger" data-loading-text="Removing…"><i class="bi bi-trash me-1"></i>Remove</button>
                                         </form>
                                     @endif
-                                    @if ($request->isOpen() && ! $request->canBeMarkedDone())
+                                    @if ($request->isOpen() && ! $request->isAssigned())
                                         <div class="w-100 small text-muted">
                                             <i class="bi bi-hourglass-split me-1"></i>Waiting to be assigned
+                                        </div>
+                                    @elseif ($request->isOpen() && $request->isBeforeVisitDay())
+                                        <div class="w-100 small text-muted">
+                                            <i class="bi bi-calendar-event me-1"></i>You can mark it as done on the visit day, {{ $request->scheduled_date->format('M d') }}
                                         </div>
                                     @endif
                                     @unless ($request->isOpen() || $request->isDeletable())

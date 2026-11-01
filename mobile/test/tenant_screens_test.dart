@@ -641,9 +641,9 @@ void main() {
         200,
         scrollable: list,
       );
-      // Mark as done shows on both open requests but only the assigned,
-      // due one can be pressed. Everything not done can be removed.
-      expect(find.text('Mark as done'), findsNWidgets(2));
+      // Mark as done only shows on the assigned request whose day has come.
+      // Everything not done can be removed.
+      expect(find.text('Mark as done'), findsOneWidget);
       expect(_enabledMarkAsDone(tester), 1);
       expect(find.text('Remove'), findsNWidgets(3));
 
@@ -674,7 +674,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Mark as done waits for someone to be assigned', (
+    testWidgets('Mark as done waits for someone to be assigned and the visit day', (
       tester,
     ) async {
       final app = _tenant()
@@ -694,7 +694,6 @@ void main() {
             submittedAt: DateTime(2026, 10, 14),
             assignedName: 'Juan Dela Cruz',
             scheduledDate: DateTime(2026, 10, 20),
-            canMarkDone: true,
           ),
         ];
       await _pump(
@@ -708,11 +707,14 @@ void main() {
         scrollable: find.byType(Scrollable).last,
       );
 
-      // Both show the button; only the assigned one can be pressed, date or not.
-      expect(find.text('Mark as done'), findsNWidgets(2));
-      expect(_enabledMarkAsDone(tester), 1);
+      // Neither shows the button yet; each says when it will.
+      expect(find.text('Mark as done'), findsNothing);
       expect(
         find.text('You can mark it as done once someone is assigned.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('You can mark it as done on the visit day, Oct 20.'),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

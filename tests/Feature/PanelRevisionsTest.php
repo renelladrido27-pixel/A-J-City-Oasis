@@ -237,7 +237,7 @@ class PanelRevisionsTest extends TestCase
         $this->assertSame('pending', $request->fresh()->status);
     }
 
-    public function test_mark_as_done_unlocks_as_soon_as_someone_is_assigned(): void
+    public function test_mark_as_done_shows_from_the_visit_day_once_someone_is_assigned(): void
     {
         Carbon::setTestNow('2026-10-15 09:00');
         $request = $this->requestFor(Lease::factory()->create());
@@ -245,14 +245,24 @@ class PanelRevisionsTest extends TestCase
         $tenant = $request->tenant;
         $page = fn () => $this->actingAs($tenant)->get(route('tenant.maintenance-requests.index'));
 
-        // Not assigned yet: the button is there but disabled, and the server refuses.
-        $page()->assertDontSee('Mark as done</button>', false)->assertSee('Waiting to be assigned');
+        // Not assigned yet: no button, and the server refuses.
+        $page()->assertDontSee('Mark as done')->assertSee('Waiting to be assigned');
         $this->actingAs($tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertStatus(422);
         Sanctum::actingAs($tenant);
         $this->getJson('/api/maintenance-requests')->assertJsonPath('requests.0.can_mark_done', false);
 
-        // Assigned for a later day: it unlocks right away — no date check.
+        // Assigned for a later day: still hidden until that day, and refused.
         $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => $admin->name, 'scheduled_date' => '2026-10-20']);
+        Sanctum::actingAs($tenant);
+        $this->getJson('/api/maintenance-requests')->assertJsonPath('requests.0.can_mark_done', false);
+        $page()->assertDontSee('Mark as done</button>', false)->assertSee('You can mark it as done on the visit day, Oct 20');
+        $this->actingAs($tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertStatus(422);
+        Sanctum::actingAs($tenant);
+        $this->postJson("/api/maintenance-requests/{$request->id}/resolve")->assertStatus(422);
+        $this->assertSame('in_progress', $request->fresh()->status);
+
+        // The visit day: the button shows and works.
+        Carbon::setTestNow('2026-10-20 08:00');
         Sanctum::actingAs($tenant);
         $this->getJson('/api/maintenance-requests')->assertJsonPath('requests.0.can_mark_done', true);
         $page()->assertSee('Mark as done</button>', false)->assertDontSee('Waiting to be assigned');

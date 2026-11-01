@@ -20,17 +20,18 @@ class MaintenanceRequest extends Model
     }
 
     /**
-     * The tenant may delete a request they changed their mind about — but
-     * only before anyone has been assigned to it (or after they cancelled it).
-     * Work in progress and finished work stay on record.
-     */
-    /**
-     * The tenant can mark the work done as soon as someone is assigned — not
-     * before anyone has looked at it. (No date check: the owner's call.)
+     * The tenant can mark the work done once someone is assigned and the
+     * visit day has come — not before the work could have been done.
      */
     public function canBeMarkedDone(): bool
     {
-        return $this->status === 'in_progress' && $this->isAssigned();
+        return $this->status === 'in_progress' && $this->isAssigned() && ! $this->isBeforeVisitDay();
+    }
+
+    /** Someone is booked to come, but not until a later day. */
+    public function isBeforeVisitDay(): bool
+    {
+        return $this->scheduled_date !== null && $this->scheduled_date->isAfter(today());
     }
 
     /** The tenant can remove a request any time before it is done (resolved stays on record). */

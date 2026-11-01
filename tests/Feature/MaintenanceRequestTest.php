@@ -308,15 +308,14 @@ class MaintenanceRequestTest extends TestCase
         $this->actingAs($resolved->tenant)->get(route('tenant.maintenance-requests.index'))->assertDontSee('bi-trash');
     }
 
-    public function test_mark_as_done_is_shown_but_not_clickable_until_assigned(): void
+    public function test_mark_as_done_is_hidden_until_assigned(): void
     {
         $request = $this->requestFor(Lease::factory()->create());
 
-        $page = $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk();
-        $page->assertSee('title="Opens once someone is assigned"', false)
+        $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
+            ->assertDontSee('Mark as done')
             ->assertSee('Waiting to be assigned')
             ->assertDontSee(route('tenant.maintenance-requests.resolve', $request));
-        $this->assertMatchesRegularExpression('/<button type="button" class="btn btn-sm btn-success" disabled/', $page->getContent());
     }
 
     public function test_only_the_tenant_who_reported_it_can_delete_it_and_a_cancelled_one_can_be_tidied_away(): void
