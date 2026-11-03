@@ -22,7 +22,7 @@ Route::post('/webhooks/xendit', [XenditWebhookController::class, 'handle'])->nam
 Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/rooms/{room}', [RoomController::class, 'show']);
 Route::get('/rooms/{room}/terms', [RoomController::class, 'terms']);
-Route::post('/rooms/{room}/book', [BookingController::class, 'store'])->middleware('throttle:signup');
+Route::post('/rooms/{room}/book', [BookingController::class, 'store'])->middleware(['throttle:signup', 'active:sanctum']);
 
 // Latest published Android build, so the app can offer an in-app update.
 Route::get('/app/version', AppVersionController::class);
@@ -30,7 +30,7 @@ Route::get('/app/version', AppVersionController::class);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:signup');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
 

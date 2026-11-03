@@ -87,6 +87,36 @@ Future<void> _tapTab(WidgetTester tester, String label) async {
 void main() {
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
+  testWidgets('a deactivated account is sent Home with the reason', (
+    tester,
+  ) async {
+    final app = _ShellApp();
+    await _pumpShell(tester, app);
+    await _tapTab(tester, 'Pay');
+    expect(
+      tester.widget<OasisBottomNav>(find.byType(OasisBottomNav)).current,
+      OasisTab.pay,
+    );
+
+    // What the app does when the server answers "account_deactivated".
+    app.signOutNotice = 'This account has been deactivated.';
+    await tester.runAsync(app.logout);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Signed out'), findsOneWidget);
+    expect(find.text('This account has been deactivated.'), findsOneWidget);
+    expect(
+      tester.widget<OasisBottomNav>(find.byType(OasisBottomNav)).current,
+      OasisTab.home,
+    );
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Signed out'), findsNothing);
+    // Shown once only.
+    expect(app.signOutNotice, isNull);
+    await _unmount(tester);
+  });
+
   testWidgets('room details open inside Home with the bottom bar still on', (
     tester,
   ) async {

@@ -23,6 +23,13 @@ class ApiClient {
 
   String? _cachedToken;
 
+  /// Called when the server says the signed-in account was deactivated by
+  /// the admin (it has already revoked the token), with its message.
+  void Function(String message)? onAccountDeactivated;
+
+  /// Whether a token is held right now (cleared at once on sign-out).
+  bool get hasToken => _cachedToken != null;
+
   Future<String?> get token async {
     return _cachedToken ??= await _storage.read(key: _tokenKey);
   }
@@ -145,6 +152,11 @@ class ApiClient {
     final message =
         _extractErrorMessage(decoded) ??
         'Request failed (${response.statusCode}).';
+    if (response.statusCode == 403 &&
+        decoded is Map &&
+        decoded['code'] == 'account_deactivated') {
+      onAccountDeactivated?.call(message);
+    }
     throw ApiException(message, statusCode: response.statusCode);
   }
 

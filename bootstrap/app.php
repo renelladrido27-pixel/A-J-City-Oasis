@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureUserHasRole;
 use Illuminate\Foundation\Application;
@@ -20,7 +21,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
             'email.verified' => EnsureEmailIsVerified::class,
+            'active' => EnsureAccountIsActive::class,
         ]);
+
+        // Every website page signs a deactivated account out at once (the
+        // app's routes use 'active:sanctum' in routes/api.php).
+        $middleware->web(append: EnsureAccountIsActive::class);
 
         // Logging out must always work, even from a page left open so long
         // that its form token expired (that used to end in "419 Page Expired").

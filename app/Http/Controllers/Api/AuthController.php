@@ -22,13 +22,13 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (! Auth::once([...$credentials, 'is_active' => true, 'role' => 'tenant'])) {
+        if (! Auth::guard('web')->once([...$credentials, 'is_active' => true, 'role' => 'tenant'])) {
             return response()->json([
                 'message' => 'These credentials do not match our records, or this account has been deactivated.',
             ], 422);
         }
 
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
 
         return response()->json([
             'token' => $user->createToken('mobile')->plainTextToken,

@@ -179,6 +179,32 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
       _rentalSection = RentalSection.myRental;
     }
     _wasLoggedIn = loggedIn;
+
+    // Signed out by the server (account deactivated): close whatever was
+    // open on top and say why.
+    final notice = loggedIn
+        ? null
+        : AppStateScope.of(context).takeSignOutNotice();
+    if (notice != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
+        showDialog<void>(
+          context: context,
+          useRootNavigator: true,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Signed out'),
+            content: Text(notice),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      });
+    }
   }
 
   /// "View" on a notification: go to the part of the app it is about — the

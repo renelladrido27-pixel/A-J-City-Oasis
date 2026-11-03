@@ -27,7 +27,22 @@ class BookingDraft {
 class AppState extends ChangeNotifier {
   final ApiClient _api = ApiClient();
 
+  AppState() {
+    _api.onAccountDeactivated = _signedOutByServer;
+  }
+
   bool isLoggedIn = false;
+
+  /// Why the app signed the tenant out on its own (the admin deactivated
+  /// the account) — shown once, then cleared by [takeSignOutNotice].
+  String? signOutNotice;
+
+  String? takeSignOutNotice() {
+    final notice = signOutNotice;
+    signOutNotice = null;
+    return notice;
+  }
+
   bool isBootstrapping = true;
 
   TenantProfile? profile;
@@ -220,6 +235,19 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       // Best-effort — clear local state regardless.
     }
+    await _clearSession();
+  }
+
+  /// The admin deactivated this account: the server already revoked the
+  /// token, so just forget everything and say why.
+  Future<void> _signedOutByServer(String message) async {
+    // Several requests can fail at once; only the first signs out.
+    if (!_api.hasToken) return;
+    signOutNotice = message;
+    await _clearSession();
+  }
+
+  Future<void> _clearSession() async {
     await _api.setToken(null);
     isLoggedIn = false;
     profile = null;
