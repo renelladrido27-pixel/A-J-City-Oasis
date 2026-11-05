@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -24,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The site uses Bootstrap 5, not Tailwind. Laravel's default (Tailwind)
+        // pagination renders unstyled here, with a giant "<" arrow on page 2+.
+        Paginator::useBootstrapFive();
+
         // Brute-force protection once the app is on the public internet: a few
         // password guesses per account per IP, and a cap on account creation
         // (the mobile "create account & book" endpoint also makes accounts).

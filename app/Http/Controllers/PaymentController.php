@@ -27,8 +27,16 @@ class PaymentController extends Controller
 
     public function index(Request $request): View
     {
+        $statusFilter = array_key_exists((string) $request->query('status'), Payment::STATUS_FILTERS)
+            ? $request->query('status')
+            : null;
+
         $payments = $request->user()->isAdmin()
-            ? Payment::with(['lease.tenant', 'booking.tenant', 'utilityBill'])->latest()->paginate(25)
+            ? Payment::with(['lease.tenant', 'booking.tenant', 'utilityBill'])
+                ->when($statusFilter, fn ($q) => $q->withDisplayStatus($statusFilter))
+                ->latest()
+                ->paginate(25)
+                ->withQueryString()
             : Payment::whereHas('lease', fn ($q) => $q->where('tenant_id', $request->user()->id))
                 ->orWhereHas('booking', fn ($q) => $q->where('user_id', $request->user()->id))
                 ->with(['lease', 'booking', 'utilityBill'])
@@ -53,7 +61,7 @@ class PaymentController extends Controller
             $this->notifications->markTypesRead($request->user(), ['payment']);
         }
 
-        return view('payments.index', compact('payments', 'outstandingBalance', 'nextDueDate'));
+        return view('payments.index', compact('payments', 'outstandingBalance', 'nextDueDate', 'statusFilter'));
     }
 
     /**

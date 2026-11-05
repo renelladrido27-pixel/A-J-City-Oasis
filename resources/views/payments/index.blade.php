@@ -20,6 +20,22 @@
     </div>
 @endif
 
+@if (auth()->user()->isAdmin())
+    <form method="GET" action="{{ route('admin.payments.index') }}" class="d-flex align-items-center gap-2 mb-3">
+        <label for="status-filter" class="form-label mb-0 text-muted small text-uppercase">Status</label>
+        <select id="status-filter" name="status" class="form-select" style="max-width: 220px;" onchange="this.form.submit()">
+            <option value="">All statuses</option>
+            @foreach (\App\Models\Payment::STATUS_FILTERS as $value => $label)
+                <option value="{{ $value }}" @selected($statusFilter === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+        <noscript><button class="btn btn-outline-secondary">Apply</button></noscript>
+        @if ($statusFilter)
+            <a href="{{ route('admin.payments.index') }}" class="btn btn-outline-secondary">Clear</a>
+        @endif
+    </form>
+@endif
+
 <div class="card border-0 shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -84,7 +100,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6"><x-empty-state icon="bi-credit-card" message="No payments yet." /></td></tr>
+                    <tr><td colspan="6"><x-empty-state icon="bi-credit-card" :message="($statusFilter ?? null) ? 'No payments with this status.' : 'No payments yet.'" /></td></tr>
                 @endforelse
             </tbody>
         </table>

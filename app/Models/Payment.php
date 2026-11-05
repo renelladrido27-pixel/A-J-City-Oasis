@@ -56,6 +56,39 @@ class Payment extends Model
      */
     public const UNPAID = ['pending', 'overdue'];
 
+    /**
+     * Choices for the admin payments "Status" dropdown. They match the badge
+     * the list shows (grace period / overdue are worked out from the due date,
+     * not only the stored status), so filtering never disagrees with the badge.
+     */
+    public const STATUS_FILTERS = [
+        'pending' => 'Pending',
+        'grace_period' => 'Grace period',
+        'overdue' => 'Overdue',
+        'paid' => 'Paid',
+        'refunded' => 'Refunded',
+    ];
+
+    /**
+     * Limit to payments whose displayed status is $status — the same rules as
+     * isWithinGracePeriod() / isOverdue(): grace runs 30 days from the due date.
+     */
+    public function scopeWithDisplayStatus($query, string $status)
+    {
+        $today = now()->toDateString();
+        $graceEnded = now()->subDays(30)->toDateString();
+
+        return match ($status) {
+            'pending' => $query->where('status', 'pending')->whereDate('due_date', '>', $today),
+            'grace_period' => $query->where('status', 'pending')
+                ->whereDate('due_date', '<=', $today)
+                ->whereDate('due_date', '>', $graceEnded),
+            'overdue' => $query->where(fn ($q) => $q->where('status', 'overdue')
+                ->orWhere(fn ($q2) => $q2->where('status', 'pending')->whereDate('due_date', '<=', $graceEnded))),
+            default => $query->where('status', $status),
+        };
+    }
+
     public function isPayable(): bool
     {
         return in_array($this->status, self::UNPAID, true);
