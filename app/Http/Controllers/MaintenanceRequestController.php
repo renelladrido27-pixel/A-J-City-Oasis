@@ -19,7 +19,7 @@ class MaintenanceRequestController extends Controller
     public function index(Request $request): View
     {
         $requests = match (true) {
-            $request->user()->isAdmin(), $request->user()->isStaff() => MaintenanceRequest::with(['tenant', 'room'])->latest()->paginate(25),
+            $request->user()->isAdmin() => MaintenanceRequest::with(['tenant', 'room'])->latest()->paginate(25),
             default => MaintenanceRequest::where('tenant_id', $request->user()->id)->with(['room'])->latest()->paginate(25),
         };
 
@@ -27,16 +27,15 @@ class MaintenanceRequestController extends Controller
             ? $request->user()->leases()->where('status', 'active')->first()
             : null;
 
-        if ($request->user()->isTenant() || $request->user()->isAdmin() || $request->user()->isStaff()) {
+        if ($request->user()->isTenant() || $request->user()->isAdmin()) {
             $this->notifications->markTypesRead($request->user(), ['maintenance']);
         }
 
-        // Names to pick from as you type: anyone assigned before, plus staff
-        // accounts — with their last-used phone, so picking a name fills it in.
-        $assignees = $request->user()->isAdmin() || $request->user()->isStaff()
+        // Names to pick from as you type: anyone assigned before, with their
+        // last-used phone, so picking a name fills it in.
+        $assignees = $request->user()->isAdmin()
             ? MaintenanceRequest::whereNotNull('assignee_name')->latest('updated_at')->get(['assignee_name', 'assignee_phone'])
                 ->map(fn ($r) => ['name' => $r->assignee_name, 'phone' => $r->assignee_phone])
-                ->concat(User::where('role', 'staff')->get(['name', 'phone'])->map(fn ($u) => ['name' => $u->name, 'phone' => $u->phone]))
                 ->unique(fn ($a) => mb_strtolower($a['name']))
                 ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
                 ->values()
@@ -72,7 +71,7 @@ class MaintenanceRequestController extends Controller
             'status' => 'pending',
         ]);
 
-        $this->notifications->notifyAdminsAndStaff(
+        $this->notifications->notifyAdmins(
             'New maintenance request',
             "{$lease->tenant->name} reported a {$validated['category']} issue in Room {$lease->room->room_number}.",
             'maintenance',
@@ -82,7 +81,7 @@ class MaintenanceRequestController extends Controller
     }
 
     /**
-     * Admin/staff assign the work (who, and when). They don't set the status:
+     * The admin assigns the work (who, and when). They don't set the status:
      * it follows the assignment, and the tenant closes the request.
      */
     public function update(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse

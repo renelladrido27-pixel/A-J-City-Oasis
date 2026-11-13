@@ -185,7 +185,6 @@ class MoveOutSettlementTest extends TestCase
         $moveOut = $this->requestMoveOut();
 
         $this->actingAs($this->lease->tenant)->post(route('admin.move-outs.finalize', $moveOut))->assertForbidden();
-        $this->actingAs(User::factory()->staff()->create())->post(route('admin.move-outs.finalize', $moveOut))->assertForbidden();
 
         $this->assertFalse($moveOut->fresh()->isFinalized());
     }

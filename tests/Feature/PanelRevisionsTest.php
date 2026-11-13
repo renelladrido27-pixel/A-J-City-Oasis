@@ -307,4 +307,22 @@ class PanelRevisionsTest extends TestCase
             $web->assertSee($section['heading']);
         }
     }
+
+    public function test_there_is_no_staff_role_any_more(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('admin.users.create'))->assertOk()->assertDontSee('value="staff"', false);
+        $this->actingAs($admin)->post(route('admin.users.store'), [
+            'first_name' => 'Juan', 'last_name' => 'Dela Cruz', 'email' => 'juan@example.com', 'role' => 'staff',
+            'password' => 'Secret#123', 'password_confirmation' => 'Secret#123',
+        ])->assertSessionHasErrors('role');
+        $this->assertDatabaseMissing('users', ['email' => 'juan@example.com']);
+
+        // An old staff account is merged into the admin role.
+        $old = User::factory()->create(['role' => 'staff']);
+        (require database_path('migrations/2026_11_13_100000_merge_staff_accounts_into_admin.php'))->up();
+        $this->assertSame('admin', $old->fresh()->role);
+    }
+
 }

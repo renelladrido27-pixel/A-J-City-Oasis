@@ -38,7 +38,7 @@ class UserController extends Controller
             ...AccountRules::name(),
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => AccountRules::phone(required: false),
-            'role' => ['required', Rule::in(['admin', 'staff', 'tenant'])],
+            'role' => ['required', Rule::in(['admin', 'tenant'])],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], AccountRules::messages());
 
@@ -70,7 +70,7 @@ class UserController extends Controller
             ...AccountRules::name(),
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'phone' => AccountRules::phone(required: false),
-            'role' => ['required', Rule::in(['admin', 'staff', 'tenant'])],
+            'role' => ['required', Rule::in(['admin', 'tenant'])],
         ], AccountRules::messages());
 
         $user->update($validated);

@@ -1,4 +1,4 @@
-@extends(auth()->user()->isAdmin() || auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
+@extends(auth()->user()->isAdmin() ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Maintenance Requests')
 
@@ -54,7 +54,7 @@
                         </td>
                         <td>{{ $request->scheduled_date?->format('M d, Y') ?? '—' }}</td>
                         @if (! auth()->user()->isTenant())
-                            {{-- Admin/staff only assign. The status follows the assignment, and the tenant closes the request. --}}
+                            {{-- The admin only assigns. The status follows the assignment, and the tenant closes the request. --}}
                             <td>
                                 @if ($request->isOpen())
                                     {{-- A button that drops down the assign form, so the list stays readable.
@@ -66,7 +66,7 @@
                                                 aria-expanded="false" @if ($reopen) data-reopen="1" @endif>
                                             <i class="bi {{ $request->isAssigned() ? 'bi-pencil' : 'bi-person-plus' }} me-1"></i>{{ $request->isAssigned() ? 'Change' : 'Assign' }}
                                         </button>
-                                        <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.maintenance-requests.update', $request) : route('staff.maintenance.update', $request) }}"
+                                        <form method="POST" action="{{ route('admin.maintenance-requests.update', $request) }}"
                                               class="dropdown-menu dropdown-menu-end p-3 shadow assign-form" style="width: 19rem;">
                                             @csrf @method('PUT')
                                             <input type="hidden" name="request_id" value="{{ $request->id }}">

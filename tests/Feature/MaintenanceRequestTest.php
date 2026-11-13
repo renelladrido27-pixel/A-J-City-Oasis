@@ -110,12 +110,11 @@ class MaintenanceRequestTest extends TestCase
     public function test_admin_assigns_who_and_when_and_the_request_becomes_in_progress(): void
     {
         $admin = User::factory()->admin()->create();
-        $staff = User::factory()->staff()->create();
         $request = $this->requestFor(Lease::factory()->create());
 
         $this->actingAs($admin)
             ->put(route('admin.maintenance-requests.update', $request), [
-                'assignee_name' => $staff->name,
+                'assignee_name' => 'Mang Ben',
                 'scheduled_date' => now()->addDays(2)->toDateString(),
             ])
             ->assertRedirect()
@@ -123,7 +122,7 @@ class MaintenanceRequestTest extends TestCase
 
         $request->refresh();
         $this->assertSame('in_progress', $request->status);
-        $this->assertSame($staff->name, $request->assignee_name);
+        $this->assertSame('Mang Ben', $request->assignee_name);
         $this->assertSame(now()->addDays(2)->toDateString(), $request->scheduled_date->toDateString());
         $this->assertNull($request->resolved_at);
         $this->assertDatabaseHas('notifications', [
@@ -132,25 +131,25 @@ class MaintenanceRequestTest extends TestCase
         ]);
     }
 
-    public function test_admin_and_staff_cannot_set_the_status_themselves(): void
+    public function test_the_admin_cannot_set_the_status_themselves(): void
     {
         $request = $this->requestFor(Lease::factory()->create());
-        $staff = User::factory()->staff()->create();
+        $admin = User::factory()->admin()->create();
 
         // A status sent anyway (e.g. from an old page) is ignored.
-        $this->actingAs(User::factory()->admin()->create())
+        $this->actingAs($admin)
             ->put(route('admin.maintenance-requests.update', $request), ['status' => 'resolved'])
             ->assertRedirect();
         $this->assertSame('pending', $request->fresh()->status);
 
-        $this->actingAs($staff)
-            ->put(route('staff.maintenance.update', $request), ['status' => 'resolved', 'assignee_name' => $staff->name, 'scheduled_date' => today()->toDateString()])
+        $this->actingAs($admin)
+            ->put(route('admin.maintenance-requests.update', $request), ['status' => 'resolved', 'assignee_name' => 'Mang Ben', 'scheduled_date' => today()->toDateString()])
             ->assertRedirect();
         $this->assertSame('in_progress', $request->fresh()->status);
         $this->assertNull($request->fresh()->resolved_at);
 
         // The page offers assigning only.
-        $this->actingAs($staff)->get(route('staff.maintenance.index'))->assertOk()
+        $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))->assertOk()
             ->assertSee('name="assignee_name"', false)
             ->assertDontSee('name="status"', false)
             ->assertSee('Waiting for the tenant to confirm');
@@ -176,9 +175,8 @@ class MaintenanceRequestTest extends TestCase
     public function test_the_tenant_confirms_the_work_is_done(): void
     {
         $admin = User::factory()->admin()->create();
-        $staff = User::factory()->staff()->create();
         $request = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => $staff->name, 'scheduled_date' => today()->toDateString()]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => 'Mang Ben', 'scheduled_date' => today()->toDateString()]);
 
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
             ->assertSee(route('tenant.maintenance-requests.resolve', $request))
@@ -192,7 +190,7 @@ class MaintenanceRequestTest extends TestCase
         $request->refresh();
         $this->assertSame('resolved', $request->status);
         $this->assertNotNull($request->resolved_at);
-        foreach ([$admin, $staff] as $recipient) {
+        foreach ([$admin] as $recipient) {
             $this->assertDatabaseHas('notifications', [
                 'user_id' => $recipient->id,
                 'title' => 'Maintenance request resolved',
@@ -205,7 +203,7 @@ class MaintenanceRequestTest extends TestCase
             ->assertDontSee('Mark as done')->assertDontSee('bi-trash');
         $this->actingAs($admin)->get(route('admin.maintenance-requests.index'))->assertSee('Confirmed by tenant')
             ->assertDontSee('name="assignee_name"', false);
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => $staff->name, 'scheduled_date' => today()->toDateString()])->assertStatus(422);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $request), ['assignee_name' => 'Mang Ben', 'scheduled_date' => today()->toDateString()])->assertStatus(422);
         $this->actingAs($request->tenant)->post(route('tenant.maintenance-requests.resolve', $request))->assertStatus(422);
     }
 
@@ -286,9 +284,8 @@ class MaintenanceRequestTest extends TestCase
     public function test_a_request_being_worked_on_can_still_be_removed_but_a_resolved_one_cannot(): void
     {
         $admin = User::factory()->admin()->create();
-        $staff = User::factory()->staff()->create(['name' => 'Ramon Cruz']);
         $inProgress = $this->requestFor(Lease::factory()->create());
-        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assignee_name' => $staff->name, 'scheduled_date' => today()->addDays(3)->toDateString()]);
+        $this->actingAs($admin)->put(route('admin.maintenance-requests.update', $inProgress), ['assignee_name' => 'Ramon Cruz', 'scheduled_date' => today()->addDays(3)->toDateString()]);
         $resolved = $this->requestFor(Lease::factory()->create());
         $resolved->update(['status' => 'resolved', 'resolved_at' => now()]);
 
@@ -297,7 +294,7 @@ class MaintenanceRequestTest extends TestCase
         $this->actingAs($inProgress->tenant)->delete(route('tenant.maintenance-requests.destroy', $inProgress))->assertRedirect();
         $this->assertNull($inProgress->fresh());
         $this->assertDatabaseHas('notifications', [
-            'user_id' => $staff->id,
+            'user_id' => $admin->id,
             'title' => 'Maintenance request withdrawn',
             'message' => "{$inProgress->tenant->name} removed the Plumbing request for Room {$inProgress->room->room_number}. Ramon Cruz no longer needs to visit.",
         ]);

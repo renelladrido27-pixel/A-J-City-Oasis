@@ -47,7 +47,6 @@ class LoginController extends Controller
     {
         return match ($role) {
             'admin' => route('admin.dashboard'),
-            'staff' => route('staff.maintenance.index'),
             default => route('tenant.dashboard'),
         };
     }

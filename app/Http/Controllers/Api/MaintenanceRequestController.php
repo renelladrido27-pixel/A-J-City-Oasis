@@ -53,7 +53,7 @@ class MaintenanceRequestController extends Controller
             'status' => 'pending',
         ]);
 
-        $this->notifications->notifyAdminsAndStaff(
+        $this->notifications->notifyAdmins(
             'New maintenance request',
             "{$lease->tenant->name} reported a {$validated['category']} issue in Room {$lease->room->room_number}.",
             'maintenance',

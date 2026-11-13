@@ -78,12 +78,12 @@ class AccountDeactivationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_staff_are_signed_out_too_and_reactivation_lets_them_back_in(): void
+    public function test_admins_are_signed_out_too_and_reactivation_lets_them_back_in(): void
     {
-        $staff = User::factory()->staff()->create();
+        $staff = User::factory()->admin()->create();
 
         $this->deactivate($staff);
-        $this->actingAs($staff->fresh())->get(route('staff.maintenance.index'))->assertRedirect(route('login'));
+        $this->actingAs($staff->fresh())->get(route('admin.maintenance-requests.index'))->assertRedirect(route('login'));
         $this->assertGuest();
 
         $this->actingAs(User::factory()->admin()->create())->post(route('admin.users.toggle-active', $staff));

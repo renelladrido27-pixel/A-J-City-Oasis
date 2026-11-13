@@ -3,7 +3,7 @@
 @section('title', 'Users')
 
 @section('content')
-<x-page-header title="Users" subtitle="Admin and staff accounts — for tenants, see the Tenants page">
+<x-page-header title="Users" subtitle="Admin accounts — for tenants, see the Tenants page">
     <x-slot:actions>
         <a href="{{ route('admin.users.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Account</a>
     </x-slot:actions>
@@ -12,7 +12,7 @@
 <div class="mb-3">
     <div class="btn-group" role="group" aria-label="Filter by role">
         <a href="{{ route('admin.users.index') }}" class="btn btn-sm btn-outline-secondary {{ request('role') ? '' : 'active' }}">All</a>
-        @foreach (['admin', 'staff', 'tenant'] as $role)
+        @foreach (['admin', 'tenant'] as $role)
             <a href="{{ route('admin.users.index', ['role' => $role]) }}" class="btn btn-sm btn-outline-secondary {{ request('role') === $role ? 'active' : '' }}">{{ ucfirst($role) }}</a>
         @endforeach
     </div>

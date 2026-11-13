@@ -16,7 +16,6 @@ class HomeController extends Controller
         if (auth()->check()) {
             return redirect()->route(match (auth()->user()->role) {
                 'admin' => 'admin.dashboard',
-                'staff' => 'staff.maintenance.index',
                 default => 'tenant.dashboard',
             });
         }

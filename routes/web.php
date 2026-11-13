@@ -128,12 +128,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/move-outs/{moveOut}/finalize', [MoveOutController::class, 'finalize'])->name('move-outs.finalize');
 });
 
-// Staff
-Route::middleware(['auth', 'role:admin,staff'])->prefix('staff')->name('staff.')->group(function () {
-    Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index'])->name('maintenance.index');
-    Route::put('/maintenance-requests/{maintenanceRequest}', [MaintenanceRequestController::class, 'update'])->name('maintenance.update');
-});
-
 // Tenant
 Route::middleware(['auth', 'role:tenant', 'email.verified'])->prefix('tenant')->name('tenant.')->group(function () {
     Route::get('/dashboard', [LeaseController::class, 'index'])->name('dashboard');

@@ -19,7 +19,6 @@
                 <label class="form-label">Role</label>
                 <select name="role" class="form-select" required>
                     <option value="tenant" @selected(old('role') === 'tenant')>Tenant</option>
-                    <option value="staff" @selected(old('role') === 'staff')>Staff (Caretaker)</option>
                     <option value="admin" @selected(old('role') === 'admin')>Admin</option>
                 </select>
             </div>

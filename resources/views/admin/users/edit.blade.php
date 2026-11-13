@@ -18,8 +18,8 @@
             <div class="mb-3">
                 <label class="form-label">Role</label>
                 <select name="role" class="form-select" required @disabled($user->id === auth()->id())>
-                    @foreach (['tenant', 'staff', 'admin'] as $role)
-                        <option value="{{ $role }}" @selected(old('role', $user->role) === $role)>{{ $role === 'staff' ? 'Staff (Caretaker)' : ucfirst($role) }}</option>
+                    @foreach (['tenant', 'admin'] as $role)
+                        <option value="{{ $role }}" @selected(old('role', $user->role) === $role)>{{ ucfirst($role) }}</option>
                     @endforeach
                 </select>
                 @if ($user->id === auth()->id())

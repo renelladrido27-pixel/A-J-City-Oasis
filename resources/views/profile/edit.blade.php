@@ -1,4 +1,4 @@
-@extends(auth()->user()->isAdmin() || auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
+@extends(auth()->user()->isAdmin() ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'My Profile')
 

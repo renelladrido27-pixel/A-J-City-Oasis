@@ -93,8 +93,6 @@
                     <a class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}"><i class="bi bi-megaphone me-2"></i>Announce.</a>
                     <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}"><i class="bi bi-graph-up me-2"></i>Reports</a>
                     <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}"><i class="bi bi-person-badge me-2"></i>Users</a>
-                @elseif (auth()->user()->isStaff())
-                    <a class="nav-link {{ request()->routeIs('staff.maintenance.*') ? 'active' : '' }}" href="{{ route('staff.maintenance.index') }}"><i class="bi bi-tools me-2"></i>Maintenance Queue</a>
                 @endif
 
                 <hr class="border-secondary my-2">

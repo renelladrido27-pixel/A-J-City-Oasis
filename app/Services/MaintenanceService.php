@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Who moves a maintenance request along:
- *  - admin/staff only ASSIGN it (who does the work, and when) — the status
+ *  - the admin only ASSIGNS it (who does the work, and when) — the status
  *    follows from that: assigned = in progress, unassigned = pending;
  *  - the TENANT who reported it closes it, by confirming the work is done
  *    (resolved) or withdrawing a request nobody has started (cancelled).
@@ -26,9 +26,6 @@ class MaintenanceService
         abort_unless($request->isOpen(), 422, 'This request is already closed.');
 
         $name = filled($name) ? trim($name) : null;
-        // A staff account with that name: use its phone when none was typed.
-        $staff = $name ? User::where('role', 'staff')->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first() : null;
-        $phone = filled($phone) ? $phone : $staff?->phone;
         $previousName = $request->assignee_name;
         $previousDate = $request->scheduled_date?->toDateString();
 
@@ -52,17 +49,6 @@ class MaintenanceService
             : "Your {$request->category} request is waiting to be assigned again.";
 
         $this->notifications->notify($request->tenant, 'Maintenance request updated', $message, 'maintenance');
-
-        // If the name belongs to a staff account, let them know in the system too.
-        if ($staff && $name !== $previousName && $staff->id !== $by->id) {
-            $this->notifications->notify(
-                $staff,
-                'Maintenance job assigned to you',
-                "{$request->category} in Room {$request->room->room_number}"
-                    .($request->scheduled_date ? ', scheduled for '.$request->scheduled_date->format('M d, Y') : '').'.',
-                'maintenance',
-            );
-        }
     }
 
     /** The tenant confirms the work was done. */
@@ -74,7 +60,7 @@ class MaintenanceService
 
         $request->update(['status' => 'resolved', 'resolved_at' => now()]);
 
-        $this->notifications->notifyAdminsAndStaff(
+        $this->notifications->notifyAdmins(
             'Maintenance request resolved',
             "{$request->tenant->name} confirmed the {$request->category} issue in Room {$request->room->room_number} is fixed.",
             'maintenance',
@@ -88,7 +74,7 @@ class MaintenanceService
 
         $request->update(['status' => 'cancelled']);
 
-        $this->notifications->notifyAdminsAndStaff(
+        $this->notifications->notifyAdmins(
             'Maintenance request cancelled',
             "{$request->tenant->name} cancelled the {$request->category} request for Room {$request->room->room_number}.",
             'maintenance',
@@ -110,10 +96,10 @@ class MaintenanceService
 
         $request->delete();
 
-        // Admins and staff were told about the request when it came in — tell them
+        // Admins were told about the request when it came in — tell them
         // it's gone (and, if someone was assigned, that the visit is off).
         if ($wasOpen) {
-            $this->notifications->notifyAdminsAndStaff(
+            $this->notifications->notifyAdmins(
                 'Maintenance request withdrawn',
                 $summary.($assignee ? " {$assignee} no longer needs to visit." : ''),
                 'maintenance',

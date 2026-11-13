@@ -334,12 +334,10 @@ class PanelFeedbackTest extends TestCase
     public function test_the_tenant_sees_who_is_assigned_and_when(): void
     {
         $request = $this->maintenanceRequest();
-        $staff = User::factory()->staff()->create(['name' => 'Ramon Cruz', 'phone' => '09181112222']);
-
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()->assertSee('Not yet assigned');
 
         $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'assignee_name' => $staff->name, 'scheduled_date' => '2026-10-12',
+            'assignee_name' => 'Ramon Cruz', 'assignee_phone' => '09181112222', 'scheduled_date' => '2026-10-12',
         ])->assertRedirect();
 
         $this->actingAs($request->tenant)->get(route('tenant.maintenance-requests.index'))->assertOk()
@@ -353,18 +351,6 @@ class PanelFeedbackTest extends TestCase
         Sanctum::actingAs($request->tenant);
         $this->getJson('/api/maintenance-requests')->assertOk()->assertJsonPath('requests.0.assigned_to.name', 'Ramon Cruz')
             ->assertJsonPath('requests.0.scheduled_date', '2026-10-12');
-    }
-
-    public function test_the_assigned_staff_member_is_notified(): void
-    {
-        $request = $this->maintenanceRequest();
-        $staff = User::factory()->staff()->create();
-
-        $this->actingAs(User::factory()->admin()->create())->put(route('admin.maintenance-requests.update', $request), [
-            'assignee_name' => $staff->name, 'scheduled_date' => today()->toDateString(),
-        ]);
-
-        $this->assertDatabaseHas('notifications', ['user_id' => $staff->id, 'title' => 'Maintenance job assigned to you']);
     }
 
     public function test_the_assign_form_drops_down_from_a_button_and_can_unassign(): void

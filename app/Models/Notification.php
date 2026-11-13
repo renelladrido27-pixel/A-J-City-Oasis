@@ -53,13 +53,6 @@ class Notification extends Model
             };
         }
 
-        if ($user->isStaff()) {
-            return match ($this->type) {
-                'maintenance' => route('staff.maintenance.index'),
-                default => null,
-            };
-        }
-
         if ($user->isAdmin()) {
             return match ($this->type) {
                 'booking' => route('admin.bookings.index'),
@@ -93,7 +86,7 @@ class Notification extends Model
 
     /**
      * Category filter options for the notifications page — same type groupings as
-     * tenantNavSections(), but with a friendly label since this also serves admin/staff.
+     * tenantNavSections(), but with a friendly label since this also serves admins.
      */
     public static function categories(): array
     {

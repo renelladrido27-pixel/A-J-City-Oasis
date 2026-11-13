@@ -40,13 +40,6 @@ class NotificationService
         );
     }
 
-    public function notifyAdminsAndStaff(string $title, string $message, string $type = 'general'): void
-    {
-        User::whereIn('role', ['admin', 'staff'])->each(
-            fn (User $user) => $this->notify($user, $title, $message, $type)
-        );
-    }
-
     /**
      * Marks a user's unread notifications of the given types as read — used
      * to clear a nav section's unread indicator as soon as the user visits

@@ -20,7 +20,7 @@
                 @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-4">
-                <x-photo-upload name="photo" label="Photo of the issue" hint="A clear photo helps staff assess the problem faster." />
+                <x-photo-upload name="photo" label="Photo of the issue" hint="A clear photo helps us assess the problem faster." />
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-primary"><i class="bi bi-send me-1"></i>Submit</button>
