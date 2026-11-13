@@ -30,7 +30,6 @@ class MaintenanceService
         $previousDate = $request->scheduled_date?->toDateString();
 
         $request->update([
-            'assigned_to' => null,
             'assignee_name' => $name,
             'assignee_phone' => $name ? $phone : null,
             'scheduled_date' => $name ? $scheduledDate : null,

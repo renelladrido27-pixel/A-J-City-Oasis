@@ -48,7 +48,6 @@ class MaintenanceRequest extends Model
         'description',
         'photo',
         'status',
-        'assigned_to',
         'assignee_name',
         'assignee_phone',
         'scheduled_date',
@@ -82,12 +81,6 @@ class MaintenanceRequest extends Model
     public function isAssigned(): bool
     {
         return filled($this->assignee_name);
-    }
-
-    /** Old assignments pointed at an account; new ones only store the name. */
-    public function assignee(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     /**

@@ -109,11 +109,6 @@ class User extends Authenticatable
         return $this->hasMany(MaintenanceRequest::class, 'tenant_id');
     }
 
-    public function assignedMaintenanceRequests(): HasMany
-    {
-        return $this->hasMany(MaintenanceRequest::class, 'assigned_to');
-    }
-
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class);

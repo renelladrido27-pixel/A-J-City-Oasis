@@ -16,7 +16,7 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         if (app()->isProduction()) {
-            $this->command?->warn('Skipped demo admin/staff accounts in production. Run: php artisan app:create-admin you@example.com');
+            $this->command?->warn('Skipped the demo admin account in production. Run: php artisan app:create-admin you@example.com');
 
             return;
         }
@@ -30,17 +30,6 @@ class AdminUserSeeder extends Seeder
             'email' => 'admin@ajoasis.test',
             'password' => Hash::make('password'),
             'role' => 'admin',
-            'phone' => null,
-            'email_verified_at' => now(),
-        ]);
-
-        User::create([
-            'name' => 'Caretaker Staff',
-            'first_name' => 'Caretaker',
-            'last_name' => 'Staff',
-            'email' => 'staff@ajoasis.test',
-            'password' => Hash::make('password'),
-            'role' => 'staff',
             'phone' => null,
             'email_verified_at' => now(),
         ]);

@@ -117,7 +117,7 @@
                                         </form>
                                     @endif
                                     @if ($request->isDeletable())
-                                        <form method="POST" action="{{ route('tenant.maintenance-requests.destroy', $request) }}" onsubmit="return confirm('Remove this maintenance request? {{ $request->assigned_to ? 'The person assigned will be told not to come. ' : '' }}This cannot be undone.')">
+                                        <form method="POST" action="{{ route('tenant.maintenance-requests.destroy', $request) }}" onsubmit="return confirm('Remove this maintenance request? {{ $request->isAssigned() ? 'The person assigned will be told not to come. ' : '' }}This cannot be undone.')">
                                             @csrf @method('DELETE')
                                             <button class="btn btn-sm btn-outline-danger" data-loading-text="Removing…"><i class="bi bi-trash me-1"></i>Remove</button>
                                         </form>

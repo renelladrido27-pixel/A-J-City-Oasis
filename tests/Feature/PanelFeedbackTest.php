@@ -392,7 +392,6 @@ class PanelFeedbackTest extends TestCase
         $request->refresh();
         $this->assertSame('Mang Ben (plumber)', $request->assignee_name);
         $this->assertSame('09171234567', $request->assignee_phone);
-        $this->assertNull($request->assigned_to);
         $this->assertSame('in_progress', $request->status);
         $this->assertTrue($request->canBeMarkedDone());
 

@@ -319,10 +319,11 @@ class PanelRevisionsTest extends TestCase
         ])->assertSessionHasErrors('role');
         $this->assertDatabaseMissing('users', ['email' => 'juan@example.com']);
 
-        // An old staff account is merged into the admin role.
-        $old = User::factory()->create(['role' => 'staff']);
-        (require database_path('migrations/2026_11_13_100000_merge_staff_accounts_into_admin.php'))->up();
-        $this->assertSame('admin', $old->fresh()->role);
+        // The schema has no staff left either: the role can't be stored, and the
+        // old account link for maintenance workers is gone (they're typed-in names).
+        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('maintenance_requests', 'assigned_to'));
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        User::factory()->create(['role' => 'staff']);
     }
 
 }
