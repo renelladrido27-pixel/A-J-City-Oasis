@@ -335,7 +335,7 @@
                     </h3>
                     <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                         <div class="accordion-body text-muted">
-                            You get a one-month grace period on rent and utility payments before it's marked overdue.
+                            You get a one-month grace period on rent payments before it's marked overdue.
                         </div>
                     </div>
                 </div>

@@ -15,7 +15,7 @@ class SendPaymentReminders extends Command
 
     protected $signature = 'app:send-payment-reminders';
 
-    protected $description = 'Remind tenants of unpaid rent and utility bills one week before they are due';
+    protected $description = 'Remind tenants of unpaid rent one week before they are due';
 
     public function handle(NotificationService $notifications): int
     {

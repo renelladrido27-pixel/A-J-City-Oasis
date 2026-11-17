@@ -60,8 +60,8 @@ class RentBillGenerationTest extends TestCase
         // Last month's rent on the same lease, and the next one on another lease.
         Payment::factory()->create(['lease_id' => $lease->id, 'type' => 'rent', 'due_date' => '2026-10-27']);
         Payment::factory()->create(['lease_id' => $otherLease->id, 'type' => 'rent', 'due_date' => '2026-11-27']);
-        // A utility bill due on the same day is not rent.
-        Payment::factory()->create(['lease_id' => $lease->id, 'type' => 'utility', 'due_date' => '2026-11-27']);
+        // Another bill due on the same day is not rent.
+        Payment::factory()->create(['lease_id' => $lease->id, 'type' => 'transfer_adjustment', 'due_date' => '2026-11-27']);
 
         $this->actingAs($admin)->post(route('admin.leases.generate-rent', $lease))->assertSessionHas('status');
 

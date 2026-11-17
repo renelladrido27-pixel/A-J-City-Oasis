@@ -48,7 +48,6 @@ void main() {
 
   group('AppNotification', () {
     test('groups server types the way the website filter does', () {
-      expect(_notification(type: 'utility').category, 'payment');
       expect(_notification(type: 'transfer').category, 'lease');
       expect(_notification(type: 'move_out').category, 'lease');
       expect(_notification(type: 'maintenance').category, 'maintenance');

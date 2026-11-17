@@ -24,8 +24,6 @@ class PaymentResource extends JsonResource
             // The parts of the upfront booking payment (advance, deposit, security
             // deposit); empty for ordinary single-amount bills.
             'breakdown' => $this->hasBreakdown() ? $this->lines() : [],
-            // The photo of the actual utility bill the admin attached, if any.
-            'bill_photo_url' => $this->utilityBill?->receiptUrl(),
         ];
     }
 }

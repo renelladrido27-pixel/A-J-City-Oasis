@@ -3,16 +3,13 @@ import 'receipt.dart';
 class PaymentRecord {
   final int id;
 
-  /// rent, utility, transfer_adjustment, move_out_balance…
+  /// rent, transfer_adjustment, move_out_balance…
   final String type;
   final String monthLabel;
   final double amount;
   final String status;
   final DateTime dueDate;
   final DateTime paidOn;
-
-  /// Photo of the utility bill itself, when the admin attached one.
-  final String? billPhotoUrl;
 
   /// "Room 202 · Main Building".
   final String? room;
@@ -29,7 +26,6 @@ class PaymentRecord {
     required this.status,
     required this.dueDate,
     required this.paidOn,
-    this.billPhotoUrl,
     this.room,
     this.breakdown = const [],
   });
@@ -47,14 +43,13 @@ class PaymentRecord {
       amount: (json['amount'] as num).toDouble(),
       status: _titleCase(json['status'] as String),
       dueDate: dueDate,
-      billPhotoUrl: json['bill_photo_url'] as String?,
       room: json['room'] as String?,
       breakdown: PaymentLine.listFrom(json['breakdown']),
       paidOn: DateTime.tryParse(json['paid_at']?.toString() ?? '') ?? dueDate,
     );
   }
 
-  /// "Rent", "Utility", "Transfer adjustment" — as the website labels them.
+  /// "Rent", "Transfer adjustment" — as the website labels them.
   String get typeLabel => _titleCase(type.replaceAll('_', ' '));
 
   static String _titleCase(String s) =>

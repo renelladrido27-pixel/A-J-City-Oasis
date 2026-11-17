@@ -58,7 +58,7 @@
                             @if ($hasUnread(['lease', 'transfer', 'move_out']))<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"><span class="visually-hidden">Unread updates</span></span>@endif
                         </a></li>
                         <li class="nav-item"><a class="nav-link position-relative {{ request()->routeIs('tenant.payments.*') ? 'active' : '' }}" href="{{ route('tenant.payments.index') }}"><i class="bi bi-credit-card me-1"></i>My Payments
-                            @if ($hasUnread(['payment', 'utility']))<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"><span class="visually-hidden">Unread updates</span></span>@endif
+                            @if ($hasUnread(['payment']))<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"><span class="visually-hidden">Unread updates</span></span>@endif
                         </a></li>
                         <li class="nav-item"><a class="nav-link position-relative {{ request()->routeIs('tenant.maintenance-requests.*') ? 'active' : '' }}" href="{{ route('tenant.maintenance-requests.index') }}"><i class="bi bi-tools me-1"></i>Maintenance
                             @if ($hasUnread(['maintenance']))<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"><span class="visually-hidden">Unread updates</span></span>@endif

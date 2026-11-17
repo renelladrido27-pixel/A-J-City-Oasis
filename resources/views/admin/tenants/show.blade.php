@@ -65,15 +65,11 @@
             </div>
 
             <div class="row g-3 small">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <span class="text-muted text-uppercase" style="font-size: .75rem;">Payments</span>
                     <p class="mb-0">{{ $lease->payments->count() }} recorded &middot; ₱{{ number_format($lease->payments->where('status', 'paid')->sum('amount'), 2) }} paid</p>
                 </div>
-                <div class="col-md-4">
-                    <span class="text-muted text-uppercase" style="font-size: .75rem;">Utility Bills</span>
-                    <p class="mb-0">{{ $lease->utilityBills->count() }} recorded</p>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <span class="text-muted text-uppercase" style="font-size: .75rem;">Maintenance Requests</span>
                     <p class="mb-0">{{ $lease->maintenanceRequests->count() }} submitted</p>
                 </div>

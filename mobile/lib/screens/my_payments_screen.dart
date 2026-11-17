@@ -297,25 +297,7 @@ class _BillCard extends StatelessWidget {
               ),
             ],
           ),
-          if (p.billPhotoUrl != null)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => BillPhotoScreen(url: p.billPhotoUrl!),
-                  ),
-                ),
-                icon: const Icon(Icons.image_outlined, size: 18),
-                label: const Text('View bill photo'),
-                style: TextButton.styleFrom(
-                  foregroundColor: OasisColors.green,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            )
-          else
-            const SizedBox(height: 14),
+          const SizedBox(height: 14),
           FilledButton(
             onPressed: enabled ? onPay : null,
             style: FilledButton.styleFrom(

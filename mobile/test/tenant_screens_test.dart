@@ -783,7 +783,7 @@ void main() {
       final app = _tenant(due: 4320)
         ..unpaidPayments = [
           _bill(4, 'rent', 3500, due: DateTime(2026, 11, 1)),
-          _bill(5, 'utility', 820, due: DateTime(2026, 11, 5)),
+          _bill(5, 'transfer_adjustment', 820, due: DateTime(2026, 11, 5)),
         ]
         ..paymentHistory = [
           _bill(2, 'rent', 3500, status: 'Paid', due: DateTime(2026, 10, 1)),
@@ -795,7 +795,7 @@ void main() {
       expect(find.text('Next due Nov 1, 2026'), findsOneWidget);
       expect(find.text('BILLS TO PAY'), findsOneWidget);
       expect(find.text('Rent · Nov'), findsOneWidget);
-      expect(find.text('Utility · Nov'), findsOneWidget);
+      expect(find.text('Transfer adjustment · Nov'), findsOneWidget);
       expect(find.text('Due Nov 5, 2026'), findsOneWidget);
       expect(find.text('Pay now'), findsNWidgets(2));
       expect(find.text('Rent · Oct'), findsOneWidget);
@@ -907,7 +907,7 @@ void main() {
   });
 
   group('Receipt', () {
-    Receipt receipt({String? billPhotoUrl, double amount = 3500}) => Receipt(
+    Receipt receipt({double amount = 3500}) => Receipt(
       number: '000012',
       business: 'A&J CITY OASIS',
       businessAddress: 'Koronadal City, South Cotabato',
@@ -919,7 +919,6 @@ void main() {
       amount: amount,
       paidAt: DateTime(2026, 10, 2, 15, 15),
       reference: 'pay-abc-123',
-      billPhotoUrl: billPhotoUrl,
     );
 
     const upfrontParts = [
@@ -1218,8 +1217,6 @@ void main() {
       expect(find.text('Oct 2, 2026 3:15 PM'), findsOneWidget);
       expect(find.text('pay-abc-123'), findsOneWidget);
       expect(find.text('Paid in Full'), findsOneWidget);
-      // No bill photo for rent.
-      expect(find.text('View bill photo'), findsNothing);
       expect(tester.takeException(), isNull);
       if (_shots) {
         await expectLater(
@@ -1227,50 +1224,6 @@ void main() {
           matchesGoldenFile('zz_shots/receipt.png'),
         );
       }
-    });
-
-    testWidgets('a utility receipt also offers the photo of the bill', (
-      tester,
-    ) async {
-      final app = _ReceiptApp(
-        receipt(billPhotoUrl: 'https://example.test/bill.jpg', amount: 450.75),
-      );
-      final payment = _bill(
-        5,
-        'utility',
-        450.75,
-        status: 'Paid',
-        due: DateTime(2026, 10, 5),
-      );
-      await _pump(tester, app, ReceiptScreen(payment: payment));
-
-      expect(find.text('₱450.75'), findsNWidgets(2));
-      expect(find.text('View bill photo'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('an unpaid utility bill shows its photo link before paying', (
-      tester,
-    ) async {
-      final app = _tenant(due: 820)
-        ..unpaidPayments = [
-          PaymentRecord(
-            id: 5,
-            type: 'utility',
-            monthLabel: 'Nov',
-            amount: 820,
-            status: 'Pending',
-            dueDate: DateTime(2026, 11, 5),
-            paidOn: DateTime(2026, 11, 5),
-            billPhotoUrl: 'https://example.test/bill.jpg',
-          ),
-          _bill(4, 'rent', 3500, due: DateTime(2026, 11, 1)),
-        ];
-      await _pump(tester, app, const MyPaymentsScreen());
-
-      // Only the bill that has a photo gets the link.
-      expect(find.text('View bill photo'), findsOneWidget);
-      expect(find.text('Pay now'), findsNWidgets(2));
     });
 
     testWidgets('fits a small phone with a large system font', (tester) async {
@@ -1285,7 +1238,7 @@ void main() {
       );
       await _pump(
         tester,
-        _ReceiptApp(receipt(billPhotoUrl: 'https://example.test/bill.jpg')),
+        _ReceiptApp(receipt()),
         ReceiptScreen(payment: payment),
         width: 320,
       );

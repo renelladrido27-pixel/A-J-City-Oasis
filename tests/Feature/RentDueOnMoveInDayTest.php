@@ -80,7 +80,7 @@ class RentDueOnMoveInDayTest extends TestCase
         $paid = Payment::factory()->create([
             'lease_id' => $oct15->id, 'type' => 'rent', 'due_date' => '2026-11-01', 'status' => 'paid', 'paid_at' => now(),
         ]);
-        $utility = Payment::factory()->create(['lease_id' => $oct15->id, 'type' => 'utility', 'due_date' => '2026-11-01']);
+        $utility = Payment::factory()->create(['lease_id' => $oct15->id, 'type' => 'transfer_adjustment', 'due_date' => '2026-11-01']);
 
         (require database_path('migrations/2026_10_24_100000_move_rent_due_dates_to_the_move_in_day.php'))->up();
 

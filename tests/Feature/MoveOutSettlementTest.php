@@ -138,7 +138,7 @@ class MoveOutSettlementTest extends TestCase
 
     public function test_unpaid_bills_are_settled_against_the_deposit_not_charged_twice(): void
     {
-        $utility = Payment::factory()->for($this->lease)->create(['type' => 'utility', 'amount' => 1500, 'due_date' => '2026-10-05']);
+        $utility = Payment::factory()->for($this->lease)->create(['type' => 'transfer_adjustment', 'amount' => 1500, 'due_date' => '2026-10-05']);
         $moveOut = $this->requestMoveOut();
         $this->assertEquals(round(self::SECURITY + self::DEPOSIT - 1500, 2), $moveOut->refund_amount);
 

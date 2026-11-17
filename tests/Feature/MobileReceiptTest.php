@@ -6,14 +6,13 @@ use App\Models\Booking;
 use App\Models\Lease;
 use App\Models\Payment;
 use App\Models\User;
-use App\Models\UtilityBill;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
  * The app can show a receipt for anything the tenant has paid — the same
- * details as the website's printable receipt — and the photo of a utility bill.
+ * details as the website's printable receipt.
  */
 class MobileReceiptTest extends TestCase
 {
@@ -41,7 +40,6 @@ class MobileReceiptTest extends TestCase
             'due_date' => ['label' => 'Due date', 'date' => '2026-10-27'],
             'refund_note' => null,
             'reference' => 'pay-abc-123',
-            'bill_photo_url' => null,
         ]]);
 
         // Everything on it is also on the website's receipt page.
@@ -161,23 +159,4 @@ class MobileReceiptTest extends TestCase
         $this->actingAs($rent->lease->tenant)->get(route('tenant.payments.index'))->assertOk()->assertDontSee('1 month advance');
     }
 
-    public function test_a_utility_bill_carries_the_photo_the_admin_attached(): void
-    {
-        $lease = Lease::factory()->create();
-        $payment = Payment::factory()->create(['lease_id' => $lease->id, 'type' => 'utility', 'amount' => 820, 'status' => 'paid', 'paid_at' => now()]);
-        UtilityBill::create([
-            'lease_id' => $lease->id, 'payment_id' => $payment->id, 'type' => 'water', 'amount' => 820,
-            'due_date' => $payment->due_date, 'status' => 'paid', 'receipt_photo' => 'utility-receipts/water.jpg',
-            'encoded_by' => User::factory()->admin()->create()->id,
-        ]);
-        $rent = Payment::factory()->create(['lease_id' => $lease->id]);
-        Sanctum::actingAs($lease->tenant);
-
-        $history = collect($this->getJson('/api/payments')->assertOk()->json('history'))->keyBy('id');
-        $this->assertSame(asset('storage/utility-receipts/water.jpg'), $history[$payment->id]['bill_photo_url']);
-        $this->assertNull($history[$rent->id]['bill_photo_url']);
-
-        $this->getJson("/api/payments/{$payment->id}/receipt")->assertOk()
-            ->assertJsonPath('receipt.bill_photo_url', asset('storage/utility-receipts/water.jpg'));
-    }
 }

@@ -70,12 +70,6 @@
                         <td>{{ $payment->due_date->format('M d, Y') }}</td>
                         <td><x-status-badge :status="$displayStatus" /></td>
                         <td class="text-end">
-                            @if ($receiptUrl = $payment->utilityBill?->receiptUrl())
-                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#receiptModal"
-                                        data-receipt-url="{{ $receiptUrl }}" data-receipt-title="{{ ucfirst($payment->utilityBill->type) }} bill — due {{ $payment->due_date->format('M d, Y') }}">
-                                    <i class="bi bi-image me-1"></i>Bill photo
-                                </button>
-                            @endif
                             @if (! auth()->user()->isAdmin() && $payment->isPayable())
                                 <form method="POST" action="{{ route('payments.pay', $payment) }}" class="d-inline">
                                     @csrf
@@ -109,5 +103,4 @@
 
 <div class="mt-3">{{ $payments->links() }}</div>
 
-@include('partials.receipt-photo-modal')
 @endsection

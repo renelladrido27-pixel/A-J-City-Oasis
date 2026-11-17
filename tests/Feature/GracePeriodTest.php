@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 /**
- * Locked rule: one-month grace period for rent and utility payments (backed by
+ * Locked rule: one-month grace period for rent payments (backed by
  * the deposit) before a payment is treated as overdue.
  */
 class GracePeriodTest extends TestCase

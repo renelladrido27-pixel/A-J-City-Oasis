@@ -34,7 +34,7 @@ class TenantController extends Controller
         abort_unless($tenant->isTenant(), 404);
 
         $tenant->load([
-            'leases' => fn ($q) => $q->with(['room.property', 'payments', 'maintenanceRequests', 'utilityBills'])->latest(),
+            'leases' => fn ($q) => $q->with(['room.property', 'payments', 'maintenanceRequests'])->latest(),
         ]);
 
         return view('admin.tenants.show', compact('tenant'));

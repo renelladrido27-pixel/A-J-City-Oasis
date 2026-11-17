@@ -36,19 +36,6 @@ class PaymentCompletionService
 
         $tenant = $payment->lease?->tenant;
 
-        if ($payment->type === 'utility') {
-            $payment->utilityBill?->update(['status' => 'paid']);
-
-            if ($tenant) {
-                $this->notifications->notify(
-                    $tenant,
-                    'Utility payment received',
-                    'Your utility payment of ₱'.number_format($payment->amount, 2).' was received.',
-                    'payment',
-                );
-            }
-        }
-
         if ($payment->type === 'transfer_adjustment') {
             $payment->lease?->roomTransfers()
                 ->where('status', 'pending')

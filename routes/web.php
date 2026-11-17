@@ -22,7 +22,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomTransferController;
-use App\Http\Controllers\UtilityBillController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -110,11 +109,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments/{payment}/record-manual', [PaymentController::class, 'recordManual'])->name('payments.record-manual');
 
-    Route::get('/utility-bills', [UtilityBillController::class, 'index'])->name('utility-bills.index');
-    Route::get('/utility-bills/create', [UtilityBillController::class, 'createAny'])->name('utility-bills.create-any');
-    Route::post('/utility-bills', [UtilityBillController::class, 'storeAny'])->name('utility-bills.store-any');
-    Route::get('/leases/{lease}/utility-bills/create', [UtilityBillController::class, 'create'])->name('utility-bills.create');
-    Route::post('/leases/{lease}/utility-bills', [UtilityBillController::class, 'store'])->name('utility-bills.store');
 
     Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index'])->name('maintenance-requests.index');
     Route::put('/maintenance-requests/{maintenanceRequest}', [MaintenanceRequestController::class, 'update'])->name('maintenance-requests.update');

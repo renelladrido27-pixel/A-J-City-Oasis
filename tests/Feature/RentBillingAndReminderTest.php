@@ -148,14 +148,14 @@ class RentBillingAndReminderTest extends TestCase
     public function test_the_reminder_email_says_what_is_due_and_when(): void
     {
         $this->travelTo('2026-10-25 08:00:00');
-        $payment = Payment::factory()->create(['due_date' => '2026-11-01', 'amount' => 3500, 'type' => 'utility']);
+        $payment = Payment::factory()->create(['due_date' => '2026-11-01', 'amount' => 3500, 'type' => 'transfer_adjustment']);
 
         $mail = new PaymentDueSoonMail($payment);
 
         $mail->assertHasSubject('Reminder: payment due in 7 days');
         $mail->assertSeeInHtml('₱3,500.00');
         $mail->assertSeeInHtml('November 1, 2026');
-        $mail->assertSeeInHtml('utility');
+        $mail->assertSeeInHtml('transfer adjustment');
         $mail->assertSeeInHtml(route('tenant.payments.index'));
     }
 }

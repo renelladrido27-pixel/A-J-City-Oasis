@@ -75,7 +75,6 @@
                     <a class="nav-link {{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}" href="{{ route('admin.bookings.index') }}"><i class="bi bi-calendar-check me-2"></i>Bookings</a>
                     <a class="nav-link {{ request()->routeIs('admin.leases.*') ? 'active' : '' }}" href="{{ route('admin.leases.index') }}"><i class="bi bi-file-earmark-text me-2"></i>Leases</a>
                     <a class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" href="{{ route('admin.payments.index') }}"><i class="bi bi-credit-card me-2"></i>Payments</a>
-                    <a class="nav-link {{ request()->routeIs('admin.utility-bills.*') ? 'active' : '' }}" href="{{ route('admin.utility-bills.index') }}"><i class="bi bi-lightning-charge me-2"></i>Utility Bills</a>
                     <a class="nav-link {{ request()->routeIs('admin.occupancy.*') ? 'active' : '' }}" href="{{ route('admin.occupancy.index') }}"><i class="bi bi-grid-3x3-gap me-2"></i>Occupancy</a>
                     <a class="nav-link position-relative {{ request()->routeIs('admin.room-transfers.*') ? 'active' : '' }}" href="{{ route('admin.room-transfers.index') }}">
                         <i class="bi bi-arrow-left-right me-2"></i>Transfer Req.

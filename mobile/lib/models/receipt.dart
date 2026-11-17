@@ -48,9 +48,6 @@ class Receipt {
   /// The payment gateway's reference, or "Recorded manually" for a walk-in.
   final String reference;
 
-  /// Photo of the utility bill itself, when the admin attached one.
-  final String? billPhotoUrl;
-
   const Receipt({
     required this.number,
     required this.business,
@@ -67,7 +64,6 @@ class Receipt {
     this.dueLabel,
     this.dueDate,
     this.refundNote,
-    this.billPhotoUrl,
   });
 
   factory Receipt.fromJson(Map<String, dynamic> json) {
@@ -91,7 +87,6 @@ class Receipt {
       ),
       refundNote: json['refund_note'] as String?,
       reference: (json['reference'] ?? '').toString(),
-      billPhotoUrl: json['bill_photo_url'] as String?,
     );
   }
 }

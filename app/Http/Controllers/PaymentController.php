@@ -32,14 +32,14 @@ class PaymentController extends Controller
             : null;
 
         $payments = $request->user()->isAdmin()
-            ? Payment::with(['lease.tenant', 'booking.tenant', 'utilityBill'])
+            ? Payment::with(['lease.tenant', 'booking.tenant'])
                 ->when($statusFilter, fn ($q) => $q->withDisplayStatus($statusFilter))
                 ->latest()
                 ->paginate(25)
                 ->withQueryString()
             : Payment::whereHas('lease', fn ($q) => $q->where('tenant_id', $request->user()->id))
                 ->orWhereHas('booking', fn ($q) => $q->where('user_id', $request->user()->id))
-                ->with(['lease', 'booking', 'utilityBill'])
+                ->with(['lease', 'booking'])
                 ->latest()
                 ->paginate(25);
 
@@ -56,7 +56,7 @@ class PaymentController extends Controller
             $nextDueDateRaw = (clone $pending)->orderBy('due_date')->value('due_date');
             $nextDueDate = $nextDueDateRaw ? \Carbon\Carbon::parse($nextDueDateRaw) : null;
 
-            $this->notifications->markTypesRead($request->user(), ['payment', 'utility']);
+            $this->notifications->markTypesRead($request->user(), ['payment']);
         } elseif ($request->user()->isAdmin()) {
             $this->notifications->markTypesRead($request->user(), ['payment']);
         }

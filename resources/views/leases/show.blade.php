@@ -30,7 +30,6 @@
                     @csrf
                     <button class="btn btn-sm btn-outline-primary" data-loading-text="Generating…"><i class="bi bi-cash-coin me-1"></i>Generate Next Month's Rent</button>
                 </form>
-                <a href="{{ route('admin.utility-bills.create', $lease) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-lightning-charge me-1"></i>Encode Utility Bill</a>
             </div>
         @else
             <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
@@ -98,30 +97,6 @@
     </div>
 </div>
 
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-4">
-        <h2 class="h5 mb-3"><i class="bi bi-lightning-charge me-1"></i>Utility Bills</h2>
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead class="table-light">
-                    <tr><th>Type</th><th>Amount</th><th>Due</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                    @forelse ($lease->utilityBills as $bill)
-                        <tr>
-                            <td>{{ ucfirst($bill->type) }}</td>
-                            <td>₱{{ number_format($bill->amount, 2) }}</td>
-                            <td>{{ $bill->due_date->format('M d, Y') }}</td>
-                            <td><x-status-badge :status="$bill->status" /></td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="4"><x-empty-state icon="bi-lightning-charge" message="No utility bills yet." /></td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
 
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">

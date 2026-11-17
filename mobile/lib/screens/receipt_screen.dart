@@ -451,31 +451,6 @@ class _ReceiptBody extends StatelessWidget {
             ),
           ),
         ),
-        if (r.billPhotoUrl != null) ...[
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: ListEntrance(
-              index: 2,
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => BillPhotoScreen(url: r.billPhotoUrl!),
-                  ),
-                ),
-                icon: const Icon(Icons.image_outlined, size: 18),
-                label: const Text('View bill photo'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: OasisColors.green,
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: OasisColors.green),
-                  minimumSize: const Size.fromHeight(46),
-                  shape: shape,
-                ),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -533,45 +508,6 @@ class _Field extends StatelessWidget {
             style: const TextStyle(color: OasisColors.muted, fontSize: 12),
           ),
       ],
-    );
-  }
-}
-
-/// The photo of a utility bill, full screen — pinch to zoom in on the figures.
-class BillPhotoScreen extends StatelessWidget {
-  final String url;
-  const BillPhotoScreen({super.key, required this.url});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        leading: const BackButton(),
-        title: const Text('Bill photo'),
-      ),
-      body: InteractiveViewer(
-        maxScale: 5,
-        child: Center(
-          child: Image.network(
-            url,
-            fit: BoxFit.contain,
-            loadingBuilder: (context, child, progress) => progress == null
-                ? child
-                : const CircularProgressIndicator(color: Colors.white),
-            errorBuilder: (_, _, _) => const Padding(
-              padding: EdgeInsets.all(24),
-              child: Text(
-                'The photo could not be loaded. Check your connection and try again.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

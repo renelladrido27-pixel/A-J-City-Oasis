@@ -44,11 +44,6 @@ class Payment extends Model
         return $this->belongsTo(Booking::class);
     }
 
-    public function utilityBill(): HasOne
-    {
-        return $this->hasOne(UtilityBill::class);
-    }
-
     /**
      * Statuses a tenant still owes. A bill the daily check has flagged
      * "overdue" is owed just as much as a "pending" one — it must stay payable
@@ -171,7 +166,6 @@ class Payment extends Model
         return match ($this->type) {
             'booking_upfront' => "3-month upfront payment (advance, deposit, security){$suffix}",
             'rent' => "Monthly rent{$suffix}",
-            'utility' => "Utility bill{$suffix}",
             'transfer_adjustment' => "Room transfer deposit adjustment{$suffix}",
             'move_out_balance' => "Move-out balance (damages and unpaid bills){$suffix}",
             default => ucfirst(str_replace('_', ' ', $this->type)).' payment',

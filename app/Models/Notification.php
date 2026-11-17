@@ -45,7 +45,7 @@ class Notification extends Model
         if ($user->isTenant()) {
             return match ($this->type) {
                 'booking' => route('tenant.bookings.index'),
-                'payment', 'utility' => route('tenant.payments.index'),
+                'payment' => route('tenant.payments.index'),
                 'lease', 'transfer', 'move_out' => route('tenant.leases.index'),
                 'maintenance' => route('tenant.maintenance-requests.index'),
                 'announcement' => route('tenant.announcements.index'),
@@ -57,7 +57,6 @@ class Notification extends Model
             return match ($this->type) {
                 'booking' => route('admin.bookings.index'),
                 'payment' => route('admin.payments.index'),
-                'utility' => route('admin.utility-bills.index'),
                 'lease', 'move_out' => route('admin.leases.index'),
                 'transfer' => route('admin.room-transfers.index'),
                 'maintenance' => route('admin.maintenance-requests.index'),
@@ -78,7 +77,7 @@ class Notification extends Model
         return [
             'bookings' => ['booking'],
             'lease' => ['lease', 'transfer', 'move_out'],
-            'payments' => ['payment', 'utility'],
+            'payments' => ['payment'],
             'maintenance' => ['maintenance'],
             'announcements' => ['announcement'],
         ];
@@ -93,7 +92,7 @@ class Notification extends Model
         return [
             'booking' => ['label' => 'Bookings', 'types' => ['booking']],
             'lease' => ['label' => 'Lease', 'types' => ['lease', 'transfer', 'move_out']],
-            'payment' => ['label' => 'Payments', 'types' => ['payment', 'utility']],
+            'payment' => ['label' => 'Payments', 'types' => ['payment']],
             'maintenance' => ['label' => 'Maintenance', 'types' => ['maintenance']],
             'announcement' => ['label' => 'Announcements', 'types' => ['announcement']],
         ];

@@ -15,7 +15,7 @@ class PaymentController extends Controller
     use HandlesPaymentGateway;
 
     /**
-     * Rent/utility payment history plus the outstanding balance and next due
+     * Rent payment history plus the outstanding balance and next due
      * date — same computation as the web app's PaymentController::index().
      */
     public function index(Request $request): JsonResponse
@@ -26,7 +26,7 @@ class PaymentController extends Controller
             // The upfront booking payment is paid through the booking screens, but once
             // paid it belongs in the history here so its receipt can be opened.
             ->orWhere(fn ($q) => $q->where('status', 'paid')->whereHas('booking', fn ($b) => $b->where('user_id', $tenant->id)))
-            ->with(['lease.room.property', 'booking.room.property', 'utilityBill'])
+            ->with(['lease.room.property', 'booking.room.property'])
             ->latest('due_date')
             ->get();
 
@@ -69,7 +69,7 @@ class PaymentController extends Controller
         $this->authorizePaymentOwner($request, $payment);
         abort_unless($payment->status === 'paid', 404, 'There is no receipt for this payment yet.');
 
-        $payment->load(['lease.room.property', 'lease.tenant', 'booking.room.property', 'booking.tenant', 'utilityBill']);
+        $payment->load(['lease.room.property', 'lease.tenant', 'booking.room.property', 'booking.tenant']);
         $tenant = $payment->lease?->tenant ?? $payment->booking?->tenant;
         $room = $payment->lease?->room ?? $payment->booking?->room;
 
@@ -88,7 +88,6 @@ class PaymentController extends Controller
             'due_date' => ($due = $payment->receiptDueDate()) ? ['label' => $due['label'], 'date' => $due['date']->toDateString()] : null,
             'refund_note' => $payment->refundNote(),
             'reference' => $payment->xendit_payment_id ?? $payment->xendit_invoice_id ?? 'Recorded manually',
-            'bill_photo_url' => $payment->utilityBill?->receiptUrl(),
         ]]);
     }
 

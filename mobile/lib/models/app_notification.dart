@@ -1,5 +1,5 @@
 /// One row of GET /api/notifications. [type] is the server's notification
-/// type (booking, lease, transfer, move_out, payment, utility, maintenance,
+/// type (booking, lease, transfer, move_out, payment, maintenance,
 /// announcement); [category] groups those the same way the website's
 /// notification filter does (Notification::categories()).
 class AppNotification {
@@ -41,7 +41,6 @@ class AppNotification {
 
   String get category => switch (type) {
     'transfer' || 'move_out' => 'lease',
-    'utility' => 'payment',
     _ => type,
   };
 

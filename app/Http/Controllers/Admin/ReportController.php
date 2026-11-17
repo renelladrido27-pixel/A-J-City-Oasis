@@ -27,10 +27,11 @@ class ReportController extends Controller
         [$from, $to] = $this->resolveDateRange($request);
 
         $report = $request->query('report');
+        [$sort, $dir] = $this->resolveSort($request);
         $result = null;
 
         if ($report && array_key_exists($report, self::REPORTS)) {
-            $result = $this->generate($report, $from, $to);
+            $result = $this->sorted($this->generate($report, $from, $to), $sort, $dir);
         }
 
         return view('admin.reports.index', [
@@ -39,6 +40,8 @@ class ReportController extends Controller
             'to' => $to,
             'activeReport' => $report,
             'result' => $result,
+            'sort' => $sort,
+            'dir' => $dir,
         ]);
     }
 
@@ -48,7 +51,7 @@ class ReportController extends Controller
         abort_unless(array_key_exists($report, self::REPORTS), 404);
 
         [$from, $to] = $this->resolveDateRange($request);
-        $result = $this->generate($report, $from, $to);
+        $result = $this->sorted($this->generate($report, $from, $to), ...$this->resolveSort($request));
 
         $filename = $report.'-'.$from->format('Y-m-d').'-to-'.$to->format('Y-m-d').'.csv';
 
@@ -57,6 +60,9 @@ class ReportController extends Controller
             fputcsv($handle, $result['columns']);
             foreach ($result['rows'] as $row) {
                 fputcsv($handle, $row);
+            }
+            if (isset($result['total'])) {
+                fputcsv($handle, $result['total']);
             }
             fclose($handle);
         };
@@ -77,6 +83,56 @@ class ReportController extends Controller
             : now()->endOfMonth();
 
         return [$from, $to];
+    }
+
+    /** [column index or null for the report's own order, 'asc'|'desc'] */
+    protected function resolveSort(Request $request): array
+    {
+        $sort = $request->query('sort');
+
+        return [
+            is_numeric($sort) ? (int) $sort : null,
+            $request->query('dir') === 'desc' ? 'desc' : 'asc',
+        ];
+    }
+
+    /**
+     * Sorts the rows by one column. Cells are display strings, so dates
+     * ("Nov 05, 2026") and amounts ("1,500.00") are compared as dates and
+     * numbers; blanks ("—") always go last.
+     */
+    protected function sorted(array $result, ?int $col, string $dir): array
+    {
+        if ($col === null || ! isset($result['columns'][$col])) {
+            return $result;
+        }
+
+        usort($result['rows'], function ($a, $b) use ($col, $dir) {
+            [$x, $y] = [$this->sortKey($a[$col] ?? null), $this->sortKey($b[$col] ?? null)];
+
+            if ($x === null || $y === null) {
+                return ($x === null) <=> ($y === null);
+            }
+
+            $cmp = is_float($x) && is_float($y) ? $x <=> $y : strnatcasecmp((string) $x, (string) $y);
+
+            return $dir === 'desc' ? -$cmp : $cmp;
+        });
+
+        return $result;
+    }
+
+    protected function sortKey(?string $cell): float|string|null
+    {
+        if ($cell === null || $cell === '' || $cell === '—') {
+            return null;
+        }
+        if (preg_match('/^[A-Z][a-z]{2} \d{2}, \d{4}$/', $cell)) {
+            return (float) Carbon::createFromFormat('M d, Y', $cell)->startOfDay()->timestamp;
+        }
+        $number = str_replace(',', '', $cell);
+
+        return is_numeric($number) ? (float) $number : $cell;
     }
 
     protected function generate(string $report, Carbon $from, Carbon $to): array
@@ -191,12 +247,12 @@ class ReportController extends Controller
             ];
         })->all();
 
-        $rows[] = ['', '', '', 'Total', number_format($payments->sum('amount'), 2)];
-
         return [
             'title' => 'Rental Income',
             'columns' => ['Date Paid', 'Tenant', 'Room', 'Type', 'Amount (₱)'],
             'rows' => $rows,
+            // Kept apart from the rows so sorting never moves it.
+            'total' => ['', '', '', 'Total', number_format($payments->sum('amount'), 2)],
         ];
     }
 
