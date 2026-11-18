@@ -22,16 +22,20 @@ class ReportController extends Controller
         'maintenance' => 'Maintenance',
     ];
 
+    /** The SOA's Status dropdown; "pending" means every unpaid bill, overdue included. */
+    protected const SOA_STATUSES = ['paid' => 'Paid', 'pending' => 'Pending (unpaid)'];
+
     public function index(Request $request): View
     {
         [$from, $to] = $this->resolveDateRange($request);
 
         $report = $request->query('report');
         [$sort, $dir] = $this->resolveSort($request);
+        $status = $this->resolveStatus($request);
         $result = null;
 
         if ($report && array_key_exists($report, self::REPORTS)) {
-            $result = $this->sorted($this->generate($report, $from, $to), $sort, $dir);
+            $result = $this->sorted($this->generate($report, $from, $to, $status), $sort, $dir);
         }
 
         return view('admin.reports.index', [
@@ -42,6 +46,8 @@ class ReportController extends Controller
             'result' => $result,
             'sort' => $sort,
             'dir' => $dir,
+            'status' => $status,
+            'soaStatuses' => self::SOA_STATUSES,
         ]);
     }
 
@@ -51,7 +57,7 @@ class ReportController extends Controller
         abort_unless(array_key_exists($report, self::REPORTS), 404);
 
         [$from, $to] = $this->resolveDateRange($request);
-        $result = $this->sorted($this->generate($report, $from, $to), ...$this->resolveSort($request));
+        $result = $this->sorted($this->generate($report, $from, $to, $this->resolveStatus($request)), ...$this->resolveSort($request));
 
         $filename = $report.'-'.$from->format('Y-m-d').'-to-'.$to->format('Y-m-d').'.csv';
 
@@ -135,11 +141,18 @@ class ReportController extends Controller
         return is_numeric($number) ? (float) $number : $cell;
     }
 
-    protected function generate(string $report, Carbon $from, Carbon $to): array
+    protected function resolveStatus(Request $request): ?string
+    {
+        $status = $request->query('status');
+
+        return array_key_exists((string) $status, self::SOA_STATUSES) ? $status : null;
+    }
+
+    protected function generate(string $report, Carbon $from, Carbon $to, ?string $status = null): array
     {
         return match ($report) {
             'tenant' => $this->tenantReport($from, $to),
-            'payment' => $this->paymentReport($from, $to),
+            'payment' => $this->paymentReport($from, $to, $status),
             'occupancy' => $this->occupancyReport(),
             'rental_income' => $this->rentalIncomeReport($from, $to),
             'maintenance' => $this->maintenanceReport($from, $to),
@@ -172,10 +185,12 @@ class ReportController extends Controller
         ];
     }
 
-    protected function paymentReport(Carbon $from, Carbon $to): array
+    protected function paymentReport(Carbon $from, Carbon $to, ?string $status = null): array
     {
         $payments = Payment::with(['lease.tenant', 'lease.room', 'booking.tenant', 'booking.room'])
             ->whereBetween('due_date', [$from, $to])
+            ->when($status === 'paid', fn ($q) => $q->where('status', 'paid'))
+            ->when($status === 'pending', fn ($q) => $q->whereIn('status', Payment::UNPAID))
             ->orderBy('due_date')
             ->get();
 

@@ -96,7 +96,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/places/barangays/{city}', [PropertyController::class, 'barangays'])->where('city', '[0-9]{9,10}')->name('places.barangays');
     Route::resource('properties', PropertyController::class)->except(['show']);
-    Route::resource('rooms', RoomController::class)->except(['show']);
+    Route::resource('rooms', RoomController::class)->except(['show', 'create', 'store']); // rooms come with their property
     Route::delete('/rooms/{room}/images/{image}', [RoomController::class, 'destroyImage'])->name('rooms.images.destroy');
 
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');

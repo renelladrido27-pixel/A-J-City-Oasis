@@ -29,11 +29,11 @@ class UploadFieldsTest extends TestCase
     public function test_admin_can_upload_several_room_photos_at_once(): void
     {
         Storage::fake('public');
-        $property = Property::factory()->create();
+        $room = Room::factory()->create(['room_number' => '301']);
 
         $this->actingAs(User::factory()->admin()->create())
-            ->post(route('admin.rooms.store'), [
-                'property_id' => $property->id,
+            ->put(route('admin.rooms.update', $room), [
+                'property_id' => $room->property_id,
                 'room_number' => '301',
                 'floor' => 3,
                 'type' => 'single',
@@ -43,7 +43,7 @@ class UploadFieldsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $room = Room::where('room_number', '301')->sole();
+        $room->refresh();
         $this->assertCount(3, $room->images);
         $room->images->each(fn ($image) => Storage::disk('public')->assertExists($image->path));
     }
@@ -101,10 +101,8 @@ class UploadFieldsTest extends TestCase
         $room = Room::factory()->create();
         $lease = Lease::factory()->create();
 
-        $this->actingAs($admin)->get(route('admin.rooms.create'))
-            ->assertOk()->assertSee('data-photo-upload', false)->assertSee('data-multiple="1"', false)->assertSee('Add photos');
         $this->actingAs($admin)->get(route('admin.rooms.edit', $room))
-            ->assertOk()->assertSee('data-multiple="1"', false);
+            ->assertOk()->assertSee('data-photo-upload', false)->assertSee('data-multiple="1"', false);
         $this->actingAs($admin)->get(route('admin.tenants.show', $lease->tenant))
             ->assertOk()->assertSee('data-accept="application/pdf,image/jpeg,image/png"', false)->assertSee('Choose the signed agreement');
     }

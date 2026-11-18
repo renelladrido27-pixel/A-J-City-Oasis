@@ -56,27 +56,6 @@ class RoomController extends Controller
         return view('admin.rooms.index', compact('rooms', 'properties'));
     }
 
-    public function create(): View
-    {
-        $properties = Property::all();
-
-        return view('admin.rooms.create', compact('properties'));
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        $validated = $this->validateRoom($request);
-
-        $room = Room::create([
-            ...$validated,
-            'inclusions' => $this->parseInclusions($request->input('inclusions')),
-        ]);
-
-        $this->storeUploadedImages($request, $room);
-
-        return redirect()->route('admin.rooms.index')->with('status', 'Room created.');
-    }
-
     public function edit(Room $room): View
     {
         $properties = Property::all();

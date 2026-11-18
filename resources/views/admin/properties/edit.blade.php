@@ -17,29 +17,7 @@
             <h2 class="h6 mt-4 mb-3"><i class="bi bi-geo-alt me-1"></i>Address</h2>
             <x-address-fields :property="$property" />
 
-            <hr class="my-4">
-            <h2 class="h6 mb-3"><i class="bi bi-door-closed me-1"></i>Add More Rooms (optional)</h2>
-            <p class="text-muted small">This property currently has <strong>{{ $property->rooms()->count() }}</strong> room(s). New rooms are numbered by floor, continuing after the last room.</p>
-
-            <div class="row g-3 mb-3">
-                <div class="col">
-                    <label class="form-label">Number of Rooms to Add</label>
-                    <input type="number" name="room_count" class="form-control @error('room_count') is-invalid @enderror" value="{{ old('room_count', 0) }}" min="0" max="200">
-                    @error('room_count')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-                <div class="col">
-                    <label class="form-label">Monthly Rate (per room)</label>
-                    <div class="input-group">
-                        <span class="input-group-text">₱</span>
-                        <input type="number" step="0.01" name="monthly_rate" class="form-control @error('monthly_rate') is-invalid @enderror" value="{{ old('monthly_rate') }}">
-                    </div>
-                    @error('monthly_rate')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
+            <p class="text-muted small mt-3"><i class="bi bi-door-closed me-1"></i>This building has <strong>{{ $property->rooms()->count() }}</strong> room(s). Edit each room from the Rooms page.</p>
 
             <div class="d-flex gap-2">
                 <button class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save</button>

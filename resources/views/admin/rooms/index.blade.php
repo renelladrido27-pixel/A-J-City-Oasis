@@ -3,11 +3,7 @@
 @section('title', 'Rooms')
 
 @section('content')
-<x-page-header title="Rooms">
-    <x-slot:actions>
-        <a href="{{ route('admin.rooms.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Room</a>
-    </x-slot:actions>
-</x-page-header>
+<x-page-header title="Rooms" subtitle="Rooms are created when a property is added." />
 
 <form method="GET" action="{{ route('admin.rooms.index') }}" class="mb-3">
     <div class="d-flex align-items-center gap-2" style="max-width: 320px;">

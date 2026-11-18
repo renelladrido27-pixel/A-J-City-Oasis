@@ -68,9 +68,11 @@ class PanelRevisionsTest extends TestCase
             ...self::KORONADAL,
             'barangay' => 'Santo Niño',
             'street' => 'Maglantay Subd.',
+            'room_count' => 3, 'monthly_rate' => 3500,
         ])->assertRedirect(route('admin.properties.index'));
 
         $property = Property::sole();
+        $this->assertSame(['101', '102', '103'], $property->rooms()->pluck('room_number')->sort()->values()->all());
         $this->assertSame('Maglantay Subd., Santo Niño, City of Koronadal, South Cotabato', $property->address);
         $this->assertSame('Region XII (SOCCSKSARGEN)', $property->region);
         $this->assertSame('Santo Niño', $property->barangay);
@@ -81,11 +83,11 @@ class PanelRevisionsTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('admin.properties.store'), [
-            'name' => 'X', ...self::KORONADAL, 'city' => 'Davao City', 'street' => 'Somewhere',
+            'name' => 'X', ...self::KORONADAL, 'city' => 'Davao City', 'street' => 'Somewhere', 'room_count' => 1, 'monthly_rate' => 3500,
         ])->assertSessionHasErrors('city');
 
         $this->actingAs($admin)->post(route('admin.properties.store'), [
-            'name' => 'X', ...self::KORONADAL, 'barangay' => 'Poblacion', 'street' => 'Somewhere',
+            'name' => 'X', ...self::KORONADAL, 'barangay' => 'Poblacion', 'street' => 'Somewhere', 'room_count' => 1, 'monthly_rate' => 3500,
         ])->assertSessionHasErrors('barangay');
 
         $this->actingAs($admin)->post(route('admin.properties.store'), ['name' => 'X', ...self::KORONADAL])
@@ -123,32 +125,34 @@ class PanelRevisionsTest extends TestCase
         $main = Property::factory()->create();
         $annex = Property::factory()->create();
         Room::factory()->for($main)->create(['room_number' => '103']);
+        $room = Room::factory()->for($main)->create(['room_number' => '104']);
+        $annexRoom = Room::factory()->for($annex)->create(['room_number' => '201']);
         $form = fn (Property $p, string $number) => [
             'property_id' => $p->id, 'room_number' => $number, 'floor' => 1, 'type' => 'Studio Loft Type',
             'monthly_rate' => 3500, 'status' => 'vacant',
         ];
 
         // "Room 103" is the same room number as "103".
-        $this->actingAs($admin)->post(route('admin.rooms.store'), $form($main, 'Room 103'))
+        $this->actingAs($admin)->put(route('admin.rooms.update', $room), $form($main, 'Room 103'))
             ->assertSessionHasErrors(['room_number' => 'That building already has a room with this number.']);
         // Another building can have its own 103.
-        $this->actingAs($admin)->post(route('admin.rooms.store'), $form($annex, 'Room 103'))->assertSessionHasNoErrors();
+        $this->actingAs($admin)->put(route('admin.rooms.update', $annexRoom), $form($annex, 'Room 103'))->assertSessionHasNoErrors();
 
-        $this->assertSame('103', Room::where('property_id', $annex->id)->sole()->room_number);
+        $this->assertSame('103', $annexRoom->fresh()->room_number);
     }
 
     public function test_the_room_type_is_a_dropdown_with_an_other_option(): void
     {
         $admin = $this->admin();
-        $property = Property::factory()->create();
+        $room = Room::factory()->create(['type' => 'Studio Loft Type']);
 
-        $this->actingAs($admin)->get(route('admin.rooms.create'))->assertOk()
+        $this->actingAs($admin)->get(route('admin.rooms.edit', $room))->assertOk()
             ->assertSee('<select name="type"', false)
             ->assertSee('<option value="Studio Loft Type" selected', false)
             ->assertSee('Other…');
 
-        $this->actingAs($admin)->post(route('admin.rooms.store'), [
-            'property_id' => $property->id, 'room_number' => '301', 'floor' => 3, 'type' => '__other', 'type_other' => 'Two-Bedroom',
+        $this->actingAs($admin)->put(route('admin.rooms.update', $room), [
+            'property_id' => $room->property_id, 'room_number' => '301', 'floor' => 3, 'type' => '__other', 'type_other' => 'Two-Bedroom',
             'monthly_rate' => 5000, 'status' => 'vacant',
         ])->assertSessionHasNoErrors();
 

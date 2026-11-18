@@ -52,6 +52,15 @@
                         <input type="hidden" name="report" value="{{ $activeReport }}">
                         <input type="hidden" name="from" value="{{ $from->format('Y-m-d') }}">
                         <input type="hidden" name="to" value="{{ $to->format('Y-m-d') }}">
+                        @if ($activeReport === 'payment')
+                            <label for="report-status" class="small text-muted text-nowrap mb-0">Status</label>
+                            <select id="report-status" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                @foreach ($soaStatuses as $value => $label)
+                                    <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        @endif
                         <label for="report-sort" class="small text-muted text-nowrap mb-0">Sort by</label>
                         <select id="report-sort" name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
                             <option value="">Default order</option>
@@ -65,7 +74,7 @@
                         </select>
                         <noscript><button class="btn btn-sm btn-outline-dark">Sort</button></noscript>
                     </form>
-                    <a href="{{ route('admin.reports.export', ['report' => $activeReport, 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'sort' => $sort, 'dir' => $dir]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV</a>
+                    <a href="{{ route('admin.reports.export', ['report' => $activeReport, 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'sort' => $sort, 'dir' => $dir, 'status' => $status]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV</a>
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print / Save as PDF</button>
                 </div>
             </div>

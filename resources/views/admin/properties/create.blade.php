@@ -18,13 +18,13 @@
             <x-address-fields />
 
             <hr class="my-4">
-            <h2 class="h6 mb-3"><i class="bi bi-door-closed me-1"></i>Rooms (optional)</h2>
-            <p class="text-muted small">Automatically create rooms for this property now, numbered by floor (101, 102… 201, 202…). You can add more later from the Rooms page.</p>
+            <h2 class="h6 mb-3"><i class="bi bi-door-closed me-1"></i>Rooms</h2>
+            <p class="text-muted small">The building's rooms are created now, numbered by floor (101, 102… 201, 202…). Rooms can't be added to a building later, so enter all of them. Each room's type, size, rate and photos can be edited afterwards on the Rooms page.</p>
 
             <div class="row g-3 mb-3">
                 <div class="col">
                     <label class="form-label">Number of Rooms</label>
-                    <input type="number" name="room_count" class="form-control @error('room_count') is-invalid @enderror" value="{{ old('room_count', 0) }}" min="0" max="200">
+                    <input type="number" name="room_count" class="form-control @error('room_count') is-invalid @enderror" value="{{ old('room_count') }}" min="1" max="200" required>
                     @error('room_count')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -33,7 +33,7 @@
                     <label class="form-label">Monthly Rate (per room)</label>
                     <div class="input-group">
                         <span class="input-group-text">₱</span>
-                        <input type="number" step="0.01" name="monthly_rate" class="form-control @error('monthly_rate') is-invalid @enderror" value="{{ old('monthly_rate') }}">
+                        <input type="number" step="0.01" name="monthly_rate" class="form-control @error('monthly_rate') is-invalid @enderror" value="{{ old('monthly_rate') }}" min="1" required>
                     </div>
                     @error('monthly_rate')
                         <div class="invalid-feedback">{{ $message }}</div>

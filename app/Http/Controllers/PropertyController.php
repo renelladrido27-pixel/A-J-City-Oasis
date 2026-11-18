@@ -31,14 +31,14 @@ class PropertyController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $this->validateProperty($request);
+        $validated = $this->validateProperty($request, withRooms: true);
 
         $property = Property::create(Arr::only($validated, ['name', 'address', 'region', 'province', 'city', 'barangay', 'street']));
 
-        $created = $this->generateRoomsIfRequested($property, $validated);
+        $created = $this->rooms->generate($property, (int) $validated['room_count'], (float) $validated['monthly_rate']);
 
         return redirect()->route('admin.properties.index')
-            ->with('status', $created > 0 ? "Property created with {$created} room(s)." : 'Property created.');
+            ->with('status', "Property created with {$created} room(s).");
     }
 
     public function edit(Property $property): View
@@ -52,10 +52,7 @@ class PropertyController extends Controller
 
         $property->update(Arr::only($validated, ['name', 'address', 'region', 'province', 'city', 'barangay', 'street']));
 
-        $created = $this->generateRoomsIfRequested($property, $validated);
-
-        return redirect()->route('admin.properties.index')
-            ->with('status', $created > 0 ? "Property updated, {$created} room(s) added." : 'Property updated.');
+        return redirect()->route('admin.properties.index')->with('status', 'Property updated.');
     }
 
     public function destroy(Property $property): RedirectResponse
@@ -65,7 +62,11 @@ class PropertyController extends Controller
         return redirect()->route('admin.properties.index')->with('status', 'Property deleted.');
     }
 
-    protected function validateProperty(Request $request): array
+    /**
+     * A building's rooms are set up once, when the building is added: an
+     * existing building does not gain rooms, so editing it only changes its details.
+     */
+    protected function validateProperty(Request $request, bool $withRooms = false): array
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -74,8 +75,13 @@ class PropertyController extends Controller
             'city' => ['required', 'string', 'max:100'],
             'barangay' => ['nullable', 'string', 'max:100'],
             'street' => ['required', 'string', 'max:150'],
-            'room_count' => ['nullable', 'integer', 'min:0', 'max:200'],
-            'monthly_rate' => ['nullable', 'numeric', 'min:0'],
+        ] + ($withRooms ? [
+            'room_count' => ['required', 'integer', 'min:1', 'max:200'],
+            'monthly_rate' => ['required', 'numeric', 'min:1'],
+        ] : []), [
+            'room_count.required' => 'Enter how many rooms this building has.',
+            'room_count.min' => 'A building needs at least one room.',
+            'monthly_rate.required' => 'Enter the monthly rate per room.',
         ]);
 
         // The dropdowns only offer real places, but check anyway: the city must
@@ -91,11 +97,6 @@ class PropertyController extends Controller
             $validated['street'], $validated['barangay'] ?? null, $validated['city'], $validated['province'],
         );
 
-        if ((int) ($validated['room_count'] ?? 0) > 0 && empty($validated['monthly_rate'])) {
-            throw ValidationException::withMessages([
-                'monthly_rate' => 'The monthly rate is required when adding rooms.',
-            ]);
-        }
 
         return $validated;
     }
@@ -104,14 +105,5 @@ class PropertyController extends Controller
     public function barangays(string $city): JsonResponse
     {
         return response()->json(PhilippineAddress::barangays($city));
-    }
-
-    protected function generateRoomsIfRequested(Property $property, array $validated): int
-    {
-        $roomCount = (int) ($validated['room_count'] ?? 0);
-
-        return $roomCount > 0
-            ? $this->rooms->generate($property, $roomCount, (float) $validated['monthly_rate'])
-            : 0;
     }
 }
