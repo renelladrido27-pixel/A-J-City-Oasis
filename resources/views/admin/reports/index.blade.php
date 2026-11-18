@@ -67,6 +67,13 @@
                                     <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
+                            <label for="report-tenant" class="small text-muted text-nowrap mb-0">Tenant</label>
+                            <select id="report-tenant" name="tenant" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">All tenants</option>
+                                @foreach ($tenants as $tenant)
+                                    <option value="{{ $tenant->id }}" @selected($tenantId === $tenant->id)>{{ $tenant->name }}</option>
+                                @endforeach
+                            </select>
                         @endif
                         <label for="report-sort" class="small text-muted text-nowrap mb-0">Sort by</label>
                         <select id="report-sort" name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -75,13 +82,13 @@
                                 <option value="{{ $i }}" @selected($sort === $i)>{{ $column }}</option>
                             @endforeach
                         </select>
-                        <select name="dir" class="form-select form-select-sm" aria-label="Sort order" onchange="this.form.submit()" @disabled($sort === null)>
+                        <select name="dir" class="form-select form-select-sm" aria-label="Sort order" onchange="this.form.submit()">
                             <option value="asc" @selected($dir === 'asc')>Ascending (A–Z, oldest, lowest)</option>
                             <option value="desc" @selected($dir === 'desc')>Descending (Z–A, newest, highest)</option>
                         </select>
                         <noscript><button class="btn btn-sm btn-outline-dark">Sort</button></noscript>
                     </form>
-                    <a href="{{ route('admin.reports.export', ['report' => $activeReport, 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'sort' => $sort, 'dir' => $dir, 'status' => $status]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV</a>
+                    <a href="{{ route('admin.reports.export', ['report' => $activeReport, 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'sort' => $sort, 'dir' => $dir, 'status' => $status, 'tenant' => $tenantId]) }}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV</a>
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print / Save as PDF</button>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Booking;
 use App\Models\Lease;
 use App\Models\Payment;
 use App\Models\User;
@@ -57,5 +58,34 @@ class ReportSortTest extends TestCase
         $this->assertSame(['3,500.00', '1,000.00'], $income);
         $this->assertSame('4,500.00', $total);
         $this->assertCount(count($income), $soa);
+    }
+
+    public function test_descending_without_a_column_reverses_the_default_order(): void
+    {
+        $lease = Lease::factory()->create();
+        foreach (['2026-11-03' => 100, '2026-11-10' => 200, '2026-11-20' => 300] as $due => $amount) {
+            Payment::factory()->create(['lease_id' => $lease->id, 'amount' => $amount, 'status' => 'paid', 'due_date' => $due, 'paid_at' => $due]);
+        }
+
+        [$amounts] = $this->amounts(['dir' => 'desc']);
+        $this->assertSame(['300.00', '200.00', '100.00'], $amounts);
+    }
+
+    public function test_the_soa_filters_by_tenant_through_lease_or_booking(): void
+    {
+        $lease = Lease::factory()->create();
+        $other = Lease::factory()->create();
+        $booking = Booking::factory()->create(['user_id' => $lease->tenant_id]);
+        Payment::factory()->create(['lease_id' => $lease->id, 'amount' => 3500, 'due_date' => '2026-11-01']);
+        Payment::factory()->create(['lease_id' => null, 'booking_id' => $booking->id, 'amount' => 10500, 'due_date' => '2026-11-02']);
+        Payment::factory()->create(['lease_id' => $other->id, 'amount' => 999, 'due_date' => '2026-11-03']);
+
+        $rows = fn (array $q) => array_column($this->actingAs(User::factory()->admin()->create())
+            ->get(route('admin.reports.index', ['report' => 'payment', 'from' => '2026-11-01', 'to' => '2026-11-30'] + $q))
+            ->assertOk()->assertSee('All tenants')->viewData('result')['rows'], 3);
+
+        $this->assertSame(['3,500.00', '10,500.00'], $rows(['tenant' => $lease->tenant_id]));
+        $this->assertCount(3, $rows([]));
+        $this->assertCount(3, $rows(['tenant' => 'abc']));
     }
 }

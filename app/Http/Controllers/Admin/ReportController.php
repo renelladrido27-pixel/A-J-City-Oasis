@@ -7,6 +7,7 @@ use App\Models\Lease;
 use App\Models\MaintenanceRequest;
 use App\Models\Payment;
 use App\Models\Room;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -32,10 +33,11 @@ class ReportController extends Controller
         $report = $request->query('report');
         [$sort, $dir] = $this->resolveSort($request);
         $status = $this->resolveStatus($request);
+        $tenantId = $this->resolveTenant($request);
         $result = null;
 
         if ($report && array_key_exists($report, self::REPORTS)) {
-            $result = $this->sorted($this->generate($report, $from, $to, $status), $sort, $dir);
+            $result = $this->sorted($this->generate($report, $from, $to, $status, $tenantId), $sort, $dir);
         }
 
         return view('admin.reports.index', [
@@ -48,6 +50,8 @@ class ReportController extends Controller
             'dir' => $dir,
             'status' => $status,
             'soaStatuses' => self::SOA_STATUSES,
+            'tenantId' => $tenantId,
+            'tenants' => $report === 'payment' ? User::where('role', 'tenant')->orderBy('name')->get(['id', 'name']) : collect(),
         ]);
     }
 
@@ -57,7 +61,7 @@ class ReportController extends Controller
         abort_unless(array_key_exists($report, self::REPORTS), 404);
 
         [$from, $to] = $this->resolveDateRange($request);
-        $result = $this->sorted($this->generate($report, $from, $to, $this->resolveStatus($request)), ...$this->resolveSort($request));
+        $result = $this->sorted($this->generate($report, $from, $to, $this->resolveStatus($request), $this->resolveTenant($request)), ...$this->resolveSort($request));
 
         $filename = $report.'-'.$from->format('Y-m-d').'-to-'.$to->format('Y-m-d').'.csv';
 
@@ -110,6 +114,10 @@ class ReportController extends Controller
     protected function sorted(array $result, ?int $col, string $dir): array
     {
         if ($col === null || ! isset($result['columns'][$col])) {
+            if ($dir === 'desc') {
+                $result['rows'] = array_reverse($result['rows']);
+            }
+
             return $result;
         }
 
@@ -148,11 +156,18 @@ class ReportController extends Controller
         return array_key_exists((string) $status, self::SOA_STATUSES) ? $status : null;
     }
 
-    protected function generate(string $report, Carbon $from, Carbon $to, ?string $status = null): array
+    protected function resolveTenant(Request $request): ?int
+    {
+        $id = $request->query('tenant');
+
+        return ctype_digit((string) $id) ? (int) $id : null;
+    }
+
+    protected function generate(string $report, Carbon $from, Carbon $to, ?string $status = null, ?int $tenantId = null): array
     {
         return match ($report) {
             'tenant' => $this->tenantReport($from, $to),
-            'payment' => $this->paymentReport($from, $to, $status),
+            'payment' => $this->paymentReport($from, $to, $status, $tenantId),
             'occupancy' => $this->occupancyReport(),
             'rental_income' => $this->rentalIncomeReport($from, $to),
             'maintenance' => $this->maintenanceReport($from, $to),
@@ -185,12 +200,16 @@ class ReportController extends Controller
         ];
     }
 
-    protected function paymentReport(Carbon $from, Carbon $to, ?string $status = null): array
+    protected function paymentReport(Carbon $from, Carbon $to, ?string $status = null, ?int $tenantId = null): array
     {
         $payments = Payment::with(['lease.tenant', 'lease.room', 'booking.tenant', 'booking.room'])
             ->whereBetween('due_date', [$from, $to])
             ->when($status === 'paid', fn ($q) => $q->where('status', 'paid'))
             ->when($status === 'pending', fn ($q) => $q->whereIn('status', Payment::UNPAID))
+            // A payment belongs to a tenant through its lease (rent) or its booking (upfront).
+            ->when($tenantId, fn ($q) => $q->where(fn ($q) => $q
+                ->whereHas('lease', fn ($l) => $l->where('tenant_id', $tenantId))
+                ->orWhereHas('booking', fn ($b) => $b->where('user_id', $tenantId))))
             ->orderBy('due_date')
             ->get();
 
