@@ -15,15 +15,22 @@
 <form method="GET" action="{{ route('admin.reports.index') }}" class="card border-0 shadow-sm mb-4 no-print">
     <div class="card-body p-4">
         <div class="row g-3 align-items-end mb-4">
-            <div class="col-sm-4">
+            <div class="col-sm-3">
+                <label for="report-month" class="form-label small text-muted mb-1">Month</label>
+                {{-- Picking a month fills From/To with its first and last day; not submitted itself. --}}
+                <input type="month" id="report-month" class="form-control"
+                       value="{{ $from->isSameDay($from->copy()->startOfMonth()) && $to->isSameDay($from->copy()->endOfMonth()) ? $from->format('Y-m') : '' }}"
+                       onchange="if (this.value) { const [y, m] = this.value.split('-').map(Number); this.form.from.value = this.value + '-01'; this.form.to.value = this.value + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0'); }">
+            </div>
+            <div class="col-sm-3">
                 <label class="form-label small text-muted mb-1">From</label>
-                <input type="date" name="from" class="form-control" value="{{ $from->format('Y-m-d') }}">
+                <input type="date" name="from" class="form-control" value="{{ $from->format('Y-m-d') }}" oninput="document.getElementById('report-month').value = ''">
             </div>
-            <div class="col-sm-4">
+            <div class="col-sm-3">
                 <label class="form-label small text-muted mb-1">To</label>
-                <input type="date" name="to" class="form-control" value="{{ $to->format('Y-m-d') }}">
+                <input type="date" name="to" class="form-control" value="{{ $to->format('Y-m-d') }}" oninput="document.getElementById('report-month').value = ''">
             </div>
-            <div class="col-sm-4 text-sm-end">
+            <div class="col-sm-3 text-sm-end">
                 <span class="text-muted small">{{ $from->format('M j') }} &ndash; {{ $to->format('M j, Y') }}</span>
             </div>
         </div>
