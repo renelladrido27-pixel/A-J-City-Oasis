@@ -22,7 +22,7 @@ class DashboardController extends Controller
             'vacant_rooms' => Room::where('status', 'vacant')->count(),
             'overdue_payments' => Payment::where('status', 'overdue')->count(),
             'income_this_month' => Payment::where('status', 'paid')
-                ->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])
+                ->whereBetween('due_date', [now()->startOfMonth(), now()->endOfMonth()]) // same basis as the Rental Income report
                 ->sum('amount'),
             'pending_bookings' => Booking::where('status', 'pending_payment')->count(),
             'pending_transfers' => RoomTransfer::where('status', 'pending')->count(),

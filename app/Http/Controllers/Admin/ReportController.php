@@ -243,10 +243,12 @@ class ReportController extends Controller
 
     protected function rentalIncomeReport(Carbon $from, Carbon $to): array
     {
+        // By due date, like the SOA: a bill paid early still counts in the month it is for,
+        // so this report's count always matches the SOA's "Paid" filter.
         $payments = Payment::with(['lease.tenant', 'lease.room', 'booking.tenant', 'booking.room'])
             ->where('status', 'paid')
-            ->whereBetween('paid_at', [$from, $to])
-            ->orderBy('paid_at')
+            ->whereBetween('due_date', [$from, $to])
+            ->orderBy('due_date')
             ->get();
 
         $rows = $payments->map(function (Payment $payment) {
@@ -254,7 +256,8 @@ class ReportController extends Controller
             $room = $payment->lease?->room ?? $payment->booking?->room;
 
             return [
-                $payment->paid_at->format('M d, Y'),
+                $payment->due_date->format('M d, Y'),
+                $payment->paid_at?->format('M d, Y') ?? '—',
                 $tenant?->name ?? '—',
                 $room ? 'Room '.$room->room_number : '—',
                 ucfirst(str_replace('_', ' ', $payment->type)),
@@ -264,10 +267,10 @@ class ReportController extends Controller
 
         return [
             'title' => 'Rental Income',
-            'columns' => ['Date Paid', 'Tenant', 'Room', 'Type', 'Amount (₱)'],
+            'columns' => ['Due Date', 'Date Paid', 'Tenant', 'Room', 'Type', 'Amount (₱)'],
             'rows' => $rows,
             // Kept apart from the rows so sorting never moves it.
-            'total' => ['', '', '', 'Total', number_format($payments->sum('amount'), 2)],
+            'total' => ['', '', '', '', 'Total', number_format($payments->sum('amount'), 2)],
         ];
     }
 
