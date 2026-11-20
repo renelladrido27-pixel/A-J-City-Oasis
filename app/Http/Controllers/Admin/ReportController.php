@@ -224,13 +224,14 @@ class ReportController extends Controller
                 number_format($payment->amount, 2),
                 $payment->due_date->format('M d, Y'),
                 $payment->paid_at?->format('M d, Y') ?? '—',
+                $payment->status === 'paid' ? '#'.str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT) : '—', // same number as the printed receipt
                 ucfirst($payment->status),
             ];
         })->all();
 
         return [
             'title' => 'Payment / Statement of Account',
-            'columns' => ['Tenant', 'Room', 'Type', 'Amount (₱)', 'Due Date', 'Paid Date', 'Status'],
+            'columns' => ['Tenant', 'Room', 'Type', 'Amount (₱)', 'Due Date', 'Paid Date', 'Receipt No.', 'Status'],
             'rows' => $rows,
         ];
     }
