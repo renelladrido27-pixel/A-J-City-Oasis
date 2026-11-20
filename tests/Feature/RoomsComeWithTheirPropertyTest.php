@@ -67,8 +67,11 @@ class RoomsComeWithTheirPropertyTest extends TestCase
         $this->assertCount(3, $amounts(['status' => 'bogus']));
 
         // Paid bills show the receipt number printed on their receipt; unpaid ones have none.
-        $rows = $this->actingAs($admin)->get(route('admin.reports.index', ['report' => 'payment', 'from' => '2026-11-01', 'to' => '2026-11-30']))->viewData('result')['rows'];
+        $result = $this->actingAs($admin)->get(route('admin.reports.index', ['report' => 'payment', 'from' => '2026-11-01', 'to' => '2026-11-30']))->assertSee('Gross')->viewData('result');
+        $rows = $result['rows'];
+        $this->assertSame('6,000.00', $result['total'][3]); // gross of all three bills
+        $this->assertNotContains('Due Date', $result['columns']);
         $paid = Payment::where('status', 'paid')->sole();
-        $this->assertEqualsCanonicalizing(['#'.str_pad((string) $paid->id, 6, '0', STR_PAD_LEFT), '—', '—'], array_column($rows, 6));
+        $this->assertEqualsCanonicalizing(['#'.str_pad((string) $paid->id, 6, '0', STR_PAD_LEFT), '—', '—'], array_column($rows, 5));
     }
 }

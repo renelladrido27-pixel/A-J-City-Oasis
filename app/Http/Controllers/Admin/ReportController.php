@@ -222,7 +222,6 @@ class ReportController extends Controller
                 $room ? 'Room '.$room->room_number : '—',
                 ucfirst(str_replace('_', ' ', $payment->type)),
                 number_format($payment->amount, 2),
-                $payment->due_date->format('M d, Y'),
                 $payment->paid_at?->format('M d, Y') ?? '—',
                 $payment->status === 'paid' ? '#'.str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT) : '—', // same number as the printed receipt
                 ucfirst($payment->status),
@@ -231,8 +230,10 @@ class ReportController extends Controller
 
         return [
             'title' => 'Payment / Statement of Account',
-            'columns' => ['Tenant', 'Room', 'Type', 'Amount (₱)', 'Due Date', 'Paid Date', 'Receipt No.', 'Status'],
+            'columns' => ['Tenant', 'Room', 'Type', 'Amount (₱)', 'Paid Date', 'Receipt No.', 'Status'],
             'rows' => $rows,
+            // Gross: every bill listed (after the Status/Tenant filters), paid or not.
+            'total' => ['', '', 'Gross', number_format($payments->sum('amount'), 2), '', '', ''],
         ];
     }
 
