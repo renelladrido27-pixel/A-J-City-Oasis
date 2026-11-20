@@ -21,7 +21,7 @@ class ReportSortTest extends TestCase
             ->assertOk()
             ->viewData('result');
 
-        return [array_column($rows['rows'], 5), $rows['total'][5]];
+        return [array_column($rows['rows'], 6), $rows['total'][6]];
     }
 
     public function test_reports_sort_by_the_chosen_column_as_numbers_and_dates(): void
@@ -32,12 +32,12 @@ class ReportSortTest extends TestCase
         }
 
         // Amount column, highest first: compared as numbers, not text ("900" < "12,000").
-        [$amounts, $total] = $this->amounts(['sort' => 5, 'dir' => 'desc']);
+        [$amounts, $total] = $this->amounts(['sort' => 6, 'dir' => 'desc']);
         $this->assertSame(['12,000.00', '3,500.00', '900.00'], $amounts);
         $this->assertSame('16,400.00', $total); // the total row stays out of the sort
 
         // Date Paid column, newest first: compared as dates, not text.
-        [$amounts] = $this->amounts(['sort' => 0, 'dir' => 'desc']);
+        [$amounts] = $this->amounts(['sort' => 1, 'dir' => 'desc']);
         $this->assertSame(['900.00', '3,500.00', '12,000.00'], $amounts);
 
         // A bogus column falls back to the report's own order (due date, oldest first).

@@ -69,6 +69,6 @@ class RoomsComeWithTheirPropertyTest extends TestCase
         // Paid bills show the receipt number printed on their receipt; unpaid ones have none.
         $rows = $this->actingAs($admin)->get(route('admin.reports.index', ['report' => 'payment', 'from' => '2026-11-01', 'to' => '2026-11-30']))->viewData('result')['rows'];
         $paid = Payment::where('status', 'paid')->sole();
-        $this->assertEqualsCanonicalizing(['#'.str_pad((string) $paid->id, 6, '0', STR_PAD_LEFT), '—', '—'], array_column($rows, 6));
+        $this->assertEqualsCanonicalizing(['#'.str_pad((string) $paid->id, 6, '0', STR_PAD_LEFT), '—', '—'], array_column($rows, 5));
     }
 }
