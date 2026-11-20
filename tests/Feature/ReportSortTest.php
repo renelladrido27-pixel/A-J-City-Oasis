@@ -37,7 +37,7 @@ class ReportSortTest extends TestCase
         $this->assertSame('16,400.00', $total); // the total row stays out of the sort
 
         // Date Paid column, newest first: compared as dates, not text.
-        [$amounts] = $this->amounts(['sort' => 1, 'dir' => 'desc']);
+        [$amounts] = $this->amounts(['sort' => 0, 'dir' => 'desc']);
         $this->assertSame(['900.00', '3,500.00', '12,000.00'], $amounts);
 
         // A bogus column falls back to the report's own order (due date, oldest first).

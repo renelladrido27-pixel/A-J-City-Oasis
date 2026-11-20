@@ -276,8 +276,8 @@ class ReportController extends Controller
             $room = $payment->lease?->room ?? $payment->booking?->room;
 
             return [
-                $payment->due_date->format('M d, Y'),
                 $payment->paid_at?->format('M d, Y') ?? '—',
+                '#'.str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT), // same number as the printed receipt
                 $tenant?->name ?? '—',
                 $room ? 'Room '.$room->room_number : '—',
                 ucfirst(str_replace('_', ' ', $payment->type)),
@@ -287,7 +287,7 @@ class ReportController extends Controller
 
         return [
             'title' => 'Rental Income',
-            'columns' => ['Due Date', 'Date Paid', 'Tenant', 'Room', 'Type', 'Amount (₱)'],
+            'columns' => ['Date Paid', 'Receipt No.', 'Tenant', 'Room', 'Type', 'Amount (₱)'],
             'rows' => $rows,
             // Kept apart from the rows so sorting never moves it.
             'total' => ['', '', '', '', 'Total', number_format($payments->sum('amount'), 2)],
