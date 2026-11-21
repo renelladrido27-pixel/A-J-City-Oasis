@@ -137,7 +137,7 @@
         <div class="table-responsive">
             <table class="table align-middle mb-0">
                 <thead class="table-light">
-                    <tr><th>From</th><th>To</th><th>Deposit Adjustment</th><th>Status</th>@if (auth()->user()->isAdmin())<th></th>@endif</tr>
+                    <tr><th>From</th><th>To</th><th>Deposit Adjustment</th><th>Preferred Date</th><th>Status</th>@if (auth()->user()->isAdmin())<th></th>@endif</tr>
                 </thead>
                 <tbody>
                     @forelse ($lease->roomTransfers as $transfer)
@@ -145,7 +145,11 @@
                             <td>{{ $transfer->fromRoom->room_number }} <span class="text-muted small">· {{ $transfer->fromRoom->property?->shortName() }}</span></td>
                             <td>{{ $transfer->toRoom->room_number }} <span class="text-muted small">· {{ $transfer->toRoom->property?->shortName() }}</span></td>
                             <td>₱{{ number_format($transfer->deposit_adjustment, 2) }}</td>
-                            <td><x-status-badge :status="$transfer->status" /></td>
+                            <td>{{ $transfer->preferred_date?->format('M d, Y') ?? '—' }}</td>
+                            <td>
+                                <x-status-badge :status="$transfer->status" />
+                                @if ($transfer->rejection_reason)<div class="text-muted small mt-1">Reason: {{ $transfer->rejection_reason }}</div>@endif
+                            </td>
                             @if (auth()->user()->isAdmin())
                                 <td>
                                     @if ($transfer->status === 'pending')
@@ -153,16 +157,13 @@
                                             @csrf
                                             <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i></button>
                                         </form>
-                                        <form method="POST" action="{{ route('admin.room-transfers.reject', $transfer) }}" class="d-inline">
-                                            @csrf
-                                            <button class="btn btn-sm btn-danger"><i class="bi bi-x-lg"></i></button>
-                                        </form>
+                                        @include('admin.room-transfers._reject-form')
                                     @endif
                                 </td>
                             @endif
                         </tr>
                     @empty
-                        <tr><td colspan="5"><x-empty-state icon="bi-arrow-left-right" message="No room transfers yet." /></td></tr>
+                        <tr><td colspan="6"><x-empty-state icon="bi-arrow-left-right" message="No room transfers yet." /></td></tr>
                     @endforelse
                 </tbody>
             </table>

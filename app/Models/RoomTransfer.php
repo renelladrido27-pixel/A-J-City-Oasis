@@ -15,8 +15,10 @@ class RoomTransfer extends Model
         'from_room_id',
         'to_room_id',
         'reason',
+        'preferred_date',
         'deposit_adjustment',
         'status',
+        'rejection_reason',
         'requested_at',
     ];
 
@@ -25,6 +27,7 @@ class RoomTransfer extends Model
         return [
             'deposit_adjustment' => 'decimal:2',
             'requested_at' => 'datetime',
+            'preferred_date' => 'date',
         ];
     }
 
@@ -41,6 +44,12 @@ class RoomTransfer extends Model
     public function toRoom(): BelongsTo
     {
         return $this->belongsTo(Room::class, 'to_room_id');
+    }
+
+    /** The two deposits held for the current room (rent deposit + security), as at move-out. */
+    public function depositsHeld(): float
+    {
+        return 2 * (float) $this->fromRoom->monthly_rate;
     }
 
     public function isUpgrade(): bool

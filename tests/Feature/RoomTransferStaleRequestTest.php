@@ -99,8 +99,9 @@ class RoomTransferStaleRequestTest extends TestCase
         [$a, $b] = Room::factory()->count(2)->create(['status' => 'vacant']);
         $lease = $this->occupiedLease($from);
 
-        $this->actingAs($lease->tenant)->post(route('tenant.room-transfers.store', $lease), ['to_room_id' => $a->id])->assertRedirect();
-        $this->actingAs($lease->tenant)->post(route('tenant.room-transfers.store', $lease), ['to_room_id' => $b->id])->assertStatus(422);
+        $form = ['preferred_date' => today()->addDays(3)->toDateString(), 'reason' => 'Closer to the stairs.'];
+        $this->actingAs($lease->tenant)->post(route('tenant.room-transfers.store', $lease), ['to_room_id' => $a->id] + $form)->assertSessionHasNoErrors();
+        $this->actingAs($lease->tenant)->post(route('tenant.room-transfers.store', $lease), ['to_room_id' => $b->id] + $form)->assertStatus(422);
 
         Sanctum::actingAs($lease->tenant);
         $this->postJson('/api/room-transfers', ['to_room_id' => $b->id])->assertStatus(422)

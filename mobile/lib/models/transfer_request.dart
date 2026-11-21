@@ -4,6 +4,8 @@ class TransferRequest {
   final String toRoomLabel;
   final String status;
   final String? reason;
+  final DateTime? preferredDate;
+  final String? rejectionReason;
   final DateTime requestedAt;
 
   const TransferRequest({
@@ -12,6 +14,8 @@ class TransferRequest {
     required this.toRoomLabel,
     required this.status,
     this.reason,
+    this.preferredDate,
+    this.rejectionReason,
     required this.requestedAt,
   });
 
@@ -22,6 +26,8 @@ class TransferRequest {
       toRoomLabel: _label(json['to_room'], json['to_building']),
       status: _titleCase(json['status'] as String),
       reason: json['reason'] as String?,
+      preferredDate: DateTime.tryParse(json['preferred_date']?.toString() ?? ''),
+      rejectionReason: json['rejection_reason'] as String?,
       requestedAt:
           DateTime.tryParse(json['requested_at']?.toString() ?? '') ??
           DateTime.now(),

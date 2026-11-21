@@ -107,12 +107,25 @@ class _RequestTransferScreenState extends State<RequestTransferScreen> {
                                   ],
                                 ),
                                 Text(
-                                  'Requested ${formatShortDate(t.requestedAt.toLocal())}',
+                                  [
+                                    'Requested ${formatShortDate(t.requestedAt.toLocal())}',
+                                    if (t.preferredDate != null)
+                                      'move on ${formatShortDate(t.preferredDate!)}',
+                                  ].join(' · '),
                                   style: const TextStyle(
                                     color: OasisColors.muted,
                                     fontSize: 12,
                                   ),
                                 ),
+                                if (t.rejectionReason != null &&
+                                    t.rejectionReason!.isNotEmpty)
+                                  Text(
+                                    'Reason: ${t.rejectionReason}',
+                                    style: const TextStyle(
+                                      color: OasisColors.muted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
@@ -228,6 +241,13 @@ class _RequestTransferScreenState extends State<RequestTransferScreen> {
   }
 
   void _openReasonSheet(BuildContext context, Room room) {
+    final app = AppStateScope.of(context);
+    // Same formula as the server: new rate − current rate.
+    final current = app.lease?.monthlyRent;
+    final diff = current == null ? null : room.monthlyRent - current;
+    final today = DateUtils.dateOnly(DateTime.now());
+    DateTime? date;
+    String? error;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -252,26 +272,69 @@ class _RequestTransferScreenState extends State<RequestTransferScreen> {
                       fontSize: 16,
                     ),
                   ),
+                  if (diff != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      diff > 0
+                          ? 'Deposit difference: ${formatPesoExact(diff)} to pay before approval.'
+                          : diff < 0
+                          ? 'Deposit difference: ${formatPesoExact(-diff)} credit, settled by the admin outside the app.'
+                          : 'Deposit difference: none (same monthly rent).',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.event_outlined),
+                    label: Text(
+                      date == null
+                          ? 'Preferred transfer date'
+                          : formatLongDate(date!),
+                    ),
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: sheetContext,
+                        initialDate: date ?? today,
+                        firstDate: today,
+                        lastDate: today.add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setSheetState(() {
+                          date = picked;
+                          error = null;
+                        });
+                      }
+                    },
+                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _reason,
-                    decoration: const InputDecoration(
-                      hintText: 'Reason + date',
+                    maxLines: 3,
+                    maxLength: 2000,
+                    decoration: InputDecoration(
+                      labelText: 'Reason for transfer',
+                      errorText: error,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   OasisButton(
                     label: 'Submit request',
                     onPressed: _submitting
                         ? null
                         : () async {
-                            setSheetState(() => _submitting = true);
-                            final app = AppStateScope.of(context);
-                            try {
-                              await app.requestTransfer(
-                                room,
-                                _reason.text.trim(),
+                            final picked = date;
+                            final reason = _reason.text.trim();
+                            if (picked == null || reason.isEmpty) {
+                              setSheetState(
+                                () => error = picked == null
+                                    ? 'Choose your preferred transfer date.'
+                                    : 'Enter the reason for the transfer.',
                               );
+                              return;
+                            }
+                            setSheetState(() => _submitting = true);
+                            try {
+                              await app.requestTransfer(room, reason, picked);
                               _reason.clear();
                               if (context.mounted) {
                                 Navigator.of(sheetContext).pop();

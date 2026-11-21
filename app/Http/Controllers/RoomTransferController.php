@@ -49,6 +49,10 @@ class RoomTransferController extends Controller
 
         $validated = $request->validate([
             'to_room_id' => ['required', 'exists:rooms,id'],
+            'preferred_date' => ['required', 'date', 'after_or_equal:today'],
+            'reason' => ['required', 'string', 'max:2000'],
+        ], [
+            'preferred_date.after_or_equal' => 'The preferred transfer date cannot be in the past.',
         ]);
 
         $toRoom = Room::findOrFail($validated['to_room_id']);
@@ -61,11 +65,13 @@ class RoomTransferController extends Controller
 
         $adjustment = (float) $toRoom->monthly_rate - (float) $lease->room->monthly_rate;
 
-        $transfer = DB::transaction(function () use ($lease, $toRoom, $adjustment) {
+        $transfer = DB::transaction(function () use ($lease, $toRoom, $adjustment, $validated) {
             $transfer = RoomTransfer::create([
                 'lease_id' => $lease->id,
                 'from_room_id' => $lease->room_id,
                 'to_room_id' => $toRoom->id,
+                'reason' => $validated['reason'],
+                'preferred_date' => $validated['preferred_date'],
                 'deposit_adjustment' => $adjustment,
                 'status' => 'pending',
                 'requested_at' => now(),
@@ -139,7 +145,7 @@ class RoomTransferController extends Controller
             // Any other request this tenant still had waiting is now moot.
             RoomTransfer::where('lease_id', $lease->id)->where('status', 'pending')
                 ->whereKeyNot($roomTransfer->id)
-                ->update(['status' => 'rejected']);
+                ->update(['status' => 'rejected', 'rejection_reason' => 'Another transfer request of yours was approved.']);
         });
 
         $this->notifications->notify(
@@ -152,14 +158,21 @@ class RoomTransferController extends Controller
         return back()->with('status', 'Room transfer completed.');
     }
 
-    public function reject(RoomTransfer $roomTransfer): RedirectResponse
+    public function reject(Request $request, RoomTransfer $roomTransfer): RedirectResponse
     {
-        $roomTransfer->update(['status' => 'rejected']);
+        abort_unless($roomTransfer->status === 'pending', 422, 'Transfer already processed.');
+
+        $validated = $request->validate(
+            ['rejection_reason' => ['required', 'string', 'max:500']],
+            ['rejection_reason.required' => 'Give the tenant a reason for rejecting the transfer.'],
+        );
+
+        $roomTransfer->update(['status' => 'rejected', 'rejection_reason' => $validated['rejection_reason']]);
 
         $this->notifications->notify(
             $roomTransfer->lease->tenant,
             'Room transfer rejected',
-            "Your request to transfer to Room {$roomTransfer->toRoom->room_number} was rejected.",
+            "Your request to transfer to Room {$roomTransfer->toRoom->room_number} was rejected. Reason: {$validated['rejection_reason']}",
             'transfer',
         );
 

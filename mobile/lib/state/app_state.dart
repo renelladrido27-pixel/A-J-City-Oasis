@@ -492,10 +492,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> requestTransfer(Room toRoom, String reason) async {
+  Future<void> requestTransfer(
+    Room toRoom,
+    String reason,
+    DateTime preferredDate,
+  ) async {
     await _api.post('/room-transfers', {
       'to_room_id': int.parse(toRoom.id),
       'reason': reason,
+      'preferred_date': preferredDate.toIso8601String().substring(0, 10),
     });
     await _loadTransfers();
     notifyListeners();

@@ -13,6 +13,8 @@ class RoomTransferResource extends JsonResource
             'id' => $this->id,
             'status' => $this->status,
             'reason' => $this->reason,
+            'preferred_date' => $this->preferred_date?->toDateString(),
+            'rejection_reason' => $this->rejection_reason,
             'deposit_adjustment' => (float) $this->deposit_adjustment,
             'requested_at' => $this->requested_at?->toIso8601String(),
             'from_room' => $this->whenLoaded('fromRoom', fn () => $this->fromRoom->room_number),

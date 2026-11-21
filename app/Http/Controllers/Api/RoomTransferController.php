@@ -49,6 +49,8 @@ class RoomTransferController extends Controller
         $validated = $request->validate([
             'to_room_id' => ['required', 'exists:rooms,id'],
             'reason' => ['nullable', 'string', 'max:2000'],
+            // shortcut: nullable so app versions before 1.0.24 can still submit; make required once they are gone.
+            'preferred_date' => ['nullable', 'date', 'after_or_equal:today'],
         ]);
 
         $toRoom = Room::findOrFail($validated['to_room_id']);
@@ -67,6 +69,7 @@ class RoomTransferController extends Controller
                 'from_room_id' => $lease->room_id,
                 'to_room_id' => $toRoom->id,
                 'reason' => $validated['reason'] ?? null,
+                'preferred_date' => $validated['preferred_date'] ?? null,
                 'deposit_adjustment' => $adjustment,
                 'status' => 'pending',
                 'requested_at' => now(),
